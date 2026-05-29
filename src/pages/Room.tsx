@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../components/GameContext';
 import Lobby from './Lobby';
 import PlayingField from './PlayingField';
+import Chat from './Chat';
 import { LogOut, Users } from 'lucide-react';
 import { storage } from '../lib/storage';
 
@@ -112,8 +113,8 @@ export default function Room() {
   }
 
   return (
-    <div className="min-h-screen max-w-7xl mx-auto p-4 md:p-8 space-y-8">
-      <header className="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-3xl">
+    <div className="min-h-screen max-w-7xl mx-auto p-4 md:p-8 space-y-8 flex flex-col">
+      <header className="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-3xl shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="text-xl md:text-2xl font-bold font-heading text-white">تحدي المعرفة</h1>
           <span className="px-3 py-1 bg-slate-800 text-xs text-slate-400 rounded-lg hidden sm:block">
@@ -129,9 +130,16 @@ export default function Room() {
         </button>
       </header>
 
-      {state.status === 'waiting' && <Lobby />}
-      
-      {state.status !== 'waiting' && <PlayingField />}
+      <div className="flex-1 grid lg:grid-cols-3 gap-8 pb-8 items-start">
+        <div className="lg:col-span-2 space-y-6">
+          {state.status === 'waiting' && <Lobby />}
+          {state.status !== 'waiting' && <PlayingField />}
+        </div>
+        
+        <div className="h-[500px] lg:h-[calc(100vh-160px)] lg:sticky lg:top-8 flex flex-col">
+          <Chat />
+        </div>
+      </div>
     </div>
   );
 }
