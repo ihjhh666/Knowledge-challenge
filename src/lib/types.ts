@@ -27,6 +27,7 @@ export interface ChatMessage {
 
 export interface GameState {
   roomId: string;
+  category?: string;
   status: RoomStatus;
   players: Record<string, RoomPlayer>;
   messages: ChatMessage[];

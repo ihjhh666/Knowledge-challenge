@@ -28,8 +28,15 @@ export default function Lobby() {
     <div className="space-y-6">
       <div className="bg-slate-800 border border-slate-700 p-6 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold font-heading text-slate-200">اللاعبين في الغرفة</h2>
-          <p className="text-slate-400 text-sm mt-1">{players.length} / 10 لاعبين</p>
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-xl font-bold font-heading text-slate-200">اللاعبين في الغرفة</h2>
+            {state.category && (
+               <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-md text-xs font-bold border border-indigo-500/30">
+                 {state.category}
+               </span>
+            )}
+          </div>
+          <p className="text-slate-400 text-sm">{players.length} / 10 لاعبين</p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2">
           <div className="bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 flex items-center gap-3">

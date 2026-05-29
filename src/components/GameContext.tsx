@@ -4,6 +4,7 @@ import { createPeer } from '../lib/peer';
 import { storage } from '../lib/storage';
 import { GENERAL_KNOWLEDGE, FOOTBALL, MOVIES, ANIME, SCIENCE, HISTORY, ISLAMIC } from '../lib/questionData';
 import { audio } from '../lib/audio';
+import { createPublicRoom, updatePublicRoom, deletePublicRoom } from '../lib/firebase';
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 
@@ -21,7 +22,7 @@ interface GameContextType {
   state: GameState | null;
   playerId: string;
   isHost: boolean;
-  createRoom: () => void;
+  createRoom: (category?: string) => void;
   joinRoom: (roomId: string, onError?: (err: string) => void) => void;
   sendMessage: (text: string) => void;
   toggleReady: () => void;
@@ -85,6 +86,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           setState(newState);
           broadcast({ type: 'STATE_UPDATE', state: newState });
+          
+          updatePublicRoom(newState.roomId, {
+            playerCount: Object.keys(newState.players).length
+          });
         }
         break;
       case 'CHAT':
@@ -141,10 +146,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        const newState = { ...currentState, status: 'finished' as const };
        setState(newState);
        broadcast({ type: 'STATE_UPDATE', state: newState });
+       
+       // Update Firebase Room Status
+       updatePublicRoom(currentState.roomId, { status: 'finished' });
        return;
     }
 
-    const q = ALL_GAME_QUESTIONS[Math.floor(Math.random() * ALL_GAME_QUESTIONS.length)];
+    let questionsPool = ALL_GAME_QUESTIONS;
+    if (currentState.category === '🧠 معلومات عامة') questionsPool = GENERAL_KNOWLEDGE;
+    else if (currentState.category === '⚽ كرة قدم') questionsPool = FOOTBALL;
+    else if (currentState.category === '📜 تاريخ') questionsPool = HISTORY;
+    else if (currentState.category === '🔬 علوم') questionsPool = SCIENCE;
+    else if (currentState.category === '🎬 أفلام') questionsPool = MOVIES;
+    else if (currentState.category === '🎌 أنمي') questionsPool = ANIME;
+
+    const q = questionsPool[Math.floor(Math.random() * questionsPool.length)];
     const options = [q.correctAnswer, ...q.wrongOptions].sort(() => Math.random() - 0.5);
     
     // reset players
@@ -167,6 +183,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setState(newState);
     broadcast({ type: 'STATE_UPDATE', state: newState });
+    
+    if (nextRound === 1) {
+      updatePublicRoom(currentState.roomId, { status: 'playing' });
+    }
   };
 
   const handleAnswer = (pId: string, answer: string, timeTaken: number) => {
@@ -214,10 +234,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const createRoom = React.useCallback(() => {
+  const createRoom = React.useCallback((category?: string) => {
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
+    const roomCategory = category || '🧠 معلومات عامة';
     
     setPlayerId(myId);
     setIsHost(true);
@@ -228,6 +249,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     peer.on('open', () => {
       const initialState: GameState = {
         roomId,
+        category: roomCategory,
         status: 'waiting',
         round: 0,
         totalRounds: 10,
@@ -238,6 +260,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       setState(initialState);
       audio.joinLobby();
+      
+      // Save Public Room to Firebase
+      createPublicRoom({
+        roomId,
+        hostName: username,
+        category: roomCategory,
+        playerCount: 1,
+        status: 'waiting',
+        createdAt: Date.now()
+      });
     });
 
     peer.on('connection', (conn) => {
@@ -255,6 +287,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            const newState = { ...stateRef.current, players: remainingPlayers };
            setState(newState);
            broadcast({ type: 'STATE_UPDATE', state: newState });
+           updatePublicRoom(newState.roomId, {
+             playerCount: Object.keys(newState.players).length
+           });
         }
       });
       
@@ -360,6 +395,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [playerId]);
 
   const leaveRoom = React.useCallback(() => {
+    if (isHostRef.current && stateRef.current?.roomId) {
+      deletePublicRoom(stateRef.current.roomId);
+    }
     if (peerRef.current) {
       peerRef.current.destroy();
     }
