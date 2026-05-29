@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Brain, Trophy, ChevronRight, X, Clock, Target } from 'lucide-react';
-import { GENERAL_KNOWLEDGE, FOOTBALL, MOVIES, ANIME, SCIENCE, HISTORY, ISLAMIC } from '../lib/questionData';
+import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC } from '../lib/dynamicQuestions';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 
@@ -181,43 +181,48 @@ export default function SoloPlay() {
   const currentQ = questions[currentQuestionIndex];
 
   return (
-    <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-8">
-      <div className="flex justify-between items-center bg-slate-800 border border-slate-700 px-6 py-4 rounded-3xl">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg bg-gradient-to-br ${selectedCategory?.color}`}>
+    <div className="max-w-4xl mx-auto p-4 md:p-12 space-y-6 md:space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-800 border border-slate-700 px-4 py-4 md:px-6 rounded-3xl gap-4">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className={`p-2 rounded-lg bg-gradient-to-br ${selectedCategory?.color} shrink-0`}>
             <span className="text-xl">{selectedCategory?.icon}</span>
           </div>
           <div>
             <p className="text-sm text-slate-400">{selectedCategory?.name}</p>
             <p className="font-bold">السؤال {currentQuestionIndex + 1} / {questions.length}</p>
           </div>
+          <div className="flex-1"></div>
+          <div className={`sm:hidden flex items-center gap-2 ${timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
+            <Clock className="w-5 h-5" />
+            <span className="font-bold font-mono text-lg">00:{timeLeft.toString().padStart(2, '0')}</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="text-left flex items-center gap-2 text-rose-500">
+        <div className="flex items-center justify-between sm:justify-end gap-4 md:gap-6 w-full sm:w-auto border-t border-slate-700 sm:border-0 pt-4 sm:pt-0">
+          <div className="flex items-center gap-1 text-rose-500">
              {[...Array(3)].map((_, i) => (
-                <svg key={i} className={`w-6 h-6 ${i < lives ? 'fill-current' : 'opacity-20'}`} viewBox="0 0 24 24">
+                <svg key={i} className={`w-5 h-5 md:w-6 md:h-6 ${i < lives ? 'fill-current' : 'opacity-20'}`} viewBox="0 0 24 24">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                 </svg>
              ))}
           </div>
-          <div className="text-left">
-            <p className="text-sm text-slate-400">النقاط</p>
-            <p className="font-bold text-lg text-indigo-400 font-mono">{score}</p>
+          <div className="text-center sm:text-left">
+            <p className="text-xs md:text-sm text-slate-400">النقاط</p>
+            <p className="font-bold text-base md:text-lg text-indigo-400 font-mono">{score}</p>
           </div>
-          <div className={`flex items-center gap-2 ${timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
+          <div className={`hidden sm:flex items-center gap-2 ${timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
             <Clock className="w-6 h-6" />
             <span className="font-bold font-mono text-xl">00:{timeLeft.toString().padStart(2, '0')}</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-800 p-8 md:p-12 rounded-3xl border border-slate-700 space-y-8">
-        <h2 className="text-2xl md:text-3xl font-bold font-heading text-center leading-relaxed">
+      <div className="bg-slate-800 p-6 md:p-12 rounded-3xl border border-slate-700 space-y-6 md:space-y-8">
+        <h2 className="text-xl md:text-3xl font-bold font-heading text-center leading-relaxed">
           {currentQ.text}
         </h2>
 
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           {currentQ.options.map((opt: string, idx: number) => {
             const isSelected = selectedAnswer === opt;
             const isCorrect = opt === currentQ.correctAnswer;

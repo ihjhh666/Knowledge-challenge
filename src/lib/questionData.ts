@@ -1,3 +1,11 @@
+import { NEW_GENERAL } from './questions/general';
+import { NEW_FOOTBALL } from './questions/football';
+import { NEW_HISTORY } from './questions/history';
+import { NEW_SCIENCE } from './questions/science';
+import { NEW_MOVIES } from './questions/movies';
+import { NEW_ANIME } from './questions/anime';
+import { NEW_ISLAMIC } from './questions/islamic';
+
 export const ALL_COUNTRIES = [
   { code: 'sa', name: 'السعودية' }, { code: 'eg', name: 'مصر' }, { code: 'ae', name: 'الإمارات' }, { code: 'dz', name: 'الجزائر' }, { code: 'ma', name: 'المغرب' }, { code: 'iq', name: 'العراق' }, { code: 'sy', name: 'سوريا' }, { code: 'ye', name: 'اليمن' }, { code: 'tn', name: 'تونس' }, { code: 'jo', name: 'الأردن' }, { code: 'lb', name: 'لبنان' }, { code: 'qa', name: 'قطر' }, { code: 'kw', name: 'الكويت' }, { code: 'bh', name: 'البحرين' }, { code: 'om', name: 'عُمان' }, { code: 'sd', name: 'السودان' }, { code: 'ly', name: 'ليبيا' }, { code: 'ps', name: 'فلسطين' }, { code: 'mr', name: 'موريتانيا' }, { code: 'so', name: 'الصومال' }, { code: 'dj', name: 'جيبوتي' }, { code: 'km', name: 'جزر القمر' },
   { code: 'us', name: 'الولايات المتحدة' }, { code: 'gb', name: 'بريطانيا' }, { code: 'fr', name: 'فرنسا' }, { code: 'de', name: 'ألمانيا' }, { code: 'it', name: 'إيطاليا' }, { code: 'es', name: 'إسبانيا' }, { code: 'cn', name: 'الصين' }, { code: 'jp', name: 'اليابان' }, { code: 'kr', name: 'كوريا الجنوبية' }, { code: 'ru', name: 'روسيا' }, { code: 'in', name: 'الهند' }, { code: 'br', name: 'البرازيل' }, { code: 'ar', name: 'الأرجنتين' }, { code: 'ca', name: 'كندا' }, { code: 'au', name: 'أستراليا' }, { code: 'mx', name: 'المكسيك' }, { code: 'za', name: 'جنوب أفريقيا' }, { code: 'ng', name: 'نيجيريا' }, { code: 'tr', name: 'تركيا' }, { code: 'ir', name: 'إيران' }, { code: 'pk', name: 'باكستان' }, { code: 'id', name: 'إندونيسيا' }, { code: 'my', name: 'ماليزيا' }, { code: 'sg', name: 'سنغافورة' }, { code: 'se', name: 'السويد' }, { code: 'no', name: 'النرويج' }, { code: 'fi', name: 'فنلندا' }, { code: 'dk', name: 'الدنمارك' }, { code: 'nl', name: 'هولندا' }, { code: 'be', name: 'بلجيكا' }, { code: 'ch', name: 'سويسرا' }, { code: 'at', name: 'النمسا' }, { code: 'gr', name: 'اليونان' }, { code: 'pt', name: 'البرتغال' }, { code: 'ie', name: 'أيرلندا' }, { code: 'nz', name: 'نيوزيلندا' },
@@ -5,6 +13,7 @@ export const ALL_COUNTRIES = [
 ];
 
 export const GENERAL_KNOWLEDGE = [
+  ...NEW_GENERAL,
   { text: 'ما هو أطول نهر في العالم؟', correctAnswer: 'النيل', wrongOptions: ['الأمازون', 'الميسيسيبي', 'الدانوب'] },
   { text: 'كم عدد الكواكب في مجموعتنا الشمسية؟', correctAnswer: '8', wrongOptions: ['7', '9', '10'] },
   { text: 'ما هي عاصمة اليابان؟', correctAnswer: 'طوكيو', wrongOptions: ['بكين', 'سول', 'بانكوك'] },
@@ -103,6 +112,7 @@ export const GENERAL_KNOWLEDGE = [
 ];
 
 export const FOOTBALL = [
+  ...NEW_FOOTBALL,
   { text: 'من هو الهداف التاريخي لكأس العالم؟', correctAnswer: 'ميروسلاف كلوزه', wrongOptions: ['بيليه', 'مارادونا', 'كريستيانو رونالدو'] },
   { text: 'في أي عام تأسس نادي ريال مدريد؟', correctAnswer: '1902', wrongOptions: ['1899', '1900', '1905'] },
   { text: 'من فاز بدوري أبطال أوروبا 2005 في نهائي إسطنبول؟', correctAnswer: 'ليفربول', wrongOptions: ['ميلان', 'يوفنتوس', 'برشلونة'] },
@@ -176,6 +186,7 @@ export const FOOTBALL = [
 ];
 
 export const MOVIES = [
+  ...NEW_MOVIES,
   { text: 'من لعب دور "الجوكر" في فيلم The Dark Knight؟', correctAnswer: 'هيث ليدجر', wrongOptions: ['واكين فينكس', 'جاك نيكلسون', 'جاريد ليتو'] },
   { text: 'ما هو الفيلم الأعلى إيرادات في التاريخ؟', correctAnswer: 'Avatar', wrongOptions: ['Avengers: Endgame', 'Titanic', 'Star Wars'] },
   { text: 'في أي عام صدر فيلم Titanic؟', correctAnswer: '1997', wrongOptions: ['1995', '1999', '2001'] },
@@ -235,6 +246,7 @@ export const MOVIES = [
 ];
 
 export const ANIME = [
+  ...NEW_ANIME,
   { text: 'ما اسم الشخصية الرئيسية في ناروتو؟', correctAnswer: 'ناروتو', wrongOptions: ['ساسكي', 'كاكاشي', 'ساكورا'] },
   { text: 'في هجوم العمالقة، ما اسم الجدار الأول؟', correctAnswer: 'ماريا', wrongOptions: ['روز', 'سينا', 'ميتراس'] },
   { text: 'من مؤلف مانغا ديث نوت (مذكرة الموت)؟', correctAnswer: 'تسوغومي أوبا', wrongOptions: ['أودا', 'كيشيموتو', 'تورياما'] },
@@ -294,6 +306,7 @@ export const ANIME = [
 ];
 
 export const SCIENCE = [
+  ...NEW_SCIENCE,
   { text: 'ما هي سرعة الضوء التقريبية؟', correctAnswer: '300,000 كم/ث', wrongOptions: ['150,000 كم/ث', '1,000,000 كم/ث', '30,000 كم/ث'] },
   { text: 'ما هو العنصر الأكثر وفرة في الكون؟', correctAnswer: 'الهيدروجين', wrongOptions: ['الأكسجين', 'الكربون', 'النيتروجين'] },
   { text: 'من وضع نظرية النسبية؟', correctAnswer: 'ألبرت أينشتاين', wrongOptions: ['نيوتن', 'هوكينغ', 'جاليليو'] },
@@ -353,6 +366,7 @@ export const SCIENCE = [
 ];
 
 export const HISTORY = [
+  ...NEW_HISTORY,
   { text: 'متى اندلعت الحرب العالمية الأولى؟', correctAnswer: '1914', wrongOptions: ['1918', '1939', '1945'] },
   { text: 'من هو القائد المسلم الذي فتح الأندلس؟', correctAnswer: 'طارق بن زياد', wrongOptions: ['خالد بن الوليد', 'يوسف بن تاشفين', 'صلاح الدين الأيوبي'] },
   { text: 'ما هي المدينة التي بناها جوهر الصقلي؟', correctAnswer: 'القاهرة', wrongOptions: ['الفومب', 'دمشق', 'بغداد'] },
@@ -409,6 +423,7 @@ export const HISTORY = [
 ];
 
 export const ISLAMIC = [
+  ...NEW_ISLAMIC,
   { text: 'كم عدد سور القرآن الكريم؟', correctAnswer: '114', wrongOptions: ['112', '120', '100'] },
   { text: 'ما هي أطول سورة في القرآن؟', correctAnswer: 'سورة البقرة', wrongOptions: ['سورة آل عمران', 'سورة النساء', 'سورة الأعراف'] },
   { text: 'في أي شهر نزل القرآن الكريم؟', correctAnswer: 'رمضان', wrongOptions: ['رجب', 'شعبان', 'محرم'] },

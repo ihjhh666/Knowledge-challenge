@@ -35,6 +35,7 @@ export interface GameState {
   round: number;
   totalRounds: number;
   roundStartTime?: number;
+  askedQuestions: string[];
 }
 
 export type PeerMessage = 

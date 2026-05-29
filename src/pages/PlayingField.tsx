@@ -127,12 +127,12 @@ export default function PlayingField() {
       <div className="grid md:grid-cols-4 gap-8">
         <div className="md:col-span-3">
           {currentQuestion && (
-            <div className="bg-slate-800 p-8 md:p-12 rounded-3xl border border-slate-700 space-y-8">
-              <h2 className="text-2xl md:text-3xl font-bold font-heading text-center leading-relaxed">
+            <div className="bg-slate-800 p-6 md:p-12 rounded-3xl border border-slate-700 space-y-6 md:space-y-8">
+              <h2 className="text-xl md:text-3xl font-bold font-heading text-center leading-relaxed">
                 {currentQuestion.text}
               </h2>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                 {currentQuestion.options.map((opt, idx) => {
                   const isSelected = selectedAnswer === opt;
                   const isRevealing = state.status === 'revealing';

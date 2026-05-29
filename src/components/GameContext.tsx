@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { GameState, RoomPlayer, ChatMessage, PeerMessage, Question } from '../lib/types';
 import { createPeer } from '../lib/peer';
 import { storage } from '../lib/storage';
-import { GENERAL_KNOWLEDGE, FOOTBALL, MOVIES, ANIME, SCIENCE, HISTORY, ISLAMIC } from '../lib/questionData';
+import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC } from '../lib/dynamicQuestions';
 import { audio } from '../lib/audio';
 import { createPublicRoom, updatePublicRoom, deletePublicRoom } from '../lib/firebase';
 import type Peer from 'peerjs';
@@ -160,7 +160,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     else if (currentState.category === '🎬 أفلام') questionsPool = MOVIES;
     else if (currentState.category === '🎌 أنمي') questionsPool = ANIME;
 
-    const q = questionsPool[Math.floor(Math.random() * questionsPool.length)];
+    // Filter out already asked questions, handle pool exhaustion gracefully
+    let availableQuestions = questionsPool.filter(q => !currentState.askedQuestions.includes(q.text));
+    if (availableQuestions.length === 0) {
+      availableQuestions = questionsPool; // fallback if all were asked
+    }
+
+    const q = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
     const options = [q.correctAnswer, ...q.wrongOptions].sort(() => Math.random() - 0.5);
     
     // reset players
@@ -174,6 +180,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       status: 'playing',
       round: nextRound,
       roundStartTime: Date.now(),
+      askedQuestions: [...(currentState.askedQuestions || []), q.text],
       currentQuestion: {
         text: q.text,
         correctAnswer: q.correctAnswer,
@@ -256,7 +263,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         players: {
            [myId]: { id: myId, username, isReady: true, isHost: true, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false }
         },
-        messages: []
+        messages: [],
+        askedQuestions: []
       };
       setState(initialState);
       audio.joinLobby();
