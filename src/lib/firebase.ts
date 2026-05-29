@@ -21,8 +21,10 @@ export interface PublicRoom {
   hostName: string;
   category: string;
   playerCount: number;
+  maxPlayers: number;
   status: 'waiting' | 'playing' | 'finished';
   createdAt: number;
+  roomVisibility: 'public' | 'private' | 'link' | 'password';
 }
 
 export const createPublicRoom = async (roomData: PublicRoom) => {
@@ -70,7 +72,7 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
       const rooms: PublicRoom[] = Object.values(data);
       // Clean up old or empty rooms (optional, clean older than 24h)
       const now = Date.now();
-      const validRooms = rooms.filter(r => (now - r.createdAt) < 24 * 60 * 60 * 1000);
+      const validRooms = rooms.filter(r => (now - r.createdAt) < 24 * 60 * 60 * 1000 && r.status !== 'finished');
       callback(validRooms);
     } else {
       callback([]);

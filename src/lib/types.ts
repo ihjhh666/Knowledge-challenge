@@ -25,9 +25,14 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+export type RoomVisibility = 'public' | 'private' | 'link' | 'password';
+
 export interface GameState {
   roomId: string;
   category?: string;
+  roomVisibility?: RoomVisibility;
+  maxPlayers?: number;
+  password?: string;
   status: RoomStatus;
   players: Record<string, RoomPlayer>;
   messages: ChatMessage[];
@@ -40,7 +45,8 @@ export interface GameState {
 
 export type PeerMessage = 
   | { type: 'STATE_UPDATE', state: GameState }
-  | { type: 'JOIN', player: RoomPlayer }
+  | { type: 'JOIN', player: RoomPlayer, password?: string }
+  | { type: 'JOIN_REJECTED', reason: string }
   | { type: 'CHAT', message: ChatMessage }
   | { type: 'TOGGLE_READY', playerId: string }
   | { type: 'START_GAME' }

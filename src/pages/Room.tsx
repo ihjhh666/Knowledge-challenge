@@ -4,7 +4,7 @@ import { useGame } from '../components/GameContext';
 import Lobby from './Lobby';
 import PlayingField from './PlayingField';
 import Chat from './Chat';
-import { LogOut, Users } from 'lucide-react';
+import { LogOut, Users, Lock } from 'lucide-react';
 import { storage } from '../lib/storage';
 
 export default function Room() {
@@ -15,6 +15,8 @@ export default function Room() {
   const [hasName, setHasName] = useState(!!storage.getPlayerName());
   const [username, setUsername] = useState('');
   const [errorStr, setErrorStr] = useState<string | null>(null);
+  const [joinPassword, setJoinPassword] = useState('');
+  const [needsPassword, setNeedsPassword] = useState(false);
   const joiningRef = React.useRef(false);
 
   const handleSaveName = (e: React.FormEvent) => {
@@ -25,27 +27,39 @@ export default function Room() {
     }
   };
 
+  const attemptJoin = (password?: string) => {
+    if (!roomId) return;
+    joiningRef.current = true;
+    setErrorStr(null);
+    joinRoom(roomId, password, (err) => {
+       setErrorStr(err);
+       if (err.includes('مرور') || err.includes('Password')) {
+         setNeedsPassword(true);
+       }
+       joiningRef.current = false;
+    });
+  };
+
   useEffect(() => {
     if (!roomId) {
       navigate('/');
       return;
     }
 
-    // Only attempt to join if the user has provided a name
-    if (hasName && !state && !isHost && !joiningRef.current) {
-      joiningRef.current = true;
-      setErrorStr(null);
-      joinRoom(roomId, (err) => {
-         setErrorStr(err);
-         joiningRef.current = false;
-      });
+    if (hasName && !state && !isHost && !joiningRef.current && !needsPassword && !errorStr) {
+      attemptJoin();
     }
-  }, [roomId, state, isHost, joinRoom, navigate, hasName]);
+  }, [roomId, state, isHost, navigate, hasName, needsPassword, errorStr]);
 
   const handleLeave = () => {
     joiningRef.current = false;
     leaveRoom();
     navigate('/');
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    attemptJoin(joinPassword);
   };
 
   if (!hasName) {
@@ -87,11 +101,40 @@ export default function Room() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950">
         <div className="text-center space-y-6 max-w-sm w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl">
-          {!errorStr ? (
+          {!errorStr && !needsPassword ? (
             <>
               <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-white text-lg font-bold font-heading">جاري الاتصال بالغرفة...</p>
             </>
+          ) : needsPassword ? (
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div className="bg-amber-500/10 w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                <Lock className="w-8 h-8 text-amber-500" />
+              </div>
+              <h2 className="text-xl font-bold font-heading text-white">الغرفة محمية بكلمة مرور</h2>
+              {errorStr && <p className="text-red-400 text-sm font-bold">{errorStr}</p>}
+              <input
+                type="password"
+                value={joinPassword}
+                onChange={(e) => setJoinPassword(e.target.value)}
+                placeholder="أدخل كلمة المرور"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-center focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95"
+              >
+                دخول الغرفة
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-transform active:scale-95 mt-2 text-sm"
+              >
+                رجوع
+              </button>
+            </form>
           ) : (
             <>
               <div className="w-16 h-16 bg-red-500/10 rounded-2xl mx-auto flex items-center justify-center mb-4">

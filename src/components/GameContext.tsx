@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { GameState, RoomPlayer, ChatMessage, PeerMessage, Question } from '../lib/types';
+import { GameState, RoomPlayer, ChatMessage, PeerMessage, Question, RoomVisibility } from '../lib/types';
 import { createPeer } from '../lib/peer';
 import { storage } from '../lib/storage';
 import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC } from '../lib/dynamicQuestions';
@@ -22,8 +22,8 @@ interface GameContextType {
   state: GameState | null;
   playerId: string;
   isHost: boolean;
-  createRoom: (category?: string) => void;
-  joinRoom: (roomId: string, onError?: (err: string) => void) => void;
+  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number) => void;
+  joinRoom: (roomId: string, password?: string, onError?: (err: string) => void) => void;
   sendMessage: (text: string) => void;
   toggleReady: () => void;
   leaveRoom: () => void;
@@ -71,6 +71,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'JOIN':
         if (isHostRef.current && stateRef.current) {
+          const conn = senderId ? connectionsRef.current.get(senderId) : null;
+          if (stateRef.current.roomVisibility === 'password' && message.password !== stateRef.current.password) {
+            if (conn) {
+              conn.send({ type: 'JOIN_REJECTED', reason: 'كلمة المرور غير صحيحة' });
+              setTimeout(() => conn.close(), 500);
+            }
+            break;
+          }
+          if (stateRef.current.maxPlayers && Object.keys(stateRef.current.players).length >= stateRef.current.maxPlayers) {
+            if (conn) {
+               conn.send({ type: 'JOIN_REJECTED', reason: 'الغرفة ممتلئة' });
+               setTimeout(() => conn.close(), 500);
+            }
+            break;
+          }
+
           const playerName = message.player.username;
           // Add player
           const newState = {
@@ -241,7 +257,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const createRoom = React.useCallback((category?: string) => {
+  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10) => {
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
@@ -257,6 +273,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const initialState: GameState = {
         roomId,
         category: roomCategory,
+        roomVisibility,
+        maxPlayers,
+        password,
         status: 'waiting',
         round: 0,
         totalRounds: 10,
@@ -269,15 +288,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setState(initialState);
       audio.joinLobby();
       
-      // Save Public Room to Firebase
-      createPublicRoom({
-        roomId,
-        hostName: username,
-        category: roomCategory,
-        playerCount: 1,
-        status: 'waiting',
-        createdAt: Date.now()
-      });
+      // Save Public Room to Firebase only if public or password
+      if (roomVisibility === 'public' || roomVisibility === 'password') {
+        createPublicRoom({
+          roomId,
+          hostName: username,
+          category: roomCategory,
+          playerCount: 1,
+          maxPlayers,
+          roomVisibility,
+          status: 'waiting',
+          createdAt: Date.now()
+        });
+      }
     });
 
     peer.on('connection', (conn) => {
@@ -311,7 +334,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const joinRoom = React.useCallback((roomId: string, onError?: (err: string) => void) => {
+  const joinRoom = React.useCallback((roomId: string, password?: string, onError?: (err: string) => void) => {
+    if (peerRef.current) {
+      peerRef.current.destroy();
+    }
+    
     const myId = `peer-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
     
@@ -328,21 +355,27 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       conn.on('open', () => {
         conn.send({
           type: 'JOIN',
-          player: { id: myId, username, isReady: false, isHost: false, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false }
+          player: { id: myId, username, isReady: false, isHost: false, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false },
+          password
         });
         audio.joinLobby();
       });
 
+      let rejectedReason: string | null = null;
       conn.on('data', (data) => {
         const msg = data as PeerMessage;
         if (msg.type === 'STATE_UPDATE') {
           setState(msg.state);
+        } else if (msg.type === 'JOIN_REJECTED') {
+          rejectedReason = msg.reason;
+          if (onError) onError(msg.reason);
+          conn.close();
         }
       });
       
       conn.on('close', () => {
         setState(null);
-        if (onError) onError('انقطع الاتصال بالغرفة');
+        if (!rejectedReason && onError) onError('انقطع الاتصال بالغرفة');
       });
       
       conn.on('error', (err) => {
