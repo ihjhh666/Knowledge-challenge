@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user profile in the system.",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "avatar": { "type": "string" },
+        "xp": { "type": "number" },
+        "level": { "type": "number" },
+        "coins": { "type": "number" },
+        "gamesPlayed": { "type": "number" },
+        "wins": { "type": "number" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["username", "email", "xp", "level", "coins", "gamesPlayed", "wins", "createdAt", "updatedAt"]
+    },
+    "Room": {
+      "title": "Room",
+      "description": "A multiplayer game room.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "hostId": { "type": "string" },
+        "status": { "type": "string", "enum": ["waiting", "playing", "finished"] },
+        "category": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "rounds": { "type": "number" },
+        "currentRound": { "type": "number" },
+        "questionTimer": { "type": "number" },
+        "isPublic": { "type": "boolean" },
+        "allowChat": { "type": "boolean" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["name", "hostId", "status", "category", "difficulty", "rounds", "currentRound", "questionTimer", "isPublic", "allowChat", "createdAt", "updatedAt"]
+    },
+    "RoomPlayer": {
+      "title": "RoomPlayer",
+      "description": "A player who joined a game room.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "avatar": { "type": "string" },
+        "score": { "type": "number" },
+        "isReady": { "type": "boolean" },
+        "hasAnsweredCurrentRound": { "type": "boolean" },
+        "lastAnswerSucceeded": { "type": "boolean" },
+        "joinedAt": { "type": "number" }
+      },
+      "required": ["userId", "username", "avatar", "score", "isReady", "hasAnsweredCurrentRound", "lastAnswerSucceeded", "joinedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A chat message in a room.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "username", "text", "createdAt"]
+    },
+    "RoomQuestion": {
+      "title": "RoomQuestion",
+      "description": "A question copied into a room for gameplay.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "options": { "type": "array" },
+        "correctAnswer": { "type": "number" },
+        "image": { "type": "string" },
+        "roundIndex": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["text", "options", "correctAnswer", "roundIndex", "createdAt"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "A global question in the database.",
+      "type": "object",
+      "properties": {
+        "category": { "type": "string" },
+        "text": { "type": "string" },
+        "options": { "type": "array" },
+        "correctAnswer": { "type": "number" },
+        "image": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["category", "text", "options", "correctAnswer", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles."
+    },
+    "rooms/{roomId}": {
+      "schema": "Room",
+      "description": "Stores active game rooms."
+    },
+    "rooms/{roomId}/players/{playerId}": {
+      "schema": "RoomPlayer",
+      "description": "Stores players in a room."
+    },
+    "rooms/{roomId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Stores chat messages in a room."
+    },
+    "rooms/{roomId}/questions/{questionId}": {
+      "schema": "RoomQuestion",
+      "description": "Stores selected questions for a room."
+    },
+    "questions/{questionId}": {
+      "schema": "Question",
+      "description": "Global questions database."
+    }
+  }
+}

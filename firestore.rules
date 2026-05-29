@@ -1,0 +1,197 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Basic helpers
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User Schema
+    function isValidUser(data) {
+      return data.keys().hasAll(['username', 'email', 'xp', 'level', 'coins', 'gamesPlayed', 'wins', 'createdAt', 'updatedAt'])
+        && data.username is string && data.username.size() >= 2 && data.username.size() <= 30
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 100
+        && (data.avatar == null || (data.avatar is string && data.avatar.size() <= 1000))
+        && data.xp is number
+        && data.level is number
+        && data.coins is number
+        && data.gamesPlayed is number
+        && data.wins is number
+        && (data.isAdmin == null || data.isAdmin is bool)
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() 
+        && request.auth.uid == userId 
+        && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().createdAt == request.time.toMillis()
+        && incoming().updatedAt == request.time.toMillis()
+        && (incoming().isAdmin == null || incoming().isAdmin == false);
+        
+      allow update: if isSignedIn() 
+        && request.auth.uid == userId 
+        && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time.toMillis()
+        && incoming().email == existing().email // email immutable
+        && (incoming().isAdmin == existing().isAdmin) // cannot escalate role
+        && (
+           incoming().diff(existing()).affectedKeys().hasOnly(['username', 'avatar', 'updatedAt']) ||
+           incoming().diff(existing()).affectedKeys().hasOnly(['xp', 'level', 'coins', 'gamesPlayed', 'wins', 'updatedAt'])
+        );
+    }
+    
+    // Room Schema
+    function isValidRoom(data) {
+      return data.keys().hasAll(['name', 'hostId', 'status', 'category', 'difficulty', 'rounds', 'currentRound', 'questionTimer', 'isPublic', 'allowChat', 'createdAt', 'updatedAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.hostId is string && data.hostId.size() > 0 && data.hostId.size() <= 128
+        && data.status in ['waiting', 'playing', 'revealing', 'finished']
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 50
+        && data.difficulty is string && data.difficulty.size() > 0 && data.difficulty.size() <= 50
+        && data.rounds is number && data.rounds >= 1 && data.rounds <= 50
+        && data.currentRound is number && data.currentRound >= 0 && data.currentRound <= 50
+        && data.questionTimer is number && data.questionTimer >= 5 && data.questionTimer <= 60
+        && data.isPublic is bool
+        && data.allowChat is bool
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+    
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow create: if isSignedIn() 
+        && isValidId(roomId)
+        && isValidRoom(incoming())
+        && incoming().hostId == request.auth.uid
+        && incoming().status == 'waiting'
+        && incoming().createdAt == request.time.toMillis()
+        && incoming().updatedAt == request.time.toMillis()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update: if isSignedIn() 
+        && isValidId(roomId)
+        && isValidRoom(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time.toMillis()
+        && incoming().hostId == existing().hostId // Immutable
+        && existing().status != 'finished' // Terminal state lock
+        && (
+           // Host updating settings
+           (request.auth.uid == existing().hostId && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'difficulty', 'rounds', 'questionTimer', 'isPublic', 'allowChat', 'updatedAt'])) ||
+           // Host changing status
+           (request.auth.uid == existing().hostId && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'currentRound', 'updatedAt'])) ||
+           // Anyone changing currentRound/status during game phase
+           (existing().status in ['playing', 'revealing'] && incoming().diff(existing()).affectedKeys().hasOnly(['currentRound', 'status', 'updatedAt']))
+        );
+    }
+
+    // RoomPlayer Schema
+    function isValidRoomPlayer(data) {
+      return data.keys().hasAll(['userId', 'username', 'avatar', 'score', 'isReady', 'hasAnsweredCurrentRound', 'lastAnswerSucceeded', 'joinedAt'])
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.username is string && data.username.size() >= 2 && data.username.size() <= 30
+        && (data.avatar == null || (data.avatar is string && data.avatar.size() <= 1000))
+        && data.score is number
+        && data.isReady is bool
+        && data.hasAnsweredCurrentRound is bool
+        && data.lastAnswerSucceeded is bool
+        && data.joinedAt is number;
+    }
+
+    match /rooms/{roomId}/players/{playerId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && isValidId(roomId) && isValidId(playerId)
+        && request.auth.uid == playerId
+        && isValidRoomPlayer(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().score == 0
+        && incoming().joinedAt == request.time.toMillis()
+        && exists(/databases/$(database)/documents/rooms/$(roomId));
+        
+      allow update: if isSignedIn()
+        && isValidId(roomId) && isValidId(playerId)
+        && request.auth.uid == existing().userId
+        && isValidRoomPlayer(incoming())
+        && incoming().joinedAt == existing().joinedAt
+        && incoming().userId == existing().userId // Immutable
+        && (
+           incoming().diff(existing()).affectedKeys().hasOnly(['isReady']) ||
+           incoming().diff(existing()).affectedKeys().hasOnly(['score', 'hasAnsweredCurrentRound', 'lastAnswerSucceeded'])
+        );
+      allow delete: if isSignedIn() && request.auth.uid == existing().userId;
+    }
+
+    // ChatMessage Schema
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['userId', 'username', 'text', 'createdAt'])
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.username is string && data.username.size() >= 2 && data.username.size() <= 30
+        && data.text is string && data.text.size() > 0 && data.text.size() <= 500
+        && data.createdAt is number;
+    }
+
+    match /rooms/{roomId}/messages/{messageId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && isValidId(roomId) && isValidId(messageId)
+        && isValidChatMessage(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time.toMillis()
+        && exists(/databases/$(database)/documents/rooms/$(roomId)/players/$(request.auth.uid)); // Must be a member of the room
+    }
+
+    // RoomQuestion Schema
+    function isValidRoomQuestion(data) {
+      return data.keys().hasAll(['text', 'options', 'correctAnswer', 'roundIndex', 'createdAt'])
+        && data.text is string && data.text.size() > 0 && data.text.size() <= 1000
+        && data.options is list && data.options.size() >= 2 && data.options.size() <= 8
+        && data.options[0] is string && data.options[1] is string
+        && data.correctAnswer is number && data.correctAnswer >= 0 && data.correctAnswer < data.options.size()
+        && (data.image == null || (data.image is string && data.image.size() <= 1000))
+        && data.roundIndex is number && data.roundIndex >= 1 && data.roundIndex <= 50
+        && data.createdAt is number;
+    }
+
+    match /rooms/{roomId}/questions/{questionId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && isValidId(roomId) && isValidId(questionId)
+        && isValidRoomQuestion(incoming())
+        && incoming().createdAt == request.time.toMillis()
+        && get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId == request.auth.uid;
+    }
+
+    // Question Schema (Global Database)
+    function isValidQuestion(data) {
+      return data.keys().hasAll(['category', 'text', 'options', 'correctAnswer', 'createdAt'])
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 50
+        && (data.difficulty == null || (data.difficulty is string && data.difficulty.size() > 0 && data.difficulty.size() <= 50))
+        && data.text is string && data.text.size() > 0 && data.text.size() <= 1000
+        && data.options is list && data.options.size() >= 2 && data.options.size() <= 8
+        && data.options[0] is string && data.options[1] is string
+        && data.correctAnswer is number && data.correctAnswer >= 0 && data.correctAnswer < data.options.size()
+        && (data.image == null || (data.image is string && data.image.size() <= 1000))
+        && data.createdAt is number;
+    }
+
+    match /questions/{questionId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin()
+        && isValidId(questionId)
+        && (request.method == 'delete' || isValidQuestion(incoming()));
+    }
+  }
+}
