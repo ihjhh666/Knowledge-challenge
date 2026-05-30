@@ -57,6 +57,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isHostRef.current = isHost;
   }, [isHost]);
 
+  // Cleanup on window close if host
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+       if (isHostRef.current && stateRef.current?.roomId) {
+         // Only delete if I am the last player
+         if (Object.keys(stateRef.current.players).length <= 1) {
+           deletePublicRoom(stateRef.current.roomId);
+         }
+       }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   const broadcast = (message: PeerMessage) => {
     connectionsRef.current.forEach(conn => {
       if (conn.open) {
@@ -448,6 +464,82 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       conn.on('close', () => {
+        const oldState = stateRef.current;
+        if (oldState && !rejectedReason) {
+           const players = Object.values(oldState.players);
+           const remaining = players.filter(p => !p.isHost);
+           if (remaining.length > 0) {
+              remaining.sort((a, b) => a.id.localeCompare(b.id));
+              if (remaining[0].id === myId) {
+                 // I am the new host!
+                 setIsHost(true);
+                 if (peerRef.current) peerRef.current.destroy();
+                 connectionsRef.current.clear();
+                 hostConnectionRef.current = null;
+                 
+                 const newPeer = createPeer(roomId);
+                 peerRef.current = newPeer;
+                 
+                 newPeer.on('open', () => {
+                    const updatedPlayers = { ...oldState.players };
+                    const oldHostId = Object.keys(updatedPlayers).find(k => updatedPlayers[k].isHost);
+                    if (oldHostId) delete updatedPlayers[oldHostId];
+                    
+                    updatedPlayers[myId] = { ...updatedPlayers[myId], isHost: true };
+                    const newState = { ...oldState, players: updatedPlayers };
+                    setState(newState);
+                    
+                    if (newState.roomVisibility === 'public' || newState.roomVisibility === 'password') {
+                       createPublicRoom({
+                          roomId: newState.roomId,
+                          hostName: updatedPlayers[myId].username,
+                          category: newState.category,
+                          playerCount: Object.keys(updatedPlayers).length,
+                          maxPlayers: newState.maxPlayers || 10,
+                          roomVisibility: newState.roomVisibility,
+                          status: newState.status,
+                          createdAt: Date.now()
+                       });
+                    }
+                 });
+
+                 newPeer.on('connection', (c) => {
+                    connectionsRef.current.set(c.peer, c);
+                    c.on('data', (data) => handleMessage(data as PeerMessage, c.peer));
+                    c.on('close', () => {
+                       connectionsRef.current.delete(c.peer);
+                       disconnectDelays.current[c.peer] = setTimeout(() => {
+                         if (stateRef.current) {
+                            const { [c.peer]: _, ...remainingPlayers } = stateRef.current.players;
+                            const newState = { ...stateRef.current, players: remainingPlayers };
+                            setState(newState);
+                            broadcast({ type: 'STATE_UPDATE', state: newState });
+                            updatePublicRoom(newState.roomId, {
+                              playerCount: Object.keys(newState.players).length
+                            });
+                            checkAllAnswered(newState);
+                         }
+                       }, 5000);
+                    });
+                    c.on('error', (err) => console.error('New host conn error:', err));
+                    
+                    c.on('open', () => {
+                      // Send current state to newly rejoined peers
+                      if (stateRef.current) c.send({ type: 'STATE_UPDATE', state: stateRef.current });
+                    });
+                 });
+                 newPeer.on('error', (err) => console.error('New host peer error:', err));
+                 return; // Prevent normal close handling
+              } else {
+                 // Not the new host, wait 3 seconds and rejoin
+                 setTimeout(() => {
+                    joinRoom(roomId, password, onError);
+                 }, 3000);
+                 return; // Prevent normal close handling
+              }
+           }
+        }
+
         setState(null);
         if (!rejectedReason && onError) onError('انقطع الاتصال بالغرفة');
       });
@@ -459,11 +551,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
 
-    peer.on('error', (err) => {
-      console.error('Peer error:', err);
+    peer.on('error', (err: any) => {
+      if (err.type === 'peer-unavailable') {
+         console.warn('Peer unavailable (host may have left). Removing room from DB:', roomId);
+         deletePublicRoom(roomId);
+      } else {
+         console.error('Peer error:', err);
+      }
       setTimeout(() => {
         if (!stateRef.current) {
-          if (onError) onError('تعذر الاتصال بالغرفة ' + roomId);
+          if (onError) onError('تعذر الاتصال بالغرفة - قد يكون المضيف غادر');
         }
       }, 500);
       setState(null);
@@ -511,7 +608,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const leaveRoom = React.useCallback(() => {
     if (isHostRef.current && stateRef.current?.roomId) {
-      deletePublicRoom(stateRef.current.roomId);
+      if (Object.keys(stateRef.current.players).length <= 1) {
+        deletePublicRoom(stateRef.current.roomId);
+      }
     }
     if (peerRef.current) {
       peerRef.current.destroy();

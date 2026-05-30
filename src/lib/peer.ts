@@ -2,7 +2,7 @@ import Peer, { DataConnection } from 'peerjs';
 
 export const createPeer = (id?: string) => {
   return new Peer(id, {
-    debug: 2,
+    debug: 0,
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },

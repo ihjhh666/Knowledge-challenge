@@ -23,6 +23,7 @@ export default function Home() {
   const [joinId, setJoinId] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null);
   const [createConfig, setCreateConfig] = useState({
     category: CATEGORIES[0].id,
     type: 'public' as RoomVisibility,
@@ -70,8 +71,11 @@ export default function Home() {
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
     setJoinError('');
-    if (joinId.trim().toUpperCase().startsWith('ROOM-')) {
-      joinRoom(joinId.trim().toUpperCase(), joinPassword, (err) => {
+    const roomId = joinId.trim().toUpperCase();
+    if (roomId.startsWith('ROOM-')) {
+      setJoiningRoomId(roomId);
+      joinRoom(roomId, joinPassword, (err) => {
+        setJoiningRoomId(null);
         setJoinError(err);
       });
     } else {
@@ -85,7 +89,9 @@ export default function Home() {
       setPasswordPromptRoomId(room.roomId);
       return;
     }
+    setJoiningRoomId(room.roomId);
     joinRoom(room.roomId, joinPassword, (err) => {
+      setJoiningRoomId(null);
       if (err.includes('كلمة المرور') || err.includes('Password')) {
         setPasswordPromptRoomId(room.roomId);
         setJoinError(err);
@@ -304,10 +310,15 @@ export default function Home() {
             />
             <button 
               type="submit"
-              disabled={!joinId}
-              className="w-full bg-emerald-600 disabled:opacity-50 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-transform active:scale-95 shadow-lg"
+              disabled={!joinId || joiningRoomId === joinId.trim().toUpperCase()}
+              className="w-full bg-emerald-600 disabled:opacity-50 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-transform active:scale-95 shadow-lg flex items-center justify-center gap-2"
             >
-              انضمام
+              {joiningRoomId === joinId.trim().toUpperCase() ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  جارِ الانضمام...
+                </>
+              ) : 'انضمام'}
             </button>
           </form>
         </div>
@@ -334,8 +345,8 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {publicRooms.map((room) => (
-              <div key={room.roomId} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between hover:border-slate-600 transition-colors relative">
+            {publicRooms.map((room, idx) => (
+              <div key={room.roomId || `room-${idx}`} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between hover:border-slate-600 transition-colors relative">
                 {room.roomVisibility === 'password' && (
                   <div className="absolute top-6 left-6 text-amber-400">
                     <Lock className="w-5 h-5" />
@@ -370,18 +381,26 @@ export default function Home() {
                        />
                        <button
                          onClick={() => handleJoinPublicRoom(room)}
-                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-sm font-bold"
+                         disabled={joiningRoomId === room.roomId}
+                         className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-3 py-1 rounded-lg text-sm font-bold flex items-center justify-center gap-2"
                        >
-                         دخول
+                         {joiningRoomId === room.roomId ? (
+                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                         ) : 'دخول'}
                        </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => handleJoinPublicRoom(room)}
-                      disabled={room.status === 'playing' || room.playerCount >= (room.maxPlayers || 10)}
-                      className="bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-500 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
+                      disabled={room.status === 'playing' || room.playerCount >= (room.maxPlayers || 10) || joiningRoomId === room.roomId}
+                      className="bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-500 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
-                      انضمام
+                      {joiningRoomId === room.roomId ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          جارِ الانضمام...
+                        </>
+                      ) : 'انضمام'}
                     </button>
                   )}
                 </div>

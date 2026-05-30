@@ -74,13 +74,30 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
   const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
     const rooms: PublicRoom[] = [];
     snapshot.forEach(doc => {
-      rooms.push(doc.data() as PublicRoom);
+      rooms.push({ ...doc.data(), roomId: doc.id } as PublicRoom);
     });
     console.log("Firestore onSnapshot received", rooms.length, "total rooms.");
     
-    // Clean up old or empty rooms (older than 24h)
+    // Clean up old or empty rooms
     const now = Date.now();
-    const validRooms = rooms.filter(r => (now - r.createdAt) < 24 * 60 * 60 * 1000 && r.status !== 'finished');
+    const validRooms = rooms.filter(r => {
+      // Room is considered dead if:
+      // 1. It is marked as finished
+      // 2. Play count is 0 or less
+      // 3. It's older than 12 hours (cleanup)
+      // 4. Waiting for more than 15 minutes with only 1 player (likely a dead tab/zombie host)
+      const isDead = r.status === 'finished' 
+        || r.playerCount <= 0 
+        || (now - r.createdAt) > 12 * 60 * 60 * 1000
+        || (r.status === 'waiting' && r.playerCount === 1 && (now - r.createdAt) > 15 * 60 * 1000);
+      
+      if (isDead) {
+        // Aggressively delete dead rooms to keep Firestore clean (idempotent operation)
+        deletePublicRoom(r.roomId);
+        return false;
+      }
+      return true;
+    });
     
     console.log("After local filter, sending", validRooms.length, "valid rooms to UI.");
     callback(validRooms);
