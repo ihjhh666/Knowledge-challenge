@@ -33,6 +33,7 @@ export interface GameContextType {
   mutePlayer: (playerId: string, isMuted: boolean) => void;
   changeCategory: (category: string) => void;
   forceNextQuestion: () => void;
+  transferHost: (playerId: string) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -57,7 +58,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isHostRef.current = isHost;
   }, [isHost]);
 
-  // Cleanup on window close if host
+  // Cleanup on window close
   useEffect(() => {
     const handleBeforeUnload = () => {
        if (isHostRef.current && stateRef.current?.roomId) {
@@ -65,13 +66,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
          if (Object.keys(stateRef.current.players).length <= 1) {
            deletePublicRoom(stateRef.current.roomId);
          }
+       } else if (hostConnectionRef.current?.open) {
+         // Tell host we are leaving explicitly so they don't wait 7 seconds
+         hostConnectionRef.current.send({ type: 'LEAVE', playerId });
        }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [playerId]);
 
   const broadcast = (message: PeerMessage) => {
     connectionsRef.current.forEach(conn => {
@@ -252,6 +256,101 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            });
         }
         break;
+      case 'LEAVE':
+        if (isHostRef.current && stateRef.current) {
+           const conn = connectionsRef.current.get(message.playerId);
+           if (conn) {
+             clearTimeout(disconnectDelays.current[message.playerId]);
+           }
+           const { [message.playerId]: _, ...remainingPlayers } = stateRef.current.players;
+           const newState = { ...stateRef.current, players: remainingPlayers };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+           updatePublicRoom(newState.roomId, {
+             playerCount: Object.keys(newState.players).length
+           });
+           checkAllAnswered(newState);
+        }
+        break;
+      case 'TRANSFER_HOST':
+        if (isHostRef.current && stateRef.current) {
+           // Host decided to transfer manually
+           const newHostId = message.playerId;
+           const oldState = stateRef.current;
+           const updatedPlayers = { ...oldState.players };
+           (Object.values(updatedPlayers) as RoomPlayer[]).forEach(p => p.isHost = false);
+           if (updatedPlayers[newHostId]) {
+              updatedPlayers[newHostId].isHost = true;
+           }
+           const newState = { ...oldState, players: updatedPlayers };
+           
+           setState(newState);
+           broadcast({ type: 'TRANSFER_HOST', playerId: newHostId });
+           
+           // the old host steps down and re-joins
+           setTimeout(() => {
+              joinRoom(newState.roomId);
+           }, 1000);
+        } else if (stateRef.current) {
+           const newHostId = message.playerId;
+           if (playerId === newHostId) {
+              const oldState = stateRef.current;
+              // I am the new host manually!
+              setIsHost(true);
+              if (peerRef.current) peerRef.current.destroy();
+              connectionsRef.current.clear();
+              hostConnectionRef.current = null;
+              
+              const newPeer = createPeer(oldState.roomId);
+              peerRef.current = newPeer;
+              
+              newPeer.on('open', () => {
+                 const updatedPlayers = { ...oldState.players };
+                 (Object.values(updatedPlayers) as RoomPlayer[]).forEach(p => p.isHost = false);
+                 updatedPlayers[playerId] = { ...updatedPlayers[playerId], isHost: true };
+                 const newState = { ...oldState, players: updatedPlayers };
+                 setState(newState);
+                 
+                 if (newState.roomVisibility === 'public' || newState.roomVisibility === 'password') {
+                    updatePublicRoom(newState.roomId, {
+                       hostName: updatedPlayers[playerId].username
+                    });
+                 }
+              });
+
+              newPeer.on('connection', (c) => {
+                 connectionsRef.current.set(c.peer, c);
+                 c.on('data', (data) => handleMessage(data as PeerMessage, c.peer));
+                 c.on('close', () => {
+                    connectionsRef.current.delete(c.peer);
+                    disconnectDelays.current[c.peer] = setTimeout(() => {
+                      if (stateRef.current) {
+                         const { [c.peer]: _, ...remainingPlayers } = stateRef.current.players;
+                         const newState = { ...stateRef.current, players: remainingPlayers };
+                         setState(newState);
+                         broadcast({ type: 'STATE_UPDATE', state: newState });
+                         updatePublicRoom(newState.roomId, {
+                           playerCount: Object.keys(newState.players).length
+                         });
+                         checkAllAnswered(newState);
+                      }
+                    }, 7000);
+                 });
+                 c.on('error', (err) => console.error('New host conn error:', err));
+                 
+                 c.on('open', () => {
+                   if (stateRef.current) c.send({ type: 'STATE_UPDATE', state: stateRef.current });
+                 });
+              });
+              newPeer.on('error', (err) => console.error('New host peer error:', err));
+           } else {
+              // Not the new host, let's rejoin pointing to the new host
+              setTimeout(() => {
+                 joinRoom(stateRef.current!.roomId);
+              }, 3000);
+           }
+        }
+        break;
     }
   };
 
@@ -393,7 +492,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       conn.on('close', () => {
         connectionsRef.current.delete(conn.peer);
-        // Wait 5 seconds before removing player
+        // Wait 7 seconds before removing player
         disconnectDelays.current[conn.peer] = setTimeout(() => {
           if (stateRef.current) {
              const { [conn.peer]: _, ...remainingPlayers } = stateRef.current.players;
@@ -410,7 +509,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              });
              checkAllAnswered(newState);
           }
-        }, 5000);
+        }, 7000);
       });
       
       conn.on('error', (err) => {
@@ -519,7 +618,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             });
                             checkAllAnswered(newState);
                          }
-                       }, 5000);
+                       }, 7000);
                     });
                     c.on('error', (err) => console.error('New host conn error:', err));
                     
@@ -607,20 +706,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [playerId]);
 
   const leaveRoom = React.useCallback(() => {
+    if (!isHostRef.current && hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ type: 'LEAVE', playerId });
+    }
+    
     if (isHostRef.current && stateRef.current?.roomId) {
       if (Object.keys(stateRef.current.players).length <= 1) {
         deletePublicRoom(stateRef.current.roomId);
       }
     }
-    if (peerRef.current) {
-      peerRef.current.destroy();
-    }
-    setState(null);
-    setIsHost(false);
-    setPlayerId('');
-    connectionsRef.current.clear();
-    hostConnectionRef.current = null;
-  }, []);
+    
+    // Slight delay to ensure LEAVE message is sent before destroying
+    setTimeout(() => {
+      if (peerRef.current) {
+        peerRef.current.destroy();
+      }
+      setState(null);
+      setIsHost(false);
+      setPlayerId('');
+      connectionsRef.current.clear();
+      hostConnectionRef.current = null;
+    }, 100);
+  }, [playerId]);
 
   const kickPlayer = React.useCallback((playerIdToKick: string) => {
     if (isHostRef.current) {
@@ -646,8 +753,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const transferHost = React.useCallback((playerIdToTransfer: string) => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'TRANSFER_HOST', playerId: playerIdToTransfer });
+    }
+  }, []);
+
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, forceNextQuestion }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, forceNextQuestion, transferHost }}>
       {children}
     </GameContext.Provider>
   );

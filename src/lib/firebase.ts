@@ -25,6 +25,7 @@ export interface PublicRoom {
   maxPlayers: number;
   status: 'waiting' | 'playing' | 'finished';
   createdAt: number;
+  lastActiveAt?: number;
   roomVisibility: 'public' | 'private' | 'link' | 'password';
 }
 
@@ -33,7 +34,7 @@ export const createPublicRoom = async (roomData: PublicRoom) => {
   console.log("Saving room to Firestore 'rooms' collection:", roomData.roomId);
   try {
     const roomRef = doc(db, 'rooms', roomData.roomId);
-    await setDoc(roomRef, roomData);
+    await setDoc(roomRef, { ...roomData, lastActiveAt: Date.now() });
     console.log("Successfully saved room to Firestore:", roomData.roomId);
   } catch (err) {
     console.error("Firebase Create Room Error:", err);
@@ -46,7 +47,7 @@ export const updatePublicRoom = async (roomId: string, updates: Partial<PublicRo
     const roomRef = doc(db, 'rooms', roomId);
     const snapshot = await getDoc(roomRef);
     if (snapshot.exists()) {
-       await setDoc(roomRef, { ...snapshot.data(), ...updates }, { merge: true });
+       await setDoc(roomRef, { ...snapshot.data(), ...updates, lastActiveAt: Date.now() }, { merge: true });
     }
   } catch (err) {
     console.error("Firebase Update Room Error:", err);
@@ -84,12 +85,12 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
       // Room is considered dead if:
       // 1. It is marked as finished
       // 2. Play count is 0 or less
-      // 3. It's older than 12 hours (cleanup)
-      // 4. Waiting for more than 15 minutes with only 1 player (likely a dead tab/zombie host)
+      // 3. It hasn't been active for 10 minutes, or it's older than 8 hours
+      const inactiveMs = now - (r.lastActiveAt || r.createdAt);
       const isDead = r.status === 'finished' 
         || r.playerCount <= 0 
-        || (now - r.createdAt) > 12 * 60 * 60 * 1000
-        || (r.status === 'waiting' && r.playerCount === 1 && (now - r.createdAt) > 15 * 60 * 1000);
+        || (now - r.createdAt) > 8 * 60 * 60 * 1000
+        || inactiveMs > 10 * 60 * 1000;
       
       if (isDead) {
         // Aggressively delete dead rooms to keep Firestore clean (idempotent operation)

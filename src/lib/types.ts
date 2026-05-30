@@ -56,4 +56,6 @@ export type PeerMessage =
   | { type: 'KICKED', reason: string }
   | { type: 'MUTE', playerId: string, isMuted: boolean }
   | { type: 'CHANGE_CATEGORY', category: string }
-  | { type: 'FORCE_NEXT_QUESTION' };
+  | { type: 'FORCE_NEXT_QUESTION' }
+  | { type: 'LEAVE', playerId: string }
+  | { type: 'TRANSFER_HOST', playerId: string };

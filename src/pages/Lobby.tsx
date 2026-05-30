@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGame } from '../components/GameContext';
 import { RoomPlayer } from '../lib/types';
-import { Check, Clock, Users, Play, Copy, Hand, MicOff, Mic, UserMinus, Settings } from 'lucide-react';
+import { Check, Clock, Users, Play, Copy, Hand, MicOff, Mic, UserMinus, Settings, Crown } from 'lucide-react';
 
 const CATEGORIES = [
   '🧠 معلومات عامة',
@@ -13,7 +13,7 @@ const CATEGORIES = [
 ];
 
 export default function Lobby() {
-  const { state, toggleReady, playerId, isHost, startGame, kickPlayer, mutePlayer, changeCategory } = useGame();
+  const { state, toggleReady, playerId, isHost, startGame, kickPlayer, mutePlayer, changeCategory, transferHost } = useGame();
   const [showSettings, setShowSettings] = useState(false);
 
   if (!state) return null;
@@ -111,6 +111,13 @@ export default function Lobby() {
               <div className="flex items-center gap-2">
                 {isHost && !isMe && (
                   <div className="hidden group-hover:flex items-center gap-2 animate-fade-in mr-2">
+                    <button 
+                      onClick={() => transferHost(p.id)}
+                      className="p-2 border border-slate-600 rounded-lg text-slate-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-colors"
+                      title="ترقية إلى مضيف"
+                    >
+                      <Crown className="w-4 h-4" />
+                    </button>
                     <button 
                       onClick={() => mutePlayer(p.id, !p.isMuted)}
                       className="p-2 border border-slate-600 rounded-lg text-slate-400 hover:text-amber-400 hover:border-amber-500/50 transition-colors"
