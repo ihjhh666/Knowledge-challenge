@@ -8,6 +8,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import TermsOfService from './pages/TermsOfService';
+import DebugRooms from './pages/DebugRooms';
 import { AdBanner } from './components/AdBanner';
 import { Footer } from './components/Footer';
 
@@ -25,6 +26,7 @@ export default function App() {
               <Route path="/about" element={<AboutUs />} />
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/debug" element={<DebugRooms />} />
             </Routes>
           </main>
           

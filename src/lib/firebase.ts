@@ -1,19 +1,21 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import * as config from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: config.apiKey,
+  authDomain: config.authDomain,
+  projectId: config.projectId,
+  storageBucket: config.storageBucket,
+  messagingSenderId: config.messagingSenderId,
+  appId: config.appId,
+  firestoreDatabaseId: config.firestoreDatabaseId
 };
 
 const isFirebaseConfigured = !!firebaseConfig.projectId;
 
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
-export const db = app ? getFirestore(app) : null;
+export const db = app ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : null;
 
 export interface PublicRoom {
   roomId: string;
