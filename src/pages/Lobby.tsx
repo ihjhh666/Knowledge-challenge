@@ -110,7 +110,7 @@ export default function Lobby() {
               </div>
               <div className="flex items-center gap-2">
                 {isHost && !isMe && (
-                  <div className="hidden group-hover:flex items-center gap-2 animate-fade-in mr-2">
+                  <div className="flex items-center gap-2 mr-2">
                     <button 
                       onClick={() => transferHost(p.id)}
                       className="p-2 border border-slate-600 rounded-lg text-slate-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-colors"

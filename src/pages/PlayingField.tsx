@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../components/GameContext';
 import { RoomPlayer } from '../lib/types';
-import { Check, X, Clock, Brain, Trophy } from 'lucide-react';
+import { Check, X, Clock, Brain, Trophy, Crown, Mic, MicOff, UserMinus } from 'lucide-react';
 import { audio } from '../lib/audio';
 
 export default function PlayingField() {
-  const { state, submitAnswer, playerId, isHost, startGame, forceNextQuestion } = useGame();
+  const { state, submitAnswer, playerId, isHost, startGame, forceNextQuestion, transferHost, kickPlayer, mutePlayer } = useGame();
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15);
 
@@ -198,6 +198,19 @@ export default function PlayingField() {
                   <div>
                     <span className="block text-sm font-bold text-slate-200">{p.username}</span>
                     <span className="block text-xs text-indigo-400">{p.score} pt</span>
+                    {isHost && playerId !== p.id && (
+                      <div className="flex gap-1 mt-1">
+                        <button onClick={() => transferHost(p.id)} className="p-1 rounded text-slate-400 hover:text-indigo-400 hover:bg-slate-700 bg-slate-700/50" title="ترقية">
+                          <Crown className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => mutePlayer(p.id, !p.isMuted)} className="p-1 rounded text-slate-400 hover:text-amber-400 hover:bg-slate-700 bg-slate-700/50" title={p.isMuted ? 'إلغاء الكتم' : 'كتم'}>
+                          {p.isMuted ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                        </button>
+                        <button onClick={() => kickPlayer(p.id)} className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-slate-700 bg-slate-700/50" title="طرد">
+                          <UserMinus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {state.status === 'revealing' && (

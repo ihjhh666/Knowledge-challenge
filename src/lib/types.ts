@@ -58,4 +58,5 @@ export type PeerMessage =
   | { type: 'CHANGE_CATEGORY', category: string }
   | { type: 'FORCE_NEXT_QUESTION' }
   | { type: 'LEAVE', playerId: string }
-  | { type: 'TRANSFER_HOST', playerId: string };
+  | { type: 'TRANSFER_HOST', playerId: string }
+  | { type: 'PING', playerId: string };

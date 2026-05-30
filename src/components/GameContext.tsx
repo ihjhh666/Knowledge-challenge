@@ -48,6 +48,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hostConnectionRef = useRef<DataConnection | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const isHostRef = useRef<boolean>(false);
+  const lastPingTimes = useRef<Record<string, number>>({});
 
   // Sync state ref
   useEffect(() => {
@@ -84,6 +85,54 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
   };
+
+  // Ping interval
+  useEffect(() => {
+    const pingInterval = setInterval(() => {
+      if (!isHostRef.current && hostConnectionRef.current?.open) {
+         hostConnectionRef.current.send({ type: 'PING', playerId });
+      }
+      
+      if (isHostRef.current && stateRef.current) {
+         const now = Date.now();
+         let changed = false;
+         const players = { ...stateRef.current.players };
+         
+         Object.keys(players).forEach(pId => {
+           if (pId !== playerId) {
+              const lastPing = lastPingTimes.current[pId] || now; // if not set yet, assume now
+              if (now - lastPing > 7000) {
+                 // Missed pings for 7 seconds!
+                 delete players[pId];
+                 changed = true;
+                 
+                 const conn = connectionsRef.current.get(pId);
+                 if (conn) {
+                   conn.close();
+                   connectionsRef.current.delete(pId);
+                 }
+                 delete lastPingTimes.current[pId];
+                 if (disconnectDelays.current[pId]) {
+                   clearTimeout(disconnectDelays.current[pId]);
+                   delete disconnectDelays.current[pId];
+                 }
+              }
+           }
+         });
+         
+         if (changed) {
+            const newState = { ...stateRef.current, players };
+            setState(newState);
+            broadcast({ type: 'STATE_UPDATE', state: newState });
+            updatePublicRoom(newState.roomId, {
+              playerCount: Object.keys(newState.players).length
+            });
+            checkAllAnswered(newState);
+         }
+      }
+    }, 2500);
+    return () => clearInterval(pingInterval);
+  }, [playerId]);
 
   // Added disconnect delays tracking
   const disconnectDelays = useRef<Record<string, NodeJS.Timeout>>({});
@@ -163,7 +212,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'CHAT':
         if (isHostRef.current && stateRef.current) {
           const senderPlayer = stateRef.current.players[message.message.senderId];
-          if (senderPlayer && senderPlayer.isMuted) break; // Block muted player
+          if (senderPlayer && senderPlayer.isMuted) {
+             const conn = connectionsRef.current.get(message.message.senderId);
+             if (conn && conn.open) {
+                // Send a private rejection / system message
+                const msg: ChatMessage = {
+                  id: Math.random().toString(),
+                  senderId: 'system',
+                  senderName: 'النظام',
+                  text: 'لا يمكنك إرسال رسائل (أنت مكتوم بواسطة المضيف)',
+                  timestamp: Date.now()
+                };
+                conn.send({ type: 'STATE_UPDATE', state: { ...stateRef.current, messages: [...stateRef.current.messages, msg] } });
+             }
+             break; // Block muted player
+          }
 
           const newState = {
             ...stateRef.current,
@@ -214,6 +277,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              conn.send({ type: 'KICKED', reason: 'تم طردك من قبل المالك.' });
              setTimeout(() => conn.close(), 500);
            }
+           
+           if (disconnectDelays.current[message.playerId]) {
+             clearTimeout(disconnectDelays.current[message.playerId]);
+           }
+           const { [message.playerId]: _, ...remainingPlayers } = stateRef.current.players;
+           const newState = { ...stateRef.current, players: remainingPlayers };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+           updatePublicRoom(newState.roomId, {
+             playerCount: Object.keys(newState.players).length
+           });
+           checkAllAnswered(newState);
         }
         break;
       case 'KICKED':
@@ -349,6 +424,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                  joinRoom(stateRef.current!.roomId);
               }, 3000);
            }
+        }
+        break;
+      case 'PING':
+        if (isHostRef.current) {
+           lastPingTimes.current[message.playerId] = Date.now();
         }
         break;
     }
