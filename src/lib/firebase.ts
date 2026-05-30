@@ -28,9 +28,11 @@ export interface PublicRoom {
 
 export const createPublicRoom = async (roomData: PublicRoom) => {
   if (!db) return;
+  console.log("Saving room to Firestore 'rooms' collection:", roomData.roomId);
   try {
     const roomRef = doc(db, 'rooms', roomData.roomId);
     await setDoc(roomRef, roomData);
+    console.log("Successfully saved room to Firestore:", roomData.roomId);
   } catch (err) {
     console.error("Firebase Create Room Error:", err);
   }
@@ -64,6 +66,7 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
     callback([]);
     return () => {};
   }
+  console.log("Subscribing to Firestore 'rooms' collection...");
   const roomsRef = collection(db, 'rooms');
   // Subscribe to all rooms, filter locally like before (or we can use query)
   const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
@@ -71,10 +74,13 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
     snapshot.forEach(doc => {
       rooms.push(doc.data() as PublicRoom);
     });
+    console.log("Firestore onSnapshot received", rooms.length, "total rooms.");
     
     // Clean up old or empty rooms (older than 24h)
     const now = Date.now();
     const validRooms = rooms.filter(r => (now - r.createdAt) < 24 * 60 * 60 * 1000 && r.status !== 'finished');
+    
+    console.log("After local filter, sending", validRooms.length, "valid rooms to UI.");
     callback(validRooms);
   }, (err) => {
     console.error("Firebase Subscribe Error:", err);
