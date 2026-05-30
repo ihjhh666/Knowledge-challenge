@@ -10,6 +10,7 @@ const CATEGORIES = [
   '🔬 علوم',
   '🎬 أفلام',
   '🎌 أنمي',
+  '🧮 رياضيات',
 ];
 
 export default function Lobby() {

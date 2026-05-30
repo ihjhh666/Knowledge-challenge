@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { GameState, RoomPlayer, ChatMessage, PeerMessage, Question, RoomVisibility } from '../lib/types';
 import { createPeer } from '../lib/peer';
 import { storage } from '../lib/storage';
-import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC } from '../lib/dynamicQuestions';
+import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC, MATH_EXPANDED as MATH } from '../lib/dynamicQuestions';
 import { audio } from '../lib/audio';
 import { createPublicRoom, updatePublicRoom, deletePublicRoom } from '../lib/firebase';
 import type Peer from 'peerjs';
@@ -15,7 +15,8 @@ const ALL_GAME_QUESTIONS = [
   ...ANIME,
   ...SCIENCE,
   ...HISTORY,
-  ...ISLAMIC
+  ...ISLAMIC,
+  ...MATH
 ];
 
 export interface GameContextType {
@@ -454,14 +455,38 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     else if (currentState.category === '🔬 علوم') questionsPool = SCIENCE;
     else if (currentState.category === '🎬 أفلام') questionsPool = MOVIES;
     else if (currentState.category === '🎌 أنمي') questionsPool = ANIME;
+    else if (currentState.category === '🧮 رياضيات') questionsPool = MATH;
+
+    // Load global seen history from localStorage to prevent repeats across games
+    let globalSeenQuestions: string[] = [];
+    try {
+      const stored = localStorage.getItem('seenQuestionsHistory');
+      if (stored) globalSeenQuestions = JSON.parse(stored);
+    } catch(e) {}
 
     // Filter out already asked questions, handle pool exhaustion gracefully
     let availableQuestions = questionsPool.filter(q => !currentState.askedQuestions.includes(q.text));
-    if (availableQuestions.length === 0) {
-      availableQuestions = questionsPool; // fallback if all were asked
+    
+    // Also try to filter out global history
+    let unseenAvailable = availableQuestions.filter(q => !globalSeenQuestions.includes(q.text));
+    
+    if (unseenAvailable.length > 0) {
+      availableQuestions = unseenAvailable;
+    } else if (availableQuestions.length === 0) {
+      availableQuestions = questionsPool; // fallback if all were asked completely
     }
 
     const q = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+    
+    // Update global history (keep max 200 questions to avoid filling storage)
+    globalSeenQuestions.push(q.text);
+    if (globalSeenQuestions.length > 200) {
+      globalSeenQuestions = globalSeenQuestions.slice(globalSeenQuestions.length - 200);
+    }
+    try {
+      localStorage.setItem('seenQuestionsHistory', JSON.stringify(globalSeenQuestions));
+    } catch(e) {}
+
     const options = [q.correctAnswer, ...q.wrongOptions].sort(() => Math.random() - 0.5);
     
     // reset players
@@ -645,7 +670,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       conn.on('close', () => {
         const oldState = stateRef.current;
         if (oldState && !rejectedReason) {
-           const players = Object.values(oldState.players);
+           const players = Object.values(oldState.players) as RoomPlayer[];
            const remaining = players.filter(p => !p.isHost);
            if (remaining.length > 0) {
               remaining.sort((a, b) => a.id.localeCompare(b.id));

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Brain, Trophy, ChevronRight, X, Clock, Target } from 'lucide-react';
-import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC } from '../lib/dynamicQuestions';
+import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC, MATH_EXPANDED as MATH } from '../lib/dynamicQuestions';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 
@@ -12,7 +12,8 @@ const CATEGORIES = [
   { id: 'anime', name: 'الأنمي', icon: '🎌', data: ANIME, color: 'from-red-500 to-red-700' },
   { id: 'science', name: 'العلوم', icon: '🔬', data: SCIENCE, color: 'from-teal-500 to-teal-700' },
   { id: 'history', name: 'التاريخ', icon: '📜', data: HISTORY, color: 'from-amber-500 to-amber-700' },
-  { id: 'islamic', name: 'إسلاميات', icon: '🕌', data: ISLAMIC, color: 'from-emerald-500 to-emerald-700' }
+  { id: 'islamic', name: 'إسلاميات', icon: '🕌', data: ISLAMIC, color: 'from-emerald-500 to-emerald-700' },
+  { id: 'math', name: 'رياضيات', icon: '🧮', data: MATH, color: 'from-blue-400 to-blue-600' }
 ];
 
 export default function SoloPlay() {

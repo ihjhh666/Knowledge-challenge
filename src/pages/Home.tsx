@@ -13,6 +13,7 @@ const CATEGORIES = [
   { id: '🔬 علوم', name: 'علوم', icon: FlaskConical, color: 'text-cyan-400', bg: 'bg-cyan-500/20' },
   { id: '🎬 أفلام', name: 'أفلام', icon: Film, color: 'text-rose-400', bg: 'bg-rose-500/20' },
   { id: '🎌 أنمي', name: 'أنمي', icon: PlayCircle, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+  { id: '🧮 رياضيات', name: 'رياضيات', icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/20' },
 ];
 
 export default function Home() {
