@@ -15,6 +15,7 @@ export interface RoomPlayer {
   hasAnsweredCurrentRound: boolean;
   lastAnswerSucceeded: boolean;
   lastAnswerTime?: number;
+  isMuted?: boolean;
 }
 
 export interface ChatMessage {
@@ -50,4 +51,9 @@ export type PeerMessage =
   | { type: 'CHAT', message: ChatMessage }
   | { type: 'TOGGLE_READY', playerId: string }
   | { type: 'START_GAME' }
-  | { type: 'SUBMIT_ANSWER', playerId: string, answer: string, timeToAnswerMs: number };
+  | { type: 'SUBMIT_ANSWER', playerId: string, answer: string, timeToAnswerMs: number }
+  | { type: 'KICK', playerId: string }
+  | { type: 'KICKED', reason: string }
+  | { type: 'MUTE', playerId: string, isMuted: boolean }
+  | { type: 'CHANGE_CATEGORY', category: string }
+  | { type: 'FORCE_NEXT_QUESTION' };

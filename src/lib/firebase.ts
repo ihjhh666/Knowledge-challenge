@@ -1,10 +1,9 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, onValue, remove, off, get } from 'firebase/database';
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || (import.meta.env.VITE_FIREBASE_PROJECT_ID ? `https://${import.meta.env.VITE_FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com` : undefined),
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
@@ -14,7 +13,7 @@ const firebaseConfig = {
 const isFirebaseConfigured = !!firebaseConfig.projectId;
 
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
-export const db = app ? getDatabase(app) : null;
+export const db = app ? getFirestore(app) : null;
 
 export interface PublicRoom {
   roomId: string;
@@ -30,8 +29,8 @@ export interface PublicRoom {
 export const createPublicRoom = async (roomData: PublicRoom) => {
   if (!db) return;
   try {
-    const roomRef = ref(db, `rooms/${roomData.roomId}`);
-    await set(roomRef, roomData);
+    const roomRef = doc(db, 'rooms', roomData.roomId);
+    await setDoc(roomRef, roomData);
   } catch (err) {
     console.error("Firebase Create Room Error:", err);
   }
@@ -40,10 +39,10 @@ export const createPublicRoom = async (roomData: PublicRoom) => {
 export const updatePublicRoom = async (roomId: string, updates: Partial<PublicRoom>) => {
   if (!db) return;
   try {
-    const roomRef = ref(db, `rooms/${roomId}`);
-    const snapshot = await get(roomRef);
+    const roomRef = doc(db, 'rooms', roomId);
+    const snapshot = await getDoc(roomRef);
     if (snapshot.exists()) {
-       await set(roomRef, { ...snapshot.val(), ...updates });
+       await setDoc(roomRef, { ...snapshot.data(), ...updates }, { merge: true });
     }
   } catch (err) {
     console.error("Firebase Update Room Error:", err);
@@ -53,8 +52,8 @@ export const updatePublicRoom = async (roomId: string, updates: Partial<PublicRo
 export const deletePublicRoom = async (roomId: string) => {
   if (!db) return;
   try {
-    const roomRef = ref(db, `rooms/${roomId}`);
-    await remove(roomRef);
+    const roomRef = doc(db, 'rooms', roomId);
+    await deleteDoc(roomRef);
   } catch (err) {
     console.error("Firebase Delete Room Error:", err);
   }
@@ -65,21 +64,22 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
     callback([]);
     return () => {};
   }
-  const roomsRef = ref(db, 'rooms');
-  onValue(roomsRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      const rooms: PublicRoom[] = Object.values(data);
-      // Clean up old or empty rooms (optional, clean older than 24h)
-      const now = Date.now();
-      const validRooms = rooms.filter(r => (now - r.createdAt) < 24 * 60 * 60 * 1000 && r.status !== 'finished');
-      callback(validRooms);
-    } else {
-      callback([]);
-    }
+  const roomsRef = collection(db, 'rooms');
+  // Subscribe to all rooms, filter locally like before (or we can use query)
+  const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
+    const rooms: PublicRoom[] = [];
+    snapshot.forEach(doc => {
+      rooms.push(doc.data() as PublicRoom);
+    });
+    
+    // Clean up old or empty rooms (older than 24h)
+    const now = Date.now();
+    const validRooms = rooms.filter(r => (now - r.createdAt) < 24 * 60 * 60 * 1000 && r.status !== 'finished');
+    callback(validRooms);
   }, (err) => {
     console.error("Firebase Subscribe Error:", err);
   });
   
-  return () => off(roomsRef);
+  return () => unsubscribe();
 };
+

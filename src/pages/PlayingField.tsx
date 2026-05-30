@@ -5,7 +5,7 @@ import { Check, X, Clock, Brain, Trophy } from 'lucide-react';
 import { audio } from '../lib/audio';
 
 export default function PlayingField() {
-  const { state, submitAnswer, playerId, isHost, startGame } = useGame();
+  const { state, submitAnswer, playerId, isHost, startGame, forceNextQuestion } = useGame();
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15);
 
@@ -24,6 +24,12 @@ export default function PlayingField() {
             clearInterval(interval);
             if (!selectedAnswer && state.players[playerId] && !state.players[playerId].hasAnsweredCurrentRound) {
               submitAnswer('', 15000);
+            }
+            if (isHost) {
+              // Wait a little extra bit for latency, then force it.
+              setTimeout(() => {
+                 forceNextQuestion();
+              }, 1500);
             }
             return 0;
           }

@@ -18,7 +18,7 @@ const ALL_GAME_QUESTIONS = [
   ...ISLAMIC
 ];
 
-interface GameContextType {
+export interface GameContextType {
   state: GameState | null;
   playerId: string;
   isHost: boolean;
@@ -29,6 +29,10 @@ interface GameContextType {
   leaveRoom: () => void;
   startGame: () => void;
   submitAnswer: (answer: string, timeToAnswerMs: number) => void;
+  kickPlayer: (playerId: string) => void;
+  mutePlayer: (playerId: string, isMuted: boolean) => void;
+  changeCategory: (category: string) => void;
+  forceNextQuestion: () => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -61,6 +65,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // Added disconnect delays tracking
+  const disconnectDelays = useRef<Record<string, NodeJS.Timeout>>({});
+
+  const checkAllAnswered = (currentState: GameState) => {
+    if (currentState.status !== 'playing') return;
+    const allAnswered = (Object.values(currentState.players) as RoomPlayer[]).every(p => p.hasAnsweredCurrentRound);
+    if (allAnswered) {
+      const revealingState: GameState = {
+        ...currentState,
+        status: 'revealing'
+      };
+      setState(revealingState);
+      broadcast({ type: 'STATE_UPDATE', state: revealingState });
+
+      // Automatically go to next round after 3 seconds
+      setTimeout(() => {
+        if (stateRef.current) {
+          startNextRound(stateRef.current);
+        }
+      }, 3000);
+    }
+  };
+
   const handleMessage = (message: PeerMessage, senderId?: string) => {
     switch (message.type) {
       case 'STATE_UPDATE':
@@ -87,8 +114,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             break;
           }
 
+          if (senderId && disconnectDelays.current[senderId]) {
+             clearTimeout(disconnectDelays.current[senderId]);
+             delete disconnectDelays.current[senderId];
+          }
+
           const playerName = message.player.username;
-          // Add player
           const newState = {
             ...stateRef.current,
             players: {
@@ -96,7 +127,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               [message.player.id]: {
                 ...message.player,
                 hasAnsweredCurrentRound: false,
-                lastAnswerSucceeded: false
+                lastAnswerSucceeded: false,
+                isMuted: false
               }
             }
           };
@@ -110,6 +142,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'CHAT':
         if (isHostRef.current && stateRef.current) {
+          const senderPlayer = stateRef.current.players[message.message.senderId];
+          if (senderPlayer && senderPlayer.isMuted) break; // Block muted player
+
           const newState = {
             ...stateRef.current,
             messages: [...stateRef.current.messages, message.message]
@@ -150,6 +185,55 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'SUBMIT_ANSWER':
         if (isHostRef.current && stateRef.current) {
           handleAnswer(message.playerId, message.answer, message.timeToAnswerMs);
+        }
+        break;
+      case 'KICK':
+        if (isHostRef.current && stateRef.current) {
+           const conn = connectionsRef.current.get(message.playerId);
+           if (conn) {
+             conn.send({ type: 'KICKED', reason: 'تم طردك من قبل المالك.' });
+             setTimeout(() => conn.close(), 500);
+           }
+        }
+        break;
+      case 'KICKED':
+        // received by peer
+        alert(message.reason);
+        leaveRoom();
+        break;
+      case 'MUTE':
+        if (isHostRef.current && stateRef.current) {
+           const p = stateRef.current.players[message.playerId];
+           if (p) {
+             const newState = {
+               ...stateRef.current,
+               players: {
+                 ...stateRef.current.players,
+                 [message.playerId]: { ...p, isMuted: message.isMuted }
+               }
+             };
+             setState(newState);
+             broadcast({ type: 'STATE_UPDATE', state: newState });
+           }
+        }
+        break;
+      case 'CHANGE_CATEGORY':
+        if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
+           const newState = { ...stateRef.current, category: message.category };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+           updatePublicRoom(newState.roomId, { category: message.category });
+        }
+        break;
+      case 'FORCE_NEXT_QUESTION':
+        if (isHostRef.current && stateRef.current) {
+           // Provide an empty answer for those who didn't
+           const currentState = stateRef.current;
+           (Object.values(currentState.players) as RoomPlayer[]).forEach(p => {
+              if (!p.hasAnsweredCurrentRound) {
+                 handleAnswer(p.id, '', 15000);
+              }
+           });
         }
         break;
     }
@@ -232,29 +316,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    const allAnswered = (Object.values(updatedPlayers) as RoomPlayer[]).every(p => p.hasAnsweredCurrentRound);
-
-    if (allAnswered) {
-      // Move to revealing
-      const revealingState: GameState = {
-        ...currentState,
-        status: 'revealing',
-        players: updatedPlayers
-      };
-      setState(revealingState);
-      broadcast({ type: 'STATE_UPDATE', state: revealingState });
-
-      // Automatically go to next round after 3 seconds
-      setTimeout(() => {
-        if (stateRef.current) {
-          startNextRound(stateRef.current);
-        }
-      }, 3000);
-    } else {
-      const newState = { ...currentState, players: updatedPlayers };
-      setState(newState);
-      broadcast({ type: 'STATE_UPDATE', state: newState });
-    }
+    const newState = { ...currentState, players: updatedPlayers };
+    setState(newState);
+    broadcast({ type: 'STATE_UPDATE', state: newState });
+    checkAllAnswered(newState);
   };
 
   const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10) => {
@@ -312,16 +377,24 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       conn.on('close', () => {
         connectionsRef.current.delete(conn.peer);
-        // Remove player on disconnect
-        if (stateRef.current) {
-           const { [conn.peer]: _, ...remainingPlayers } = stateRef.current.players;
-           const newState = { ...stateRef.current, players: remainingPlayers };
-           setState(newState);
-           broadcast({ type: 'STATE_UPDATE', state: newState });
-           updatePublicRoom(newState.roomId, {
-             playerCount: Object.keys(newState.players).length
-           });
-        }
+        // Wait 5 seconds before removing player
+        disconnectDelays.current[conn.peer] = setTimeout(() => {
+          if (stateRef.current) {
+             const { [conn.peer]: _, ...remainingPlayers } = stateRef.current.players;
+             const newState = { ...stateRef.current, players: remainingPlayers };
+             
+             // Auto-transfer host logic: If we wanted to transfer host, we do it here. 
+             // But the host is the server, so you can't transfer from here if the host themselves leaves!
+             // This event only fires when a client leaves.
+
+             setState(newState);
+             broadcast({ type: 'STATE_UPDATE', state: newState });
+             updatePublicRoom(newState.roomId, {
+               playerCount: Object.keys(newState.players).length
+             });
+             checkAllAnswered(newState);
+          }
+        }, 5000);
       });
       
       conn.on('error', (err) => {
@@ -335,6 +408,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const joinRoom = React.useCallback((roomId: string, password?: string, onError?: (err: string) => void) => {
+
     if (peerRef.current) {
       peerRef.current.destroy();
     }
@@ -449,8 +523,32 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hostConnectionRef.current = null;
   }, []);
 
+  const kickPlayer = React.useCallback((playerIdToKick: string) => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'KICK', playerId: playerIdToKick });
+    }
+  }, []);
+
+  const mutePlayer = React.useCallback((playerIdToMute: string, isMuted: boolean) => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'MUTE', playerId: playerIdToMute, isMuted });
+    }
+  }, []);
+
+  const changeCategory = React.useCallback((category: string) => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'CHANGE_CATEGORY', category });
+    }
+  }, []);
+
+  const forceNextQuestion = React.useCallback(() => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'FORCE_NEXT_QUESTION' });
+    }
+  }, []);
+
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, forceNextQuestion }}>
       {children}
     </GameContext.Provider>
   );

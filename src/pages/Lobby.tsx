@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGame } from '../components/GameContext';
 import { RoomPlayer } from '../lib/types';
-import { Check, Clock, Users, Play, Copy } from 'lucide-react';
-import Chat from './Chat';
+import { Check, Clock, Users, Play, Copy, Hand, MicOff, Mic, UserMinus, Settings } from 'lucide-react';
+
+const CATEGORIES = [
+  '🧠 معلومات عامة',
+  '⚽ كرة قدم',
+  '📜 تاريخ',
+  '🔬 علوم',
+  '🎬 أفلام',
+  '🎌 أنمي',
+];
 
 export default function Lobby() {
-  const { state, toggleReady, playerId, isHost, startGame } = useGame();
+  const { state, toggleReady, playerId, isHost, startGame, kickPlayer, mutePlayer, changeCategory } = useGame();
+  const [showSettings, setShowSettings] = useState(false);
 
   if (!state) return null;
 
@@ -18,7 +27,6 @@ export default function Lobby() {
   };
 
   const copyInviteLink = () => {
-    // Generate full URL
     const url = `${window.location.origin}${window.location.pathname}#/room/${state.roomId}`;
     navigator.clipboard.writeText(url);
     alert('تم نسخ رابط الدعوة! أرسله لأصدقائك');
@@ -35,8 +43,17 @@ export default function Lobby() {
                  {state.category}
                </span>
             )}
+            {isHost && (
+              <button 
+                onClick={() => setShowSettings(!showSettings)}
+                className="ml-2 bg-slate-700 hover:bg-slate-600 p-1.5 rounded-lg transition-colors text-slate-300"
+                title="إعدادات الغرفة"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
           </div>
-          <p className="text-slate-400 text-sm">{players.length} / 10 لاعبين</p>
+          <p className="text-slate-400 text-sm">{players.length} / {state.maxPlayers || 10} لاعبين</p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2">
           <div className="bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 flex items-center gap-3">
@@ -51,21 +68,66 @@ export default function Lobby() {
         </div>
       </div>
 
+      {isHost && showSettings && (
+        <div className="bg-slate-800/80 border border-indigo-500/30 p-6 rounded-3xl animate-fade-in">
+          <h3 className="text-slate-200 font-bold mb-4">إعدادات الغرفة المباشرة</h3>
+          <div>
+            <label className="block text-slate-400 text-sm mb-2">تريد تغيير التصنيف؟</label>
+            <select 
+              value={state.category}
+              onChange={(e) => changeCategory(e.target.value)}
+              className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none"
+            >
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       <div className="grid sm:grid-cols-2 gap-4">
         {players.map((p) => {
           const isMe = p.id === playerId;
           return (
-            <div key={p.id} className={`p-4 rounded-2xl border ${isMe ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-slate-800 border-slate-700'} flex items-center justify-between`}>
+            <div key={p.id} className={`p-4 rounded-2xl border ${isMe ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-slate-800 border-slate-700'} flex items-center justify-between group`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center relative">
                   <Users className="w-5 h-5 text-slate-400" />
+                  {p.isMuted && (
+                    <div className="absolute -top-1 -right-1 bg-red-500 text-white border-2 border-slate-800 rounded-full p-0.5">
+                      <MicOff className="w-3 h-3" />
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-200">{p.username} {isMe && <span className="text-indigo-400 text-xs ml-2">(أنت)</span>}</p>
+                  <p className="font-bold text-slate-200 flex items-center gap-2">
+                    {p.username} 
+                    {isMe && <span className="text-indigo-400 text-xs">(أنت)</span>}
+                  </p>
                   <p className="text-xs text-slate-400">{p.isHost ? 'المضيف' : 'لاعب'}</p>
                 </div>
               </div>
-              <div>
+              <div className="flex items-center gap-2">
+                {isHost && !isMe && (
+                  <div className="hidden group-hover:flex items-center gap-2 animate-fade-in mr-2">
+                    <button 
+                      onClick={() => mutePlayer(p.id, !p.isMuted)}
+                      className="p-2 border border-slate-600 rounded-lg text-slate-400 hover:text-amber-400 hover:border-amber-500/50 transition-colors"
+                      title={p.isMuted ? "إلغاء الكتم" : "كتم من الدردشة"}
+                    >
+                      {p.isMuted ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                    </button>
+                    <button 
+                      onClick={() => kickPlayer(p.id)}
+                      className="p-2 border border-slate-600 rounded-lg text-slate-400 hover:text-red-400 hover:border-red-500/50 transition-colors"
+                      title="طرد اللاعب"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                
                 {p.isReady ? (
                   <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-xl">
                     <Check className="w-5 h-5" />
@@ -86,8 +148,8 @@ export default function Lobby() {
           onClick={toggleReady}
           className={`flex-1 py-4 rounded-2xl font-bold transition-all active:scale-95 ${
             state.players[playerId]?.isReady 
-              ? 'bg-amber-600 hover:bg-amber-700 text-white'
-              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              ? 'bg-amber-600 hover:bg-amber-700 text-white border-b-4 border-amber-800'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white border-b-4 border-emerald-800'
           }`}
         >
           {state.players[playerId]?.isReady ? 'إلغاء الاستعداد' : 'أنا مستعد!'}
@@ -97,7 +159,7 @@ export default function Lobby() {
           <button
             onClick={startGame}
             disabled={!allReady || players.length < 2}
-            className="flex-1 max-w-[200px] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-all active:scale-95"
+            className="flex-1 max-w-[200px] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:border-slate-800 disabled:text-slate-500 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 border-b-4 border-indigo-800 disabled:border-b-0"
           >
             <Play className="w-5 h-5" />
             ابدأ اللعب

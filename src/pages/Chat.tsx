@@ -23,6 +23,8 @@ export default function Chat() {
     }
   };
 
+  const isMuted = state?.players[playerId]?.isMuted;
+
   return (
     <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-sm">
       <div className="bg-slate-800 px-4 py-3 border-b border-slate-700 flex items-center justify-between shadow-sm z-10 shrink-0">
@@ -49,12 +51,13 @@ export default function Chat() {
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="اكتب رسالة..."
-          className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 text-sm focus:border-indigo-500 outline-none transition-colors"
+          placeholder={isMuted ? "تم كتمك من قبل المالك" : "اكتب رسالة..."}
+          disabled={isMuted}
+          className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 text-sm focus:border-indigo-500 outline-none transition-colors disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={!text.trim()}
+          disabled={!text.trim() || isMuted}
           className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white p-3 md:px-4 rounded-xl transition-all active:scale-95 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20"
         >
           <Send className="w-5 h-5" />
