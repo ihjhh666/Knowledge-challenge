@@ -41,6 +41,12 @@ export interface PlayerStats {
   categoryCounts: Record<string, number>;
   mostPlayedCategory: string;
   lastUpdated: number;
+  // Fishing Stats
+  fishingGamesPlayed?: number;
+  fishingWins?: number;
+  fishingHighestScore?: number;
+  fishingTotalFish?: number;
+  fishingTotalPoints?: number;
 }
 
 export const createPublicRoom = async (roomData: PublicRoom) => {
@@ -187,6 +193,54 @@ export const updatePlayerStats = async (
     }
   } catch(err) {
     console.error('Error updating player stats:', err);
+  }
+};
+
+export const updateFishingStats = async (
+  playerId: string,
+  playerName: string,
+  isWin: boolean,
+  score: number,
+  fishCaught: number
+) => {
+  if (!db) return;
+  try {
+    const playerRef = doc(db, 'users', playerId);
+    const snap = await getDoc(playerRef);
+    
+    if (snap.exists()) {
+      const data = snap.data() as PlayerStats;
+      await setDoc(playerRef, {
+        fishingGamesPlayed: (data.fishingGamesPlayed || 0) + 1,
+        fishingWins: (data.fishingWins || 0) + (isWin ? 1 : 0),
+        fishingHighestScore: Math.max(data.fishingHighestScore || 0, score),
+        fishingTotalFish: (data.fishingTotalFish || 0) + fishCaught,
+        fishingTotalPoints: (data.fishingTotalPoints || 0) + score,
+        lastUpdated: Date.now()
+      }, { merge: true });
+    } else {
+      const newStats: PlayerStats = {
+        playerId,
+        playerName,
+        gamesPlayed: 0,
+        wins: 0,
+        correctAnswers: 0,
+        wrongAnswers: 0,
+        totalPoints: 0,
+        successRate: 0,
+        categoryCounts: {},
+        mostPlayedCategory: '',
+        fishingGamesPlayed: 1,
+        fishingWins: isWin ? 1 : 0,
+        fishingHighestScore: score,
+        fishingTotalFish: fishCaught,
+        fishingTotalPoints: score,
+        lastUpdated: Date.now()
+      };
+      await setDoc(playerRef, newStats);
+    }
+  } catch(err) {
+    console.error('Error updating fishing stats:', err);
   }
 };
 

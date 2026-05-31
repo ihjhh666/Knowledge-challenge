@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
-import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound } from 'lucide-react';
+import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves } from 'lucide-react';
 import { subscribeToPublicRooms, PublicRoom, subscribeToOnlineCount } from '../lib/firebase';
 import { RoomVisibility } from '../lib/types';
 
@@ -289,14 +289,25 @@ export default function Home() {
               <Gamepad2 className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold font-heading mb-2 text-white">لعب فردي</h2>
-            <p className="text-blue-100 mb-6 text-sm">اختبر معلوماتك في مختلف الأقسام والتحديات والعب بمفردك.</p>
+            <p className="text-blue-100 mb-6 text-sm">استمتع باللعب بمفردك، سواء بتحدي الأسئلة أو صيد الأسماك.</p>
           </div>
-          <button 
-            onClick={() => navigate('/solo')}
-            className="w-full bg-white text-blue-900 font-bold py-4 rounded-xl hover:bg-blue-50 transition-transform active:scale-95 shadow-lg"
-          >
-            العب الآن
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => navigate('/solo')}
+              className="flex-1 bg-white text-blue-900 font-bold py-4 rounded-xl hover:bg-blue-50 transition-transform active:scale-95 shadow-lg flex items-center justify-center"
+              title="تحدي المعرفة"
+            >
+              أسئلة
+            </button>
+            <button 
+              onClick={() => navigate('/fishing')}
+              className="flex-1 bg-sky-200 text-sky-900 font-bold py-4 rounded-xl hover:bg-sky-100 transition-transform active:scale-95 shadow-lg flex items-center justify-center gap-2"
+              title="صيد السمك"
+            >
+              <Waves className="w-5 h-5" />
+              صيد
+            </button>
+          </div>
         </div>
 
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-3xl shadow-xl shadow-indigo-900/20 relative overflow-hidden flex flex-col items-start justify-between min-h-[250px] transform hover:scale-[1.02] transition-transform">

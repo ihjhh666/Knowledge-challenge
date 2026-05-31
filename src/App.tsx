@@ -14,6 +14,7 @@ import { useOnlinePresence } from './hooks/useOnlinePresence';
 import { Footer } from './components/Footer';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
+import FishingSolo from './pages/FishingSolo';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/room/:roomId" element={<Room />} />
           <Route path="/solo" element={<SoloPlay />} />
+          <Route path="/fishing" element={<FishingSolo />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

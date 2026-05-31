@@ -86,6 +86,19 @@ export default function Profile() {
             <StatCard icon={XCircle} label="إجابات خاطئة" value={stats.wrongAnswers} color="text-rose-500" bg="bg-rose-500/10" />
             <StatCard icon={BrainCircuit} label="التصنيف المفضل" value={stats.mostPlayedCategory} color="text-purple-400" bg="bg-purple-500/20" colSpan="col-span-2" />
           </div>
+
+          {(stats.fishingGamesPlayed || 0) > 0 && (
+            <div className="mt-8 space-y-4">
+              <h3 className="text-2xl font-bold font-heading text-sky-400 mb-4">إحصائيات صيد السمك 🎣</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <StatCard icon={Gamepad2} label="مباريات الصيد" value={stats.fishingGamesPlayed || 0} color="text-blue-400" bg="bg-blue-500/20" />
+                <StatCard icon={Trophy} label="مرات الفوز" value={stats.fishingWins || 0} color="text-emerald-400" bg="bg-emerald-500/20" />
+                <StatCard icon={Star} label="إجمالي النقاط" value={(stats.fishingTotalPoints || 0).toLocaleString()} color="text-amber-400" bg="bg-amber-500/20" />
+                <StatCard icon={Target} label="أعلى نتيجة" value={(stats.fishingHighestScore || 0).toLocaleString()} color="text-sky-400" bg="bg-sky-500/20" />
+                <StatCard icon={CheckCircle} label="إجمالي الأسماك" value={stats.fishingTotalFish || 0} color="text-purple-400" bg="bg-purple-500/20" colSpan="col-span-2 md:col-span-1 lg:col-span-2" />
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
