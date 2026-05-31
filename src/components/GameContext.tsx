@@ -49,6 +49,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hostConnectionRef = useRef<DataConnection | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const isHostRef = useRef<boolean>(false);
+  const intentionalLeaveRef = useRef<boolean>(false);
   const lastPingTimes = useRef<Record<string, number>>({});
 
   // Sync state ref
@@ -543,6 +544,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10) => {
+    intentionalLeaveRef.current = false;
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
@@ -628,6 +630,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const joinRoom = React.useCallback((roomId: string, password?: string, onError?: (err: string) => void) => {
+    intentionalLeaveRef.current = false;
 
     if (peerRef.current) {
       peerRef.current.destroy();
@@ -668,6 +671,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       conn.on('close', () => {
+        if (intentionalLeaveRef.current) return;
+
         const oldState = stateRef.current;
         if (oldState && !rejectedReason) {
            const players = Object.values(oldState.players) as RoomPlayer[];
@@ -811,6 +816,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [playerId]);
 
   const leaveRoom = React.useCallback(() => {
+    intentionalLeaveRef.current = true;
+
     if (!isHostRef.current && hostConnectionRef.current?.open) {
       hostConnectionRef.current.send({ type: 'LEAVE', playerId });
     }
@@ -821,13 +828,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     
+    // Clear state synchronously so that Home component doesn't try to redirect back
+    setState(null);
+    setIsHost(false);
+    
     // Slight delay to ensure LEAVE message is sent before destroying
     setTimeout(() => {
       if (peerRef.current) {
         peerRef.current.destroy();
+        peerRef.current = null;
       }
-      setState(null);
-      setIsHost(false);
       setPlayerId('');
       connectionsRef.current.clear();
       hostConnectionRef.current = null;

@@ -18,6 +18,7 @@ export default function Room() {
   const [joinPassword, setJoinPassword] = useState('');
   const [needsPassword, setNeedsPassword] = useState(false);
   const joiningRef = React.useRef(false);
+  const leavingRef = React.useRef(false);
 
   const handleSaveName = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +29,7 @@ export default function Room() {
   };
 
   const attemptJoin = (password?: string) => {
-    if (!roomId) return;
+    if (!roomId || leavingRef.current) return;
     joiningRef.current = true;
     setErrorStr(null);
     joinRoom(roomId, password, (err) => {
@@ -46,13 +47,13 @@ export default function Room() {
       return;
     }
 
-    if (hasName && !state && !isHost && !joiningRef.current && !needsPassword && !errorStr) {
+    if (hasName && !state && !isHost && !joiningRef.current && !needsPassword && !errorStr && !leavingRef.current) {
       attemptJoin();
     }
   }, [roomId, state, isHost, navigate, hasName, needsPassword, errorStr]);
 
   const handleLeave = () => {
-    joiningRef.current = false;
+    leavingRef.current = true;
     leaveRoom();
     navigate('/');
   };
