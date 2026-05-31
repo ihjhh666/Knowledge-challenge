@@ -32,7 +32,7 @@ export default function Home() {
     type: 'public' as RoomVisibility,
     password: '',
     maxPlayers: 10,
-    gameMode: 'quiz' as 'quiz' | 'fishing'
+    gameMode: 'quiz' as 'quiz' | 'fishing' | 'penalty'
   });
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [joinError, setJoinError] = useState('');
@@ -166,10 +166,10 @@ export default function Home() {
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
             <div>
               <label className="block text-slate-400 mb-3 font-bold">نمط اللعب</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz'})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: createConfig.gameMode === 'penalty' ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'quiz' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <Brain className="w-6 h-6 text-indigo-400" />
@@ -177,11 +177,19 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing'})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: createConfig.gameMode === 'penalty' ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'fishing' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <div className="text-2xl">🎣</div>
                   <span className="text-sm font-bold text-slate-200">صيد السمك</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'penalty', maxPlayers: 2})}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'penalty' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                >
+                  <Goal className="w-6 h-6 text-emerald-400" />
+                  <span className="text-sm font-bold text-slate-200">ركلات الجزاء</span>
                 </button>
               </div>
             </div>
@@ -249,10 +257,11 @@ export default function Home() {
               <input 
                 type="number"
                 min="2"
-                max="20"
+                max={createConfig.gameMode === 'penalty' ? "2" : "20"}
+                disabled={createConfig.gameMode === 'penalty'}
                 value={createConfig.maxPlayers}
                 onChange={(e) => setCreateConfig({...createConfig, maxPlayers: parseInt(e.target.value) || 2})}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
               />
             </div>
           </div>
@@ -427,7 +436,7 @@ export default function Home() {
                     </span>
                   </div>
                   <h3 className="font-bold text-white text-lg pr-8">
-                    {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.category}
+                    {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : room.category}
                   </h3>
                   <p className="text-slate-400 text-sm mt-1">المضيف: {room.hostName}</p>
                 </div>

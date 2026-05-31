@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RoomPlayer } from '../lib/types';
+import { useGame } from '../components/GameContext';
 import { ChevronRight, ChevronLeft, Trophy, Goal, Shield, Save, XOctagon, RotateCcw, Volume2, VolumeX, Home as HomeIcon, Activity, Clock, Star, Medal } from 'lucide-react';
 import { updatePenaltyStats } from '../lib/firebase';
 import { storage } from '../lib/storage';
@@ -34,27 +36,10 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: n
   ctx.fill();
 }
 
-export default function PenaltySolo() {
+export default function PenaltyRoom() {
   const navigate = useNavigate();
-  
-  // Game Setup & Progression States
-  const [gameState, setGameState] = useState<'setup' | 'playing' | 'results'>('setup');
-  const [difficulty, setDifficulty] = useState<BotDifficulty>('medium');
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const { state, playerId, isHost, sendPenaltyAction, startGame: startAg, changeGameMode, leaveRoom } = useGame();
 
-  // Active Game States
-  const [currentRound, setCurrentRound] = useState(1);
-  const [turnRole, setTurnRole] = useState<TurnRole>('kicker'); // Player always starts by kicking round 1
-  const [playerScore, setPlayerScore] = useState(0);
-  const [botScore, setBotScore] = useState(0);
-  const [history, setHistory] = useState<KickResult[]>([]);
-  const [isSuddenDeath, setIsSuddenDeath] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(10);
-  
-  // Stats
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [maxStreak, setMaxStreak] = useState(0);
-  
   // Visual/Animation States
   const [kickState, setKickState] = useState<'idle' | 'animating' | 'result_shown'>('idle');
   const kickStateRef = useRef(kickState);
@@ -66,6 +51,56 @@ export default function PenaltySolo() {
   const rafRef = useRef<number>(0);
   const idleRafRef = useRef<number>(0);
   const timerRef = useRef<any>(0);
+  
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  if (state?.gameMode !== 'penalty') return null;
+
+  const pst = state?.penaltyState;
+  const isPlaying = state?.status === 'playing';
+  const isFinished = state?.status === 'finished';
+  
+  const gameState = isFinished ? 'results' : (isPlaying ? 'playing' : 'setup');
+  const currentRound = state?.round || 1;
+  const turnRole = pst?.kickerId === playerId ? 'kicker' : 'goalie';
+  const currentStreak = 0;
+  const maxStreak = 0;
+  const isSuddenDeath = (state?.totalRounds || 10) > 10;
+  const timeLeft = pst?.countdown;
+  
+  const myPlayer = state?.players[playerId];
+  const allPl = Object.values(state?.players || {}) as RoomPlayer[];
+  const opp = allPl.find(p => p.id !== playerId) || allPl[0] as RoomPlayer;
+  
+  const playerScore = myPlayer?.score || 0;
+  const botScore = opp?.score || 0;
+  
+  const history = pst?.history || [];
+
+  const hasUpdatedRef = useRef(false);
+
+  useEffect(() => {
+    if (isFinished && !hasUpdatedRef.current) {
+      hasUpdatedRef.current = true;
+      const isPlayerWin = playerScore > botScore;
+      const willWin = isPlayerWin || (playerScore === botScore); // if draw, count as whatever
+      const playerSaves = history.filter(h => h.goalieId === playerId && !h.isGoal).length;
+      const playerName = storage.getPlayerName() || 'لاعب مجهول';
+      updatePenaltyStats(
+         playerId,
+         playerName,
+         isPlayerWin,
+         playerScore,
+         playerSaves
+      );
+    }
+  }, [isFinished]);
+  
+  const amReady = (turnRole === 'kicker') ? pst?.kickerReady : pst?.goalieReady;
+  const oppReady = (turnRole === 'kicker') ? pst?.goalieReady : pst?.kickerReady;
+
+  const canSelect = gameState === 'playing' && kickState === 'idle' && !amReady && timeLeft === undefined;
+
   
   // Physics & Drawing states
   const ball = useRef({ x: 0, y: 0, z: 0, scale: 1, vx: 0, vy: 0, vz: 0, rotation: 0, hitPost: false, finalX: 0 });
@@ -83,38 +118,14 @@ export default function PenaltySolo() {
     }
   }, [soundEnabled, gameState]);
 
-  // Main 10-second action timer
+  // Play tick sound when countdown is low
   useEffect(() => {
-    if (gameState === 'playing' && kickState === 'idle') {
-      setTimeLeft(10);
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            handleTimeOut();
-            return 0;
-          }
-          if (soundEnabled) audio.tick();
-          return prev - 1;
-        });
-      }, 1000);
+    if (gameState === 'playing' && timeLeft !== undefined && timeLeft <= 3 && timeLeft > 0) {
+      if (soundEnabled) audio.tick();
     }
-    return () => clearInterval(timerRef.current);
-  }, [gameState, kickState, turnRole, currentRound]);
+  }, [timeLeft, gameState, soundEnabled]);
 
-  const startGame = (diff: BotDifficulty) => {
-    setDifficulty(diff);
-    setCurrentRound(1);
-    setTurnRole('kicker');
-    setPlayerScore(0);
-    setBotScore(0);
-    setHistory([]);
-    setIsSuddenDeath(false);
-    setKickState('idle');
-    setAnnouncement(null);
-    setGameState('playing');
-    if (soundEnabled) audio.whistle();
-  };
+  
 
   const handleTimeOut = () => {
     if (kickStateRef.current !== 'idle') return;
@@ -126,47 +137,27 @@ export default function PenaltySolo() {
     }
   };
 
-  const getBotDecision = (role: TurnRole, diff: BotDifficulty): Direction => {
-    const r = Math.random();
-    if (role === 'kicker') {
-      if (diff === 'easy') {
-         if (r < 0.4) return 'center';
-         return r < 0.7 ? 'left' : 'right';
-      }
-      if (diff === 'medium') return ALL_DIRECTIONS[Math.floor(r * 3)];
-      return ALL_DIRECTIONS[Math.floor(r * 3)];
-    } else {
-      if (diff === 'easy') {
-         if (r < 0.5) return 'center';
-         return r < 0.75 ? 'left' : 'right';
-      } else if (diff === 'medium') {
-         return ALL_DIRECTIONS[Math.floor(r * 3)];
-      } else {
-         if (r < 0.2) return 'cheated' as any; 
-         return ALL_DIRECTIONS[Math.floor(r * 3)];
-      }
-    }
-  };
-
   const handlePlayerAction = (dir: Direction) => {
-    if (kickStateRef.current !== 'idle' || gameState !== 'playing') return;
-    clearInterval(timerRef.current);
-    
-    let playerDir = dir;
-    let botDir = getBotDecision(turnRole === 'kicker' ? 'goalie' : 'kicker', difficulty);
-    
-    if (botDir === ('cheated' as any)) {
-       botDir = playerDir;
-    }
-
-    const hitPost = turnRole === 'kicker' && Math.random() < 0.1 && botDir !== playerDir; 
-
-    if (turnRole === 'kicker') {
-       startAnimation(playerDir, botDir, false, hitPost);
-    } else {
-       startAnimation(botDir, playerDir, false, hitPost);
-    }
+    if (!canSelect) return;
+    sendPenaltyAction(turnRole, dir);
   };
+
+  useEffect(() => {
+    if (history.length > 0) {
+      const last = history[history.length - 1];
+      if (last && kickState === 'idle') {
+        const myDir = turnRole === 'kicker' ? last.kickerDir : last.goalieDir;
+        const oppDir = turnRole === 'kicker' ? last.goalieDir : last.kickerDir;
+        if (myDir && oppDir) {
+           startAnimation(
+            turnRole === 'kicker' ? myDir : oppDir, 
+            turnRole === 'kicker' ? oppDir : myDir, 
+            false, false
+          );
+        }
+      }
+    }
+  }, [history.length, kickState, turnRole]);
 
   const startAnimation = (kickDir: Direction, saveDir: Direction, forcedMiss: boolean, hitPost: boolean) => {
     setKickState('animating');
@@ -329,17 +320,9 @@ export default function PenaltySolo() {
           audio.crowdCheer();
        }
        if (turnRole === 'kicker') {
-         setPlayerScore(p => p + 1);
          setAnnouncement({ text: 'هدف!', color: 'text-emerald-400', sub: 'تسديدة رائعة!' });
-         setCurrentStreak(s => {
-            const newStreak = s + 1;
-            setMaxStreak(m => Math.max(m, newStreak));
-            return newStreak;
-         });
        } else {
-         setBotScore(b => b + 1);
          setAnnouncement({ text: 'هدف!', color: 'text-rose-400', sub: 'في الشباك!' });
-         setCurrentStreak(0);
        }
     } else {
        if (soundEnabled) {
@@ -348,81 +331,17 @@ export default function PenaltySolo() {
        
        if (turnRole === 'kicker') {
           setAnnouncement({ text: 'ضاعت!', color: 'text-rose-400', sub: forcedMiss ? 'تسديدة خارج المرمى!' : hitPost ? 'في القائم!' : 'الحارس منع الكرة' });
-          setCurrentStreak(0); // target missed
        } else {
           setShake(true);
           setTimeout(() => setShake(false), 500);
           if (soundEnabled) audio.crowdCheer();
           setAnnouncement({ text: 'تصدي!', color: 'text-emerald-400', sub: 'لقد أنقذت المرمى!' });
-          setCurrentStreak(s => {
-             const newStreak = s + 1;
-             setMaxStreak(m => Math.max(m, newStreak));
-             return newStreak;
-          });
-       }
-    }
-    
-    setHistory(prev => [...prev, {
-       kicker: turnRole === 'kicker' ? 'player' : 'bot',
-       direction: 'center',
-       goalieDirection: 'center',
-       isGoal
-    }]);
-
-    setTimeout(() => checkGameEnd(isGoal), 1000);
-  };
-
-  const checkGameEnd = (latestIsGoal: boolean) => {
-    const currentHistory = [...history, { kicker: turnRole === 'kicker' ? 'player' : 'bot', isGoal: latestIsGoal }];
-    const playerKicksTaken = currentHistory.filter((h: any) => h.kicker === 'player').length;
-    const botKicksTaken = currentHistory.filter((h: any) => h.kicker === 'bot').length;
-    
-    const playerRemaining = Math.max(0, TOTAL_ROUNDS_NORMAL - playerKicksTaken);
-    const botRemaining = Math.max(0, TOTAL_ROUNDS_NORMAL - botKicksTaken);
-    
-    // We also need the real scores since current state might be stale
-    const realPlayerScore = currentHistory.filter((h: any) => h.kicker === 'player' && h.isGoal).length;
-    const realBotScore = currentHistory.filter((h: any) => h.kicker === 'bot' && h.isGoal).length;
-
-    let winner: 'player' | 'bot' | null = null;
-    
-    if (!isSuddenDeath) {
-       if (realPlayerScore > realBotScore + botRemaining) winner = 'player';
-       if (realBotScore > realPlayerScore + playerRemaining) winner = 'bot';
-       
-       if (playerKicksTaken === 5 && botKicksTaken === 5 && !winner) {
-          if (realPlayerScore === realBotScore) {
-             setIsSuddenDeath(true);
-             setCurrentRound(6);
-             setTurnRole('kicker');
-             resetForNextAction();
-             return;
-          }
-       }
-    } else {
-       if (playerKicksTaken === botKicksTaken) {
-          if (realPlayerScore > realBotScore) winner = 'player';
-          if (realBotScore > realPlayerScore) winner = 'bot';
-       }
-    }
-    
-    if (winner || (playerKicksTaken >= 5 && botKicksTaken >= 5 && !isSuddenDeath)) {
-       if (!winner && realPlayerScore > realBotScore) winner = 'player';
-       if (!winner && realBotScore > realPlayerScore) winner = 'bot';
-       
-       if (winner) {
-          endGame(winner);
-          return;
        }
     }
 
-    if (turnRole === 'kicker') {
-       setTurnRole('goalie');
-    } else {
-       setTurnRole('kicker');
-       setCurrentRound(prev => prev + 1);
-    }
-    resetForNextAction();
+    setTimeout(() => {
+       resetForNextAction();
+    }, 1500);
   };
 
   const resetForNextAction = () => {
@@ -439,28 +358,7 @@ export default function PenaltySolo() {
      if (soundEnabled) audio.whistle();
   };
 
-  const endGame = (winner: 'player' | 'bot') => {
-    setGameState('results');
-    if (soundEnabled) {
-       if (winner === 'player') {
-          audio.crowdCheer();
-          setTimeout(() => audio.win(), 500);
-       }
-       else audio.wrong();
-    }
-    
-    const playerId = storage.getPlayerId();
-    const playerName = storage.getPlayerName() || 'لاعب مجهول';
-    const playerSaves = history.filter(h => h.kicker === 'bot' && !h.isGoal).length;
-    
-    updatePenaltyStats(
-      playerId,
-      playerName,
-      winner === 'player',
-      playerScore,
-      playerSaves
-    );
-  };
+  
 
   const drawCanvas = (initial = false) => {
     const canvas = canvasRef.current;
@@ -846,141 +744,75 @@ export default function PenaltySolo() {
       return () => { cancel = true; cancelAnimationFrame(idleRafRef.current); };
   }, [gameState, kickState]);
 
-  if (gameState === 'setup') {
-    return (
-      <div className="max-w-3xl mx-auto p-6 md:p-12 animate-fade-in">
-        <header className="flex items-center gap-4 mb-12">
-          <button onClick={() => navigate('/')} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
-            <ChevronRight className="w-6 h-6" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold font-heading text-emerald-400">ركلات الجزاء</h1>
-            <p className="text-slate-400 mt-1">اختبر مهاراتك في التسديد وحراسة المرمى (لعب فردي)</p>
-          </div>
-        </header>
-
-        <div className="bg-slate-800/80 p-8 rounded-3xl border border-slate-700 space-y-8 backdrop-blur-sm shadow-xl">
-          <div className="text-center">
-             <div className="bg-emerald-500/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-               <Goal className="w-12 h-12 text-emerald-400" />
-             </div>
-             <h2 className="text-2xl font-bold text-white mb-2">اختر صعوبة البوت</h2>
-             <p className="text-slate-400">ستلعب {TOTAL_ROUNDS_NORMAL} جولات. في كل جولة تسدد مرة وتتصدى مرة.</p>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-4">
-            {(['easy', 'medium', 'hard'] as BotDifficulty[]).map(d => (
-              <button
-                key={d}
-                onClick={() => startGame(d)}
-                className="bg-slate-900 border border-slate-700 p-6 rounded-2xl hover:border-emerald-500 hover:bg-emerald-500/10 transition-all group flex flex-col items-center hover:scale-105"
-              >
-                <div className={`text-3xl mb-3 ${d === 'easy' ? 'text-green-400' : d === 'medium' ? 'text-yellow-400' : 'text-red-400'}`}>
-                  {d === 'easy' ? '😊' : d === 'medium' ? '😐' : '🤖'}
-                </div>
-                <h3 className="font-bold text-white mb-1 text-lg">
-                  {d === 'easy' ? 'سهل' : d === 'medium' ? 'متوسط' : 'صعب'}
-                </h3>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  
 
   if (gameState === 'results') {
-    const isPlayerWin = playerScore > botScore;
     return (
       <div className="max-w-2xl mx-auto p-6 md:p-12 text-center animate-fade-in relative z-10 w-full">
         <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ${
-           isPlayerWin ? 'bg-emerald-500/20 shadow-emerald-500/20' : 'bg-rose-500/20 shadow-rose-500/20'
+           playerScore > botScore ? 'bg-emerald-500/20 shadow-emerald-500/20' : 'bg-rose-500/20 shadow-rose-500/20'
         }`}>
-          {isPlayerWin ? <Trophy className="w-16 h-16 text-emerald-400" /> : <XOctagon className="w-16 h-16 text-rose-500" />}
+          {playerScore > botScore ? <Trophy className="w-16 h-16 text-emerald-400" /> : <XOctagon className="w-16 h-16 text-rose-500" />}
         </div>
         
         <h2 className="text-5xl font-bold font-heading mb-4 text-white">
-          {isPlayerWin ? 'انتصار رائع!' : 'حظ أوفر المرة القادمة'}
+          {playerScore > botScore ? 'انتصار رائع!' : playerScore === botScore ? 'تعادل' : 'حظ أوفر المرة القادمة'}
         </h2>
         
         <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl mt-8">
            <div className="flex justify-between items-center px-4 md:px-12">
               <div className="text-center w-1/3">
                  <p className="text-slate-400 mb-2 font-bold">أنت</p>
-                 <p className={`text-6xl font-mono font-bold ${isPlayerWin ? 'text-emerald-400' : 'text-slate-300'}`}>{playerScore}</p>
+                 <p className={`text-6xl font-mono font-bold ${playerScore > botScore ? 'text-emerald-400' : 'text-slate-300'}`}>{playerScore}</p>
               </div>
               <div className="text-4xl text-slate-600 font-black">-</div>
-              <div className="text-center w-1/3">
-                 <p className="text-slate-400 mb-2 font-bold">البوت ({difficulty})</p>
-                 <p className={`text-6xl font-mono font-bold ${!isPlayerWin ? 'text-rose-400' : 'text-slate-300'}`}>{botScore}</p>
+               <div className="text-center w-1/3">
+                 <p className="text-slate-400 mb-2 font-bold">{opp.username}</p>
+                 <p className={`text-6xl font-mono font-bold ${botScore > playerScore ? 'text-rose-400' : 'text-slate-300'}`}>{botScore}</p>
               </div>
            </div>
            
-           <div className="mt-8 pt-8 border-t border-slate-700 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-slate-900 rounded-xl p-4 flex flex-col items-center text-center">
-                 <p className="text-slate-400 text-xs mb-1">طبيعة اللعب</p>
-                 <p className="text-lg font-bold text-sky-400">
-                    {difficulty === 'easy' ? 'سهل' : difficulty === 'medium' ? 'متوسط' : 'صعب'}
-                 </p>
-              </div>
+           <div className="mt-8 pt-8 border-t border-slate-700 grid grid-cols-2 gap-4">
               <div className="bg-slate-900 rounded-xl p-4 flex flex-col items-center text-center">
                  <p className="text-slate-400 text-xs mb-1">تسجيل</p>
                  <p className="text-lg font-bold text-white">
-                    {Math.round((history.filter(h => h.kicker === 'player' && h.isGoal).length / Math.max(1, history.filter(h => h.kicker === 'player').length)) * 100)}%
+                    {history.filter(h => h.kickerId === playerId && h.isGoal).length} أهداف
                  </p>
               </div>
               <div className="bg-slate-900 rounded-xl p-4 flex flex-col items-center text-center">
                  <p className="text-slate-400 text-xs mb-1">التصديات</p>
                  <p className="text-lg font-bold text-white flex items-center gap-1">
                     <Shield className="w-4 h-4 text-emerald-400" />
-                    {history.filter(h => h.kicker === 'bot' && !h.isGoal).length}
+                    {history.filter(h => h.goalieId === playerId && !h.isGoal).length}
                  </p>
               </div>
-              <div className="bg-slate-900 rounded-xl p-4 flex flex-col items-center text-center">
-                 <p className="text-slate-400 text-xs mb-1 flex items-center justify-center gap-1">
-                    <Star className="w-3 h-3 text-amber-400" />
-                    أفضل سلسلة
-                 </p>
-                 <p className="text-lg font-bold text-amber-400">
-                    {maxStreak}
-                 </p>
-              </div>
-           </div>
-           
-           {/* Achievements section */}
-           <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {maxStreak >= 5 && (
-                 <div className="px-3 py-1 bg-amber-500/10 text-amber-400 text-sm font-bold border border-amber-500/20 rounded-full flex items-center gap-1">
-                    <Medal className="w-4 h-4" /> مدفعجي (5 متتالية)
-                 </div>
-              )}
-              {isPlayerWin && botScore === 0 && (
-                 <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-sm font-bold border border-emerald-500/20 rounded-full flex items-center gap-1">
-                    <Shield className="w-4 h-4" /> شباك نظيفة
-                 </div>
-              )}
-              {history.filter(h => h.kicker === 'bot' && !h.isGoal).length >= 3 && (
-                 <div className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-sm font-bold border border-indigo-500/20 rounded-full flex items-center gap-1">
-                    <Shield className="w-4 h-4" /> جدار حديدي
-                 </div>
-              )}
            </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
+          {isHost && (
+            <button
+              onClick={() => startAg()}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+            >
+              <RotateCcw className="w-5 h-5" />
+              مجاراة جديدة
+            </button>
+          )}
+          {isHost && (
+            <button
+              onClick={() => changeGameMode('quiz')}
+              className="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+            >
+              تغيير الطور
+            </button>
+          )}
           <button
-            onClick={() => startGame(difficulty)}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
-          >
-            <RotateCcw className="w-5 h-5" />
-            إعادة المباراة
-          </button>
-          <button
-            onClick={() => { setGameState('setup'); }}
+            onClick={() => leaveRoom()}
             className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-all border border-slate-700 flex items-center justify-center gap-2"
           >
             <HomeIcon className="w-5 h-5" />
-            تغيير الصعوبة
+            مغادرة الغرفة
           </button>
         </div>
       </div>
@@ -993,9 +825,9 @@ export default function PenaltySolo() {
       
       {/* Top Header controls only */}
       <div className="flex justify-between items-center px-4 pt-2">
-         <button onClick={() => setGameState('setup')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold">
+         <button onClick={() => leaveRoom()} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold">
             <ChevronRight className="w-4 h-4" />
-            خروج
+            مغادرة الغرفة
          </button>
          <button 
            onClick={() => setSoundEnabled(!soundEnabled)}
@@ -1044,9 +876,9 @@ export default function PenaltySolo() {
                <div className="bg-slate-800 border border-slate-700 px-4 py-1.5 rounded-lg text-sm md:text-base font-bold text-slate-300">
                  {isSuddenDeath ? 'موت مفاجئ' : `جولة ${currentRound}/${TOTAL_ROUNDS_NORMAL}`}
                </div>
-               <div className={`flex items-center gap-1.5 min-w-[80px] justify-center px-4 py-1.5 rounded-lg text-lg font-bold border transition-colors ${timeLeft <= 3 ? 'bg-red-500/20 border-red-500/30 text-red-400 animate-pulse' : 'bg-slate-800 border-slate-700 text-sky-400'}`}>
+               <div className={`flex items-center gap-1.5 min-w-[80px] justify-center px-4 py-1.5 rounded-lg text-lg font-bold border transition-colors ${(timeLeft ?? 0) > 0 ? 'bg-red-500/20 border-red-500/30 text-red-400 animate-pulse' : 'bg-slate-800 border-slate-700 text-sky-400'}`}>
                   <Clock className="w-5 h-5" />
-                  <span className="font-mono">{timeLeft.toString().padStart(2, '0')}</span>
+                  <span className="font-mono text-sm">{timeLeft !== undefined ? `استعد: ${timeLeft}` : (kickState==='idle' ? 'العب' : 'شاهد')}</span>
                </div>
             </div>
             <div className="flex items-center justify-center gap-2">
@@ -1065,10 +897,11 @@ export default function PenaltySolo() {
 
       {/* Action Controls */}
       <div className="bg-slate-800 border-2 border-slate-700 border-t-0 p-4 md:p-6 rounded-b-3xl relative z-10 shadow-2xl">
-        <div className="grid grid-cols-3 gap-4 md:gap-6 h-28 md:h-32">
-          <button
+        {!amReady && (
+         <div className="grid grid-cols-3 gap-4 md:gap-6 h-28 md:h-32">
+           <button
              onClick={() => handlePlayerAction('right')}
-             disabled={kickState !== 'idle'}
+             disabled={!canSelect}
              className="relative flex flex-col justify-center items-center h-full rounded-2xl bg-gradient-to-tl from-indigo-700 to-indigo-500 hover:to-indigo-400 disabled:opacity-50 disabled:grayscale transition-all active:scale-90 shadow-[0_8px_0_rgb(49,46,129)] active:shadow-[0_0px_0_rgb(49,46,129)] active:translate-y-[8px] group"
           >
              <ChevronRight className="w-10 h-10 md:w-12 md:h-12 text-white/50 mb-1 group-hover:translate-x-2 transition-transform" />
@@ -1077,7 +910,7 @@ export default function PenaltySolo() {
           
           <button
              onClick={() => handlePlayerAction('center')}
-             disabled={kickState !== 'idle'}
+             disabled={!canSelect}
              className="relative flex flex-col justify-center items-center h-full rounded-2xl bg-gradient-to-t from-slate-700 to-slate-500 hover:to-slate-400 disabled:opacity-50 disabled:grayscale transition-all active:scale-90 shadow-[0_8px_0_rgb(51,65,85)] active:shadow-[0_0px_0_rgb(51,65,85)] active:translate-y-[8px] group border border-slate-500/50"
           >
              <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-white/50 mb-2 group-hover:scale-125 transition-transform" />
@@ -1086,13 +919,20 @@ export default function PenaltySolo() {
           
           <button
              onClick={() => handlePlayerAction('left')}
-             disabled={kickState !== 'idle'}
+             disabled={!canSelect}
              className="relative flex flex-col justify-center items-center h-full rounded-2xl bg-gradient-to-tr from-indigo-700 to-indigo-500 hover:to-indigo-400 disabled:opacity-50 disabled:grayscale transition-all active:scale-90 shadow-[0_8px_0_rgb(49,46,129)] active:shadow-[0_0px_0_rgb(49,46,129)] active:translate-y-[8px] group"
           >
              <ChevronLeft className="w-10 h-10 md:w-12 md:h-12 text-white/50 mb-1 group-hover:-translate-x-2 transition-transform" />
              <span className="text-white font-bold text-xl md:text-2xl drop-shadow-md">يسار</span>
           </button>
         </div>
+        )}
+        {amReady && kickState === 'idle' && (
+          <div className="flex flex-col items-center justify-center h-28 text-slate-400 font-bold">
+             <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+             في انتظار {opp.username}...
+          </div>
+        )}
       </div>
     </div>
   );

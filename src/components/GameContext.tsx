@@ -23,7 +23,7 @@ export interface GameContextType {
   state: GameState | null;
   playerId: string;
   isHost: boolean;
-  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: 'quiz' | 'fishing') => void;
+  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: 'quiz' | 'fishing' | 'penalty') => void;
   joinRoom: (roomId: string, password?: string, onError?: (err: string) => void) => void;
   sendMessage: (text: string) => void;
   toggleReady: () => void;
@@ -33,11 +33,12 @@ export interface GameContextType {
   kickPlayer: (playerId: string) => void;
   mutePlayer: (playerId: string, isMuted: boolean) => void;
   changeCategory: (category: string) => void;
-  changeGameMode: (gameMode: 'quiz' | 'fishing') => void;
+  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty') => void;
   forceNextQuestion: () => void;
   transferHost: (playerId: string) => void;
   catchFish: (fishId: number, points: number, fType: string) => void;
   spawnFish: (fish: any) => void;
+  sendPenaltyAction: (action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right') => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -145,6 +146,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAllAnswered = (currentState: GameState) => {
     if (currentState.status !== 'playing') return;
+
+    if (currentState.gameMode === 'penalty' && Object.keys(currentState.players).length < 2) {
+       // opponent disconnected
+       const remainingId = Object.keys(currentState.players)[0];
+       const updatedPlayers = { ...currentState.players };
+       if (remainingId) updatedPlayers[remainingId].score += 10;
+       
+       const finSt: GameState = { ...currentState, players: updatedPlayers, status: 'finished' };
+       setState(finSt);
+       broadcast({ type: 'STATE_UPDATE', state: finSt });
+       updatePublicRoom(finSt.roomId, { status: 'finished' });
+       return;
+    }
+
     const allAnswered = (Object.values(currentState.players) as RoomPlayer[]).every(p => p.hasAnsweredCurrentRound);
     if (allAnswered) {
       const revealingState: GameState = {
@@ -270,9 +285,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           if (currentState.gameMode === 'fishing') {
             startFishingMode(currentState);
+          } else if (currentState.gameMode === 'penalty') {
+            startPenaltyMode(currentState);
           } else {
             startNextRound(currentState);
           }
+        }
+        break;
+      case 'PENALTY_ACTION':
+        if (isHostRef.current && stateRef.current && stateRef.current.gameMode === 'penalty' && stateRef.current.penaltyState) {
+          handlePenaltyAction(message.playerId, message.action, message.dir);
         }
         break;
       case 'SUBMIT_ANSWER':
@@ -479,6 +501,139 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const startPenaltyMode = (currentState: GameState) => {
+    const pIds = Object.keys(currentState.players);
+    if (pIds.length < 2) return; // Need 2 players
+    const p1 = pIds[0];
+    const p2 = pIds[1];
+    
+    // reset scores
+    const updatedPlayers = { ...currentState.players };
+    updatedPlayers[p1] = { ...updatedPlayers[p1], score: 0 };
+    updatedPlayers[p2] = { ...updatedPlayers[p2], score: 0 };
+
+    const initialState: GameState = {
+      ...currentState,
+      status: 'playing',
+      round: 1, // 1 to 10 (5 each)
+      totalRounds: 10,
+      players: updatedPlayers,
+      penaltyState: {
+        kickerId: p1,
+        goalieId: p2,
+        kickerReady: false,
+        goalieReady: false,
+        history: [],
+        countdown: 3
+      }
+    };
+    
+    setState(initialState);
+    broadcast({ type: 'STATE_UPDATE', state: initialState });
+    updatePublicRoom(initialState.roomId, { status: 'playing' });
+
+    // Countdown
+    let cd = 3;
+    const interval = setInterval(() => {
+      cd--;
+      if (stateRef.current && stateRef.current.penaltyState) {
+         const s = { ...stateRef.current, penaltyState: { ...stateRef.current.penaltyState, countdown: cd > 0 ? cd : undefined } };
+         setState(s);
+         broadcast({ type: 'STATE_UPDATE', state: s });
+      }
+      if (cd <= 0) clearInterval(interval);
+    }, 1000);
+  };
+
+  const handlePenaltyAction = (playerId: string, action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right') => {
+    const st = stateRef.current;
+    if (!st || st.status !== 'playing' || !st.penaltyState) return;
+
+    const pst = st.penaltyState;
+    if (action === 'kicker' && playerId === pst.kickerId && !pst.kickerReady) {
+      pst.kickerDir = dir;
+      pst.kickerReady = true;
+    } else if (action === 'goalie' && playerId === pst.goalieId && !pst.goalieReady) {
+      pst.goalieDir = dir;
+      pst.goalieReady = true;
+    }
+
+    const nSt = { ...st, penaltyState: { ...pst } };
+    setState(nSt);
+    broadcast({ type: 'STATE_UPDATE', state: nSt });
+
+    // evaluate if both ready
+    if (nSt.penaltyState.kickerReady && nSt.penaltyState.goalieReady) {
+      const isGoal = nSt.penaltyState.kickerDir !== nSt.penaltyState.goalieDir;
+      const historyEntry = { kickerId: pst.kickerId, goalieId: pst.goalieId, kickerDir: pst.kickerDir, goalieDir: pst.goalieDir, isGoal };
+      const newHistory = [...pst.history, historyEntry];
+      
+      const p1S = newHistory.filter(h => h.kickerId === pst.kickerId && h.isGoal).length;
+      const p2S = newHistory.filter(h => h.kickerId === pst.goalieId && h.isGoal).length;
+
+      const upP = { ...nSt.players };
+      if (isGoal) {
+         upP[pst.kickerId].score += 1;
+      }
+
+      const nextRound = nSt.round + 1;
+      
+      const resultSt = { ...nSt, players: upP, penaltyState: { ...nSt.penaltyState, history: newHistory, kickerDir: pst.kickerDir, goalieDir: pst.goalieDir } };
+      
+      // Send result state so animation can play (reveal decisions)
+      setState(resultSt);
+      broadcast({ type: 'STATE_UPDATE', state: resultSt });
+
+      setTimeout(() => {
+         if (!stateRef.current) return;
+         // Proceed next round
+         if (nextRound > nSt.totalRounds) {
+            // Check for sudden death if tie
+            if (upP[pst.kickerId].score === upP[pst.goalieId].score) {
+               // sudden death: add 2 more rounds
+               const sdSt = {
+                 ...resultSt,
+                 totalRounds: resultSt.totalRounds + 2,
+                 round: nextRound,
+                 penaltyState: {
+                   ...resultSt.penaltyState,
+                   kickerId: pst.goalieId, // toggle
+                   goalieId: pst.kickerId,
+                   kickerReady: false,
+                   goalieReady: false,
+                   kickerDir: undefined,
+                   goalieDir: undefined
+                 }
+               };
+               setState(sdSt);
+               broadcast({ type: 'STATE_UPDATE', state: sdSt });
+            } else {
+               const finSt = { ...resultSt, status: 'finished' as const };
+               setState(finSt);
+               broadcast({ type: 'STATE_UPDATE', state: finSt });
+               updatePublicRoom(finSt.roomId, { status: 'finished' });
+            }
+         } else {
+            const nrSt = {
+              ...resultSt,
+              round: nextRound,
+              penaltyState: {
+                 ...resultSt.penaltyState,
+                 kickerId: pst.goalieId, // toggle turn
+                 goalieId: pst.kickerId,
+                 kickerReady: false,
+                 goalieReady: false,
+                 kickerDir: undefined,
+                 goalieDir: undefined
+              }
+            };
+            setState(nrSt);
+            broadcast({ type: 'STATE_UPDATE', state: nrSt });
+         }
+      }, 3000);
+    }
+  };
+
   const startFishingMode = (currentState: GameState) => {
     let duration = 60; // default duration
 
@@ -627,12 +782,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAllAnswered(newState);
   };
 
-  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' = 'quiz') => {
+  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' = 'quiz') => {
     intentionalLeaveRef.current = false;
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
-    const roomCategory = gameMode === 'fishing' ? '🎣 صيد السمك' : category || '🧠 معلومات عامة';
+    const roomCategory = gameMode === 'fishing' ? '🎣 صيد السمك' : gameMode === 'penalty' ? '⚽ ركلات الجزاء' : category || '🧠 معلومات عامة';
     
     setPlayerId(myId);
     setIsHost(true);
@@ -949,7 +1104,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const changeGameMode = React.useCallback((gameMode: 'quiz' | 'fishing') => {
+  const changeGameMode = React.useCallback((gameMode: 'quiz' | 'fishing' | 'penalty') => {
     if (isHostRef.current) {
       handleMessage({ type: 'CHANGE_MODE', gameMode });
     }
@@ -981,8 +1136,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const sendPenaltyAction = React.useCallback((action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right') => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'PENALTY_ACTION', playerId, action, dir });
+    } else if (hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ type: 'PENALTY_ACTION', playerId, action, dir });
+    }
+  }, [playerId]);
+
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, forceNextQuestion, transferHost, catchFish, spawnFish }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction }}>
       {children}
     </GameContext.Provider>
   );

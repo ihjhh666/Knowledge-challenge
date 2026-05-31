@@ -16,9 +16,6 @@ class WebAudioEngine {
     }
   }
 
-  public setEnabled(val: boolean) {
-    this.enabled = val;
-  }
 
   private playTone(oscType: OscillatorType, freq: number, duration: number, vol = 0.1, slideFreq?: number) {
     if (!this.enabled) return;

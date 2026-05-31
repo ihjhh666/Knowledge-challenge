@@ -4,6 +4,7 @@ import { useGame } from '../components/GameContext';
 import Lobby from './Lobby';
 import PlayingField from './PlayingField';
 import FishingRoom from './FishingRoom';
+import PenaltyRoom from './PenaltyRoom';
 import Chat from './Chat';
 import { LogOut, Users, Lock } from 'lucide-react';
 import { storage } from '../lib/storage';
@@ -178,8 +179,9 @@ export default function Room() {
       <div className="flex-1 grid lg:grid-cols-3 gap-8 pb-8 items-start">
         <div className="lg:col-span-2 space-y-6">
           {state.status === 'waiting' && <Lobby />}
-          {state.status !== 'waiting' && state.gameMode !== 'fishing' && <PlayingField />}
+          {state.status !== 'waiting' && state.gameMode !== 'fishing' && state.gameMode !== 'penalty' && <PlayingField />}
           {state.status !== 'waiting' && state.gameMode === 'fishing' && <FishingRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'penalty' && <PenaltyRoom />}
         </div>
         
         <div className="h-[500px] lg:h-[calc(100vh-160px)] lg:sticky lg:top-8 flex flex-col">
