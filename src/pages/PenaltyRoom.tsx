@@ -99,7 +99,7 @@ export default function PenaltyRoom() {
   const amReady = (turnRole === 'kicker') ? pst?.kickerReady : pst?.goalieReady;
   const oppReady = (turnRole === 'kicker') ? pst?.goalieReady : pst?.kickerReady;
 
-  const canSelect = gameState === 'playing' && kickState === 'idle' && !amReady && timeLeft === undefined;
+  const canSelect = gameState === 'playing' && kickState === 'idle' && !amReady;
 
   
   // Physics & Drawing states
@@ -118,12 +118,26 @@ export default function PenaltyRoom() {
     }
   }, [soundEnabled, gameState]);
 
-  // Play tick sound when countdown is low
+  const [localTimeLeft, setLocalTimeLeft] = useState(15);
+  
   useEffect(() => {
-    if (gameState === 'playing' && timeLeft !== undefined && timeLeft <= 3 && timeLeft > 0) {
-      if (soundEnabled) audio.tick();
+    if (gameState === 'playing' && kickState === 'idle' && !amReady) {
+      setLocalTimeLeft(15);
+      timerRef.current = setInterval(() => {
+        setLocalTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            return 0;
+          }
+          if (soundEnabled && prev <= 4) audio.tick();
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      clearInterval(timerRef.current);
     }
-  }, [timeLeft, gameState, soundEnabled]);
+    return () => clearInterval(timerRef.current);
+  }, [gameState, kickState, turnRole, currentRound, amReady]);
 
   
 
@@ -142,13 +156,16 @@ export default function PenaltyRoom() {
     sendPenaltyAction(turnRole, dir);
   };
 
+  const lastAnimatedRoundRef = useRef(0);
+
   useEffect(() => {
-    if (history.length > 0) {
+    if (history.length > 0 && history.length > lastAnimatedRoundRef.current) {
       const last = history[history.length - 1];
       if (last && kickState === 'idle') {
         const myDir = turnRole === 'kicker' ? last.kickerDir : last.goalieDir;
         const oppDir = turnRole === 'kicker' ? last.goalieDir : last.kickerDir;
         if (myDir && oppDir) {
+           lastAnimatedRoundRef.current = history.length;
            startAnimation(
             turnRole === 'kicker' ? myDir : oppDir, 
             turnRole === 'kicker' ? oppDir : myDir, 
@@ -824,17 +841,24 @@ export default function PenaltyRoom() {
     <div className="max-w-2xl mx-auto p-2 flex flex-col h-[100dvh] justify-between pb-4 gap-2 animate-fade-in w-full">
       
       {/* Top Header controls only */}
-      <div className="flex justify-between items-center px-4 pt-2">
-         <button onClick={() => leaveRoom()} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold">
-            <ChevronRight className="w-4 h-4" />
-            مغادرة الغرفة
-         </button>
-         <button 
-           onClick={() => setSoundEnabled(!soundEnabled)}
-           className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-         >
-            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-         </button>
+      <div className="flex flex-col gap-2 px-4 pt-2">
+         <div className="flex justify-between items-center">
+            <button onClick={() => leaveRoom()} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold">
+                <ChevronRight className="w-4 h-4" />
+                مغادرة الغرفة
+            </button>
+            <button 
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            >
+               {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+         </div>
+         <div className="flex justify-center mb-2">
+            <div className={`px-6 py-2 rounded-full font-black text-lg md:text-xl shadow-lg border-2 \${turnRole === 'kicker' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'}`}>
+                {turnRole === 'kicker' ? 'أنت المسدد ⚽' : 'أنت الحارس 🧤'}
+            </div>
+         </div>
       </div>
 
       {/* Main Canvas Area */}
@@ -845,10 +869,10 @@ export default function PenaltyRoom() {
          />
          
          {/* Overlays */}
-         {kickState === 'idle' && (
+         {kickState === 'idle' && !amReady && localTimeLeft <= 3 && localTimeLeft > 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 transition-opacity">
-               <span key={timeLeft} className="text-8xl md:text-9xl font-black text-white/30 drop-shadow-2xl animate-pulse">
-                  {timeLeft}
+               <span key={localTimeLeft} className="text-8xl md:text-9xl font-black text-rose-500/50 drop-shadow-2xl animate-pulse">
+                  {localTimeLeft}
                </span>
             </div>
          )}
@@ -876,9 +900,9 @@ export default function PenaltyRoom() {
                <div className="bg-slate-800 border border-slate-700 px-4 py-1.5 rounded-lg text-sm md:text-base font-bold text-slate-300">
                  {isSuddenDeath ? 'موت مفاجئ' : `جولة ${currentRound}/${TOTAL_ROUNDS_NORMAL}`}
                </div>
-               <div className={`flex items-center gap-1.5 min-w-[80px] justify-center px-4 py-1.5 rounded-lg text-lg font-bold border transition-colors ${(timeLeft ?? 0) > 0 ? 'bg-red-500/20 border-red-500/30 text-red-400 animate-pulse' : 'bg-slate-800 border-slate-700 text-sky-400'}`}>
+               <div className={`flex items-center gap-1.5 min-w-[80px] justify-center px-4 py-1.5 rounded-lg text-lg font-bold border transition-colors ${localTimeLeft <= 5 && !amReady ? 'bg-red-500/20 border-red-500/30 text-red-400 animate-pulse' : 'bg-slate-800 border-slate-700 text-sky-400'}`}>
                   <Clock className="w-5 h-5" />
-                  <span className="font-mono text-sm">{timeLeft !== undefined ? `استعد: ${timeLeft}` : (kickState==='idle' ? 'العب' : 'شاهد')}</span>
+                  <span className="font-mono text-sm">{!amReady ? `العب (${localTimeLeft})` : (kickState==='idle' ? 'شاهد' : 'شاهد')}</span>
                </div>
             </div>
             <div className="flex items-center justify-center gap-2">
@@ -889,8 +913,8 @@ export default function PenaltyRoom() {
             </div>
         </div>
 
-        <div className="flex flex-col items-center gap-1 w-20">
-            <span className="text-sm text-slate-400 font-bold tracking-wider">البوت</span>
+        <div className="flex flex-col items-center gap-1 w-20 truncate">
+            <span className="text-sm text-slate-400 font-bold tracking-wider truncate w-full flex justify-center" title={opp.username}>{opp.username}</span>
             <span className="text-4xl md:text-5xl font-mono font-black text-rose-400 leading-none">{botScore}</span>
         </div>
       </div>

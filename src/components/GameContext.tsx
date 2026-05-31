@@ -524,53 +524,67 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         kickerReady: false,
         goalieReady: false,
         history: [],
-        countdown: 3
+        countdown: undefined
       }
     };
     
     setState(initialState);
     broadcast({ type: 'STATE_UPDATE', state: initialState });
     updatePublicRoom(initialState.roomId, { status: 'playing' });
+    startPenaltyTimer();
+  };
 
-    // Countdown
-    let cd = 3;
-    const interval = setInterval(() => {
-      cd--;
-      if (stateRef.current && stateRef.current.penaltyState) {
-         const s = { ...stateRef.current, penaltyState: { ...stateRef.current.penaltyState, countdown: cd > 0 ? cd : undefined } };
-         setState(s);
-         broadcast({ type: 'STATE_UPDATE', state: s });
+  const penaltyTimeoutRef = useRef<any>(null);
+
+  const startPenaltyTimer = () => {
+    if (penaltyTimeoutRef.current) clearTimeout(penaltyTimeoutRef.current);
+    penaltyTimeoutRef.current = setTimeout(() => {
+      // Time is up!
+      const st = stateRef.current;
+      if (st && st.status === 'playing' && st.gameMode === 'penalty' && st.penaltyState) {
+         console.log("Penalty round timeout! Auto-choosing center for those still pending.");
+         const cmds: {action: 'kicker'|'goalie', id: string}[] = [];
+         if (!st.penaltyState.kickerReady) cmds.push({action: 'kicker', id: st.penaltyState.kickerId});
+         if (!st.penaltyState.goalieReady) cmds.push({action: 'goalie', id: st.penaltyState.goalieId});
+         
+         cmds.forEach(c => handlePenaltyAction(c.id, c.action, 'center'));
       }
-      if (cd <= 0) clearInterval(interval);
-    }, 1000);
+    }, 15000); // 15 seconds timeout per round
   };
 
   const handlePenaltyAction = (playerId: string, action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right') => {
     const st = stateRef.current;
-    if (!st || st.status !== 'playing' || !st.penaltyState) return;
+    if (!st || st.status !== 'playing' || !st.penaltyState) {
+      console.log("handlePenaltyAction abort: game not playing");
+      return;
+    }
 
-    const pst = st.penaltyState;
+    console.log("PENALTY_ACTION Received:", { playerId, action, dir });
+
+    const pst = { ...st.penaltyState };
     if (action === 'kicker' && playerId === pst.kickerId && !pst.kickerReady) {
       pst.kickerDir = dir;
       pst.kickerReady = true;
     } else if (action === 'goalie' && playerId === pst.goalieId && !pst.goalieReady) {
       pst.goalieDir = dir;
       pst.goalieReady = true;
+    } else {
+      console.log("Invalid action or Already ready");
+      return; // Do nothing if already ready or doesn't match ID
     }
 
-    const nSt = { ...st, penaltyState: { ...pst } };
+    const nSt = { ...st, penaltyState: pst };
     setState(nSt);
     broadcast({ type: 'STATE_UPDATE', state: nSt });
 
     // evaluate if both ready
     if (nSt.penaltyState.kickerReady && nSt.penaltyState.goalieReady) {
+      if (penaltyTimeoutRef.current) clearTimeout(penaltyTimeoutRef.current);
+
       const isGoal = nSt.penaltyState.kickerDir !== nSt.penaltyState.goalieDir;
       const historyEntry = { kickerId: pst.kickerId, goalieId: pst.goalieId, kickerDir: pst.kickerDir, goalieDir: pst.goalieDir, isGoal };
       const newHistory = [...pst.history, historyEntry];
       
-      const p1S = newHistory.filter(h => h.kickerId === pst.kickerId && h.isGoal).length;
-      const p2S = newHistory.filter(h => h.kickerId === pst.goalieId && h.isGoal).length;
-
       const upP = { ...nSt.players };
       if (isGoal) {
          upP[pst.kickerId].score += 1;
@@ -602,11 +616,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                    kickerReady: false,
                    goalieReady: false,
                    kickerDir: undefined,
-                   goalieDir: undefined
+                   goalieDir: undefined,
+                   countdown: undefined
                  }
                };
                setState(sdSt);
                broadcast({ type: 'STATE_UPDATE', state: sdSt });
+               startPenaltyTimer();
             } else {
                const finSt = { ...resultSt, status: 'finished' as const };
                setState(finSt);
@@ -624,13 +640,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                  kickerReady: false,
                  goalieReady: false,
                  kickerDir: undefined,
-                 goalieDir: undefined
+                 goalieDir: undefined,
+                 countdown: undefined
               }
             };
             setState(nrSt);
             broadcast({ type: 'STATE_UPDATE', state: nrSt });
+            startPenaltyTimer();
          }
-      }, 3000);
+      }, 3500);
     }
   };
 
