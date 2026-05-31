@@ -14,7 +14,7 @@ const CATEGORIES = [
 ];
 
 export default function Lobby() {
-  const { state, toggleReady, playerId, isHost, startGame, kickPlayer, mutePlayer, changeCategory, transferHost } = useGame();
+  const { state, toggleReady, playerId, isHost, startGame, kickPlayer, mutePlayer, changeCategory, changeGameMode, transferHost } = useGame();
   const [showSettings, setShowSettings] = useState(false);
 
   if (!state) return null;
@@ -41,7 +41,12 @@ export default function Lobby() {
             <h2 className="text-xl font-bold font-heading text-slate-200">اللاعبين في الغرفة</h2>
             {state.category && (
                <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-md text-xs font-bold border border-indigo-500/30">
-                 {state.category}
+                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.category}
+               </span>
+            )}
+            {state.gameMode === 'fishing' && (
+               <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md text-xs font-bold border border-emerald-500/30">
+                 صيد جماعي
                </span>
             )}
             {isHost && (
@@ -70,20 +75,35 @@ export default function Lobby() {
       </div>
 
       {isHost && showSettings && (
-        <div className="bg-slate-800/80 border border-indigo-500/30 p-6 rounded-3xl animate-fade-in">
-          <h3 className="text-slate-200 font-bold mb-4">إعدادات الغرفة المباشرة</h3>
+        <div className="bg-slate-800/80 border border-indigo-500/30 p-6 rounded-3xl animate-fade-in space-y-4">
+          <h3 className="text-slate-200 font-bold mb-2">إعدادات الغرفة المباشرة</h3>
+          
           <div>
-            <label className="block text-slate-400 text-sm mb-2">تريد تغيير التصنيف؟</label>
+            <label className="block text-slate-400 text-sm mb-2">نوع اللعبة</label>
             <select 
-              value={state.category}
-              onChange={(e) => changeCategory(e.target.value)}
+              value={state.gameMode || 'quiz'}
+              onChange={(e) => changeGameMode(e.target.value as 'quiz' | 'fishing')}
               className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none"
             >
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
+              <option value="quiz">🧠 تحدي المعرفة</option>
+              <option value="fishing">🎣 صيد السمك</option>
             </select>
           </div>
+
+          {(state.gameMode === 'quiz' || !state.gameMode) && (
+            <div>
+              <label className="block text-slate-400 text-sm mb-2">تغيير التصنيف</label>
+              <select 
+                value={state.category}
+                onChange={(e) => changeCategory(e.target.value)}
+                className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none"
+              >
+                {CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       )}
 

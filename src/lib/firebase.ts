@@ -21,9 +21,10 @@ export interface PublicRoom {
   roomId: string;
   hostName: string;
   category: string;
+  gameMode?: 'quiz' | 'fishing';
   playerCount: number;
   maxPlayers: number;
-  status: 'waiting' | 'playing' | 'finished';
+  status: 'waiting' | 'playing' | 'finished' | 'revealing';
   createdAt: number;
   lastActiveAt?: number;
   roomVisibility: 'public' | 'private' | 'link' | 'password';

@@ -31,6 +31,7 @@ export type RoomVisibility = 'public' | 'private' | 'link' | 'password';
 export interface GameState {
   roomId: string;
   category?: string;
+  gameMode?: 'quiz' | 'fishing';
   roomVisibility?: RoomVisibility;
   maxPlayers?: number;
   password?: string;
@@ -38,6 +39,9 @@ export interface GameState {
   players: Record<string, RoomPlayer>;
   messages: ChatMessage[];
   currentQuestion?: Question;
+  fishingTimeLeft?: number;
+  fishes?: any[];
+  caughtFishIds?: number[];
   round: number;
   totalRounds: number;
   roundStartTime?: number;
@@ -56,7 +60,10 @@ export type PeerMessage =
   | { type: 'KICKED', reason: string }
   | { type: 'MUTE', playerId: string, isMuted: boolean }
   | { type: 'CHANGE_CATEGORY', category: string }
+  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' }
   | { type: 'FORCE_NEXT_QUESTION' }
   | { type: 'LEAVE', playerId: string }
   | { type: 'TRANSFER_HOST', playerId: string }
-  | { type: 'PING', playerId: string };
+  | { type: 'PING', playerId: string }
+  | { type: 'FISH_SPAWN', fish: any }
+  | { type: 'FISH_CATCH', playerId: string, fishId: number, points: number, fType: string };

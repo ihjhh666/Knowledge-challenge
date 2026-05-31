@@ -23,7 +23,7 @@ export interface GameContextType {
   state: GameState | null;
   playerId: string;
   isHost: boolean;
-  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number) => void;
+  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: 'quiz' | 'fishing') => void;
   joinRoom: (roomId: string, password?: string, onError?: (err: string) => void) => void;
   sendMessage: (text: string) => void;
   toggleReady: () => void;
@@ -33,8 +33,11 @@ export interface GameContextType {
   kickPlayer: (playerId: string) => void;
   mutePlayer: (playerId: string, isMuted: boolean) => void;
   changeCategory: (category: string) => void;
+  changeGameMode: (gameMode: 'quiz' | 'fishing') => void;
   forceNextQuestion: () => void;
   transferHost: (playerId: string) => void;
+  catchFish: (fishId: number, points: number, fType: string) => void;
+  spawnFish: (fish: any) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -50,6 +53,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const stateRef = useRef<GameState | null>(null);
   const isHostRef = useRef<boolean>(false);
   const intentionalLeaveRef = useRef<boolean>(false);
+  const fishingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastPingTimes = useRef<Record<string, number>>({});
 
   // Sync state ref
@@ -260,11 +264,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (currentState.status === 'finished') {
             const updatedPlayers = { ...currentState.players };
             (Object.values(updatedPlayers) as RoomPlayer[]).forEach(p => {
-              updatedPlayers[p.id] = { ...p, score: 0 };
+              updatedPlayers[p.id] = { ...p, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false };
             });
             currentState = { ...currentState, players: updatedPlayers, round: 0 };
           }
-          startNextRound(currentState);
+          if (currentState.gameMode === 'fishing') {
+            startFishingMode(currentState);
+          } else {
+            startNextRound(currentState);
+          }
         }
         break;
       case 'SUBMIT_ANSWER':
@@ -320,6 +328,41 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            setState(newState);
            broadcast({ type: 'STATE_UPDATE', state: newState });
            updatePublicRoom(newState.roomId, { category: message.category });
+        }
+        break;
+      case 'CHANGE_MODE':
+        if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
+           const newState = { ...stateRef.current, gameMode: message.gameMode, category: message.gameMode === 'fishing' ? '🎣 صيد السمك' : stateRef.current.category };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+           updatePublicRoom(newState.roomId, { gameMode: message.gameMode, category: newState.category });
+        }
+        break;
+      case 'FISH_SPAWN':
+        if (isHostRef.current) {
+          broadcast(message);
+          window.dispatchEvent(new CustomEvent('fishing_event', { detail: message }));
+        }
+        break;
+      case 'FISH_CATCH':
+        if (isHostRef.current && stateRef.current) {
+          const caughtList = stateRef.current.caughtFishIds || [];
+          if (caughtList.includes(message.fishId)) {
+             return; // Already caught by someone else
+          }
+          
+          const newCaughtList = [...caughtList, message.fishId];
+          const newPlayers = { ...stateRef.current.players };
+          if (newPlayers[message.playerId]) {
+             newPlayers[message.playerId] = {
+                ...newPlayers[message.playerId],
+                score: newPlayers[message.playerId].score + message.points
+             };
+          }
+          const newState = { ...stateRef.current, players: newPlayers, caughtFishIds: newCaughtList };
+          setState(newState);
+          broadcast(message);
+          window.dispatchEvent(new CustomEvent('fishing_event', { detail: message }));
         }
         break;
       case 'FORCE_NEXT_QUESTION':
@@ -436,6 +479,47 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const startFishingMode = (currentState: GameState) => {
+    let duration = 60; // default duration
+
+    const initialState = {
+      ...currentState,
+      status: 'playing' as const,
+      fishingTimeLeft: duration,
+      fishes: [],
+      caughtFishIds: []
+    };
+    
+    setState(initialState);
+    broadcast({ type: 'STATE_UPDATE', state: initialState });
+    updatePublicRoom(initialState.roomId, { status: 'playing' });
+
+    if (fishingIntervalRef.current) clearInterval(fishingIntervalRef.current);
+    
+    fishingIntervalRef.current = setInterval(() => {
+      const state = stateRef.current;
+      if (!state || state.status !== 'playing') {
+        if (fishingIntervalRef.current) clearInterval(fishingIntervalRef.current);
+        return;
+      }
+      
+      const newTime = (state.fishingTimeLeft || 0) - 1;
+      if (newTime <= 0) {
+        if (fishingIntervalRef.current) clearInterval(fishingIntervalRef.current);
+        const finalState = { ...state, status: 'finished' as const, fishingTimeLeft: 0 };
+        setState(finalState);
+        broadcast({ type: 'STATE_UPDATE', state: finalState });
+        updatePublicRoom(finalState.roomId, { status: 'finished' });
+        return;
+      }
+      
+      const newState = { ...state, fishingTimeLeft: newTime };
+      setState(newState);
+      // We broadcast TIME updates every round (every 1 second)
+      broadcast({ type: 'STATE_UPDATE', state: newState });
+    }, 1000);
+  };
+
   const startNextRound = (currentState: GameState) => {
     let nextRound = currentState.round + 1;
     if (nextRound > currentState.totalRounds) {
@@ -543,12 +627,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAllAnswered(newState);
   };
 
-  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10) => {
+  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' = 'quiz') => {
     intentionalLeaveRef.current = false;
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
-    const roomCategory = category || '🧠 معلومات عامة';
+    const roomCategory = gameMode === 'fishing' ? '🎣 صيد السمك' : category || '🧠 معلومات عامة';
     
     setPlayerId(myId);
     setIsHost(true);
@@ -559,6 +643,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     peer.on('open', () => {
       const initialState: GameState = {
         roomId,
+        gameMode,
         category: roomCategory,
         roomVisibility,
         maxPlayers,
@@ -667,6 +752,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           rejectedReason = msg.reason;
           if (onError) onError(msg.reason);
           conn.close();
+        } else if (msg.type === 'FISH_CATCH' || msg.type === 'FISH_SPAWN') {
+          window.dispatchEvent(new CustomEvent('fishing_event', { detail: msg }));
         }
       });
       
@@ -862,6 +949,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const changeGameMode = React.useCallback((gameMode: 'quiz' | 'fishing') => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'CHANGE_MODE', gameMode });
+    }
+  }, []);
+
+  const catchFish = React.useCallback((fishId: number, points: number, fType: string) => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'FISH_CATCH', playerId, fishId, points, fType });
+    } else if (hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ type: 'FISH_CATCH', playerId, fishId, points, fType });
+    }
+  }, [playerId]);
+
+  const spawnFish = React.useCallback((fish: any) => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'FISH_SPAWN', fish });
+    }
+  }, []);
+
   const forceNextQuestion = React.useCallback(() => {
     if (isHostRef.current) {
       handleMessage({ type: 'FORCE_NEXT_QUESTION' });
@@ -875,7 +982,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, forceNextQuestion, transferHost }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, forceNextQuestion, transferHost, catchFish, spawnFish }}>
       {children}
     </GameContext.Provider>
   );

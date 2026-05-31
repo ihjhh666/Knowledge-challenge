@@ -29,7 +29,8 @@ export default function Home() {
     category: CATEGORIES[0].id,
     type: 'public' as RoomVisibility,
     password: '',
-    maxPlayers: 10
+    maxPlayers: 10,
+    gameMode: 'quiz' as 'quiz' | 'fishing'
   });
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [joinError, setJoinError] = useState('');
@@ -73,7 +74,7 @@ export default function Home() {
 
   const handleCreateRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    createRoom(createConfig.category, createConfig.type, createConfig.password, createConfig.maxPlayers);
+    createRoom(createConfig.gameMode === 'fishing' ? '🎣 صيد السمك' : createConfig.category, createConfig.type, createConfig.password, createConfig.maxPlayers, createConfig.gameMode);
   };
 
   const handleJoinRoom = (e: React.FormEvent) => {
@@ -162,21 +163,45 @@ export default function Home() {
         <form onSubmit={handleCreateRoom} className="space-y-6">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
             <div>
-              <label className="block text-slate-400 mb-3 font-bold">تصنيف الغرفة</label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    type="button"
-                    key={cat.id}
-                    onClick={() => setCreateConfig({...createConfig, category: cat.id})}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.category === cat.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                  >
-                    <cat.icon className={`w-6 h-6 ${cat.color}`} />
-                    <span className="text-sm font-bold text-slate-200">{cat.name}</span>
-                  </button>
-                ))}
+              <label className="block text-slate-400 mb-3 font-bold">نمط اللعب</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz'})}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'quiz' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                >
+                  <Brain className="w-6 h-6 text-indigo-400" />
+                  <span className="text-sm font-bold text-slate-200">تحدي المعرفة</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing'})}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'fishing' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                >
+                  <div className="text-2xl">🎣</div>
+                  <span className="text-sm font-bold text-slate-200">صيد السمك</span>
+                </button>
               </div>
             </div>
+
+            {createConfig.gameMode === 'quiz' && (
+              <div>
+                <label className="block text-slate-400 mb-3 font-bold">تصنيف الغرفة</label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      type="button"
+                      key={cat.id}
+                      onClick={() => setCreateConfig({...createConfig, category: cat.id})}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.category === cat.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                    >
+                      <cat.icon className={`w-6 h-6 ${cat.color}`} />
+                      <span className="text-sm font-bold text-slate-200">{cat.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-slate-400 mb-3 font-bold">نوع الغرفة</label>
@@ -404,7 +429,9 @@ export default function Home() {
                       {room.status === 'playing' ? 'بدأت اللعبة' : 'في الانتظار'}
                     </span>
                   </div>
-                  <h3 className="font-bold text-white text-lg pr-8">{room.category}</h3>
+                  <h3 className="font-bold text-white text-lg pr-8">
+                    {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.category}
+                  </h3>
                   <p className="text-slate-400 text-sm mt-1">المضيف: {room.hostName}</p>
                 </div>
                 
