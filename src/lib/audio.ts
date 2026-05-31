@@ -124,6 +124,115 @@ class WebAudioEngine {
     setTimeout(() => this.playTone('sine', 659.25, 0.2, 0.1), 300);
     setTimeout(() => this.playTone('sine', 880, 0.8, 0.15), 450);
   }
+
+  // Football sounds
+  private bgNoise: AudioBufferSourceNode | null = null;
+  private bgGain: GainNode | null = null;
+
+  public startCrowd() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx || this.bgNoise) return;
+
+    const bufferSize = this.ctx.sampleRate * 2;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 300; // Low rumble
+    
+    this.bgNoise = this.ctx.createBufferSource();
+    this.bgNoise.buffer = buffer;
+    this.bgNoise.loop = true;
+    
+    this.bgGain = this.ctx.createGain();
+    this.bgGain.gain.value = 0.015; // Very soft
+
+    this.bgNoise.connect(filter);
+    filter.connect(this.bgGain);
+    this.bgGain.connect(this.ctx.destination);
+    
+    this.bgNoise.start();
+  }
+
+  public stopCrowd() {
+    if (this.bgNoise) {
+      try { this.bgNoise.stop(); } catch(e){}
+      this.bgNoise.disconnect();
+      this.bgNoise = null;
+    }
+    if (this.bgGain) {
+      this.bgGain.disconnect();
+      this.bgGain = null;
+    }
+  }
+
+  public setEnabled(enabled: boolean) {
+    this.enabled = enabled;
+    if (!enabled) {
+       this.stopCrowd();
+    }
+  }
+
+  public whistle() {
+    if (!this.enabled) return;
+    this.init();
+    // High pitched short whistle
+    this.playTone('square', 2000, 0.2, 0.1, 1800);
+    setTimeout(() => this.playTone('square', 2000, 0.4, 0.1, 1800), 200);
+  }
+
+  public kick() {
+    // Deep thud
+    this.playTone('square', 150, 0.15, 0.2, 50);
+    this.playTone('triangle', 300, 0.1, 0.1, 100);
+  }
+
+  public postHit() {
+    // Metal clang
+    this.playChord('triangle', [800, 1200, 1600], 0.3, 0.1);
+  }
+
+  public slide() {
+    // Goal save friction
+    this.playTone('sawtooth', 200, 0.3, 0.15, 50);
+  }
+
+  public crowdCheer() {
+    // White noise approximation for crowd cheer spike
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const bufferSize = this.ctx.sampleRate * 2; 
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.5;
+    }
+    
+    // Apply lowpass filter
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 1200;
+    
+    const noiseSource = this.ctx.createBufferSource();
+    noiseSource.buffer = buffer;
+    
+    const gainNode = this.ctx.createGain();
+    gainNode.gain.setValueAtTime(0.01, this.ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.15, this.ctx.currentTime + 0.3);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.8);
+    
+    noiseSource.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(this.ctx.destination);
+    
+    noiseSource.start();
+  }
 }
 
 export const audio = new WebAudioEngine();

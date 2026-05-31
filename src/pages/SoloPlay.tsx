@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Brain, Trophy, ChevronRight, X, Clock, Target } from 'lucide-react';
 import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC, MATH_EXPANDED as MATH } from '../lib/dynamicQuestions';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 import { updatePlayerStats } from '../lib/firebase';
 
-const CATEGORIES = [
+export const CATEGORIES = [
   { id: 'general', name: 'معلومات عامة', icon: '🌍', data: GENERAL_KNOWLEDGE, color: 'from-blue-500 to-blue-700' },
   { id: 'football', name: 'كرة القدم', icon: '⚽', data: FOOTBALL, color: 'from-green-500 to-green-700' },
   { id: 'movies', name: 'الأفلام', icon: '🎬', data: MOVIES, color: 'from-purple-500 to-purple-700' },
@@ -19,6 +19,7 @@ const CATEGORIES = [
 
 export default function SoloPlay() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[0] | null>(null);
   
   const [isPlaying, setIsPlaying] = useState(false);
@@ -34,6 +35,17 @@ export default function SoloPlay() {
   // Stats tracking
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
+
+  useEffect(() => {
+    if (location.state?.categoryId && !isPlaying && !isFinished) {
+      const cat = CATEGORIES.find(c => c.id === location.state.categoryId);
+      if (cat) {
+        // Only auto-start once (clear state)
+        window.history.replaceState({}, document.title);
+        startGame(cat);
+      }
+    }
+  }, [location.state, isPlaying, isFinished]);
 
   useEffect(() => {
     let timer: any;

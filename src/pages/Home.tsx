@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
-import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves } from 'lucide-react';
+import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal } from 'lucide-react';
 import { subscribeToPublicRooms, PublicRoom, subscribeToOnlineCount } from '../lib/firebase';
 import { RoomVisibility } from '../lib/types';
 
-const CATEGORIES = [
+import { CATEGORIES as SOLO_CATEGORIES } from './SoloPlay';
+
+const ROOM_CATEGORIES = [
   { id: '🧠 معلومات عامة', name: 'معلومات عامة', icon: Brain, color: 'text-violet-400', bg: 'bg-violet-500/20' },
   { id: '⚽ كرة قدم', name: 'كرة قدم', icon: Trophy, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
   { id: '📜 تاريخ', name: 'تاريخ', icon: BookOpen, color: 'text-amber-400', bg: 'bg-amber-500/20' },
@@ -26,7 +28,7 @@ export default function Home() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null);
   const [createConfig, setCreateConfig] = useState({
-    category: CATEGORIES[0].id,
+    category: ROOM_CATEGORIES[0].id,
     type: 'public' as RoomVisibility,
     password: '',
     maxPlayers: 10,
@@ -188,7 +190,7 @@ export default function Home() {
               <div>
                 <label className="block text-slate-400 mb-3 font-bold">تصنيف الغرفة</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {CATEGORIES.map((cat) => (
+                  {ROOM_CATEGORIES.map((cat) => (
                     <button
                       type="button"
                       key={cat.id}
@@ -271,7 +273,7 @@ export default function Home() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold font-heading bg-gradient-to-l from-indigo-400 to-purple-400 text-transparent bg-clip-text">
-            تحدي المعرفة
+            متعة التحدي
           </h1>
           <div className="flex items-center gap-2 mt-2">
             <p className="text-slate-400">مرحباً {username}!</p>
@@ -307,99 +309,94 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="grid md:grid-cols-3 gap-8">
-        <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-3xl shadow-xl flex flex-col justify-between min-h-[250px] transform hover:scale-[1.02] transition-transform">
-          <div>
-            <div className="bg-white/20 p-4 rounded-2xl w-fit mb-4">
-              <Gamepad2 className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold font-heading mb-2 text-white">لعب فردي</h2>
-            <p className="text-blue-100 mb-6 text-sm">استمتع باللعب بمفردك، سواء بتحدي الأسئلة أو صيد الأسماك.</p>
+      {/* 1. اللعب الفردي (الأسئلة) */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-indigo-500/20 rounded-2xl">
+            <Brain className="w-6 h-6 text-indigo-400" />
           </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => navigate('/solo')}
-              className="flex-1 bg-white text-blue-900 font-bold py-4 rounded-xl hover:bg-blue-50 transition-transform active:scale-95 shadow-lg flex items-center justify-center"
-              title="تحدي المعرفة"
+          <h2 className="text-2xl font-bold font-heading text-white">اللعب الفردي (الأسئلة)</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {SOLO_CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => navigate('/solo', { state: { categoryId: cat.id } })}
+              className={`bg-gradient-to-br ${cat.color} p-6 rounded-3xl relative overflow-hidden group hover:scale-[1.02] transition-transform shadow-lg flex flex-col items-center justify-center text-center`}
             >
-              أسئلة
+              <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
+              <span className="text-4xl mb-3 block relative z-10">{cat.icon}</span>
+              <h3 className="font-bold font-heading text-white relative z-10">{cat.name}</h3>
             </button>
-            <button 
-              onClick={() => navigate('/fishing')}
-              className="flex-1 bg-sky-200 text-sky-900 font-bold py-4 rounded-xl hover:bg-sky-100 transition-transform active:scale-95 shadow-lg flex items-center justify-center gap-2"
-              title="صيد السمك"
-            >
-              <Waves className="w-5 h-5" />
-              صيد
-            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 2. الألعاب والأطوار الأخرى */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-emerald-500/20 rounded-2xl">
+            <Gamepad2 className="w-6 h-6 text-emerald-400" />
+          </div>
+          <h2 className="text-2xl font-bold font-heading text-white">الألعاب والأطوار الأخرى</h2>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div 
+            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-slate-700 transition-colors cursor-pointer group flex flex-col items-center text-center shadow-xl" 
+            onClick={() => navigate('/fishing')}
+          >
+             <div className="bg-sky-500/10 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Waves className="w-10 h-10 text-sky-400" />
+             </div>
+             <h3 className="text-xl font-bold font-heading text-white mb-3">صيد السمك</h3>
+             <p className="text-slate-400 text-sm mb-6">استمتع بوقتك في الصيد الفردي. اصطد أسماكاً نادرة وقم بجمع النقاط.</p>
+             <span className="mt-auto bg-sky-500/20 text-sky-400 font-bold px-4 py-2 rounded-xl text-sm">لعب فردي</span>
+          </div>
+          
+          <div 
+            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-slate-700 transition-colors cursor-pointer group flex flex-col items-center text-center shadow-xl" 
+            onClick={() => navigate('/penalty')}
+          >
+             <div className="bg-emerald-500/10 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Goal className="w-10 h-10 text-emerald-400" />
+             </div>
+             <h3 className="text-xl font-bold font-heading text-white mb-3">ركلات الجزاء</h3>
+             <p className="text-slate-400 text-sm mb-6">تحدَّ الحارس وسدد الركلات وتصدى لتسديدات الخصم في مباراة مثيرة.</p>
+             <span className="mt-auto bg-emerald-500/20 text-emerald-400 font-bold px-4 py-2 rounded-xl text-sm">لعب فردي</span>
           </div>
         </div>
+      </section>
 
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-3xl shadow-xl shadow-indigo-900/20 relative overflow-hidden flex flex-col items-start justify-between min-h-[250px] transform hover:scale-[1.02] transition-transform">
-          <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
-          <div className="bg-white/20 p-4 rounded-2xl mb-4 relative z-10">
+      {/* 3. إنشاء غرفة جديدة */}
+      <section className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-3xl shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 h-auto transform transition-transform">
+        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
+        <div className="relative z-10 text-right md:w-2/3">
+          <div className="bg-white/20 p-4 rounded-2xl w-fit mb-4">
             <Plus className="w-8 h-8 text-white" />
           </div>
-          <div className="relative z-10 w-full mt-4">
-            <h2 className="text-2xl font-bold font-heading mb-2 text-white">إنشاء غرفة جديدة</h2>
-            <p className="text-indigo-100 mb-6 text-sm">العب مع أصدقائك أو افتح غرفة عامة وتعرف على أشخاص جدد.</p>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="w-full bg-white text-indigo-900 font-bold py-4 rounded-xl hover:bg-indigo-50 transition-transform active:scale-95 shadow-lg"
-            >
-              إنشاء الغرفة
-            </button>
-          </div>
+          <h2 className="text-3xl font-bold font-heading mb-2 text-white">إنشاء غرفة جديدة</h2>
+          <p className="text-indigo-100 mb-6 text-lg">العب مع أصدقائك أو افتح غرفة عامة وتعرف على أشخاص جدد.</p>
         </div>
-
-        <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-xl flex flex-col justify-between min-h-[250px] transform hover:scale-[1.02] transition-transform">
-          <div>
-            <div className="bg-slate-700 p-4 rounded-2xl w-fit mb-4">
-              <KeyRound className="w-8 h-8 text-emerald-400" />
-            </div>
-            <h2 className="text-2xl font-bold font-heading mb-2">دخول غرفة خاصة</h2>
-            <p className="text-slate-400 mb-6 text-sm">انضم بواسطة رمز الغرفة (مثال: ROOM-1234).</p>
-          </div>
-          <form onSubmit={handleJoinRoom} className="space-y-4 w-full">
-            {joinError && <div className="text-red-400 text-sm font-bold bg-red-400/10 p-3 rounded-xl">{joinError}</div>}
-            <input
-              type="text"
-              value={joinId}
-              onChange={(e) => setJoinId(e.target.value.toUpperCase())}
-              placeholder="ROOM-XXXX"
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-center font-mono font-bold tracking-widest focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none uppercase"
-            />
-            <input 
-               type="password"
-               value={joinPassword}
-               onChange={(e) => setJoinPassword(e.target.value)}
-               placeholder="كلمة المرور (إن وجدت)"
-               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
-            />
-            <button 
-              type="submit"
-              disabled={!joinId || joiningRoomId === joinId.trim().toUpperCase()}
-              className="w-full bg-emerald-600 disabled:opacity-50 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-transform active:scale-95 shadow-lg flex items-center justify-center gap-2"
-            >
-              {joiningRoomId === joinId.trim().toUpperCase() ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  جارِ الانضمام...
-                </>
-              ) : 'انضمام'}
-            </button>
-          </form>
+        <div className="relative z-10 w-full md:w-1/3">
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="w-full bg-white text-indigo-900 font-bold py-5 rounded-2xl hover:bg-indigo-50 transition-transform active:scale-95 shadow-lg text-lg flex justify-center items-center gap-2"
+          >
+            <Plus className="w-6 h-6" />
+            إنشاء غرفة
+          </button>
         </div>
-      </div>
+      </section>
 
-      <div className="mt-16 border-t border-slate-800 pt-12">
-        <div className="flex items-center gap-3 mb-8">
+      {/* 4. الغرف العامة */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
           <div className="p-3 bg-sky-500/20 rounded-2xl">
             <Globe className="w-6 h-6 text-sky-400" />
           </div>
           <h2 className="text-2xl font-bold font-heading text-white">الغرف العامة</h2>
         </div>
-
+        
         {publicRooms.length === 0 ? (
           <div className="text-center py-16 bg-slate-900/50 border border-slate-800 border-dashed rounded-3xl">
             <Globe className="w-12 h-12 text-slate-600 mx-auto mb-4 opacity-50" />
@@ -468,7 +465,7 @@ export default function Home() {
                       {joiningRoomId === room.roomId ? (
                         <>
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          جارِ الانضمام...
+                          جارِ
                         </>
                       ) : 'انضمام'}
                     </button>
@@ -481,7 +478,49 @@ export default function Home() {
             ))}
           </div>
         )}
-      </div>
+      </section>
+
+      {/* 5. دخول غرفة خاصة */}
+      <section className="bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-xl flex flex-col md:flex-row items-center justify-between gap-8 h-auto">
+        <div className="text-right md:w-1/2">
+          <div className="bg-slate-700 p-4 rounded-2xl w-fit mb-4">
+            <KeyRound className="w-8 h-8 text-emerald-400" />
+          </div>
+          <h2 className="text-2xl font-bold font-heading mb-2">دخول غرفة خاصة</h2>
+          <p className="text-slate-400 text-sm">انضم بواسطة رمز الغرفة (مثال: ROOM-1234).</p>
+        </div>
+        <form onSubmit={handleJoinRoom} className="space-y-4 w-full md:w-1/2">
+          {joinError && <div className="text-red-400 text-sm font-bold bg-red-400/10 p-3 rounded-xl">{joinError}</div>}
+          <div className="flex flex-col md:flex-row gap-3">
+            <input
+              type="text"
+              value={joinId}
+              onChange={(e) => setJoinId(e.target.value.toUpperCase())}
+              placeholder="ROOM-XXXX"
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-4 text-center font-mono font-bold tracking-widest focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none uppercase"
+            />
+            <input 
+               type="password"
+               value={joinPassword}
+               onChange={(e) => setJoinPassword(e.target.value)}
+               placeholder="كلمة المرور (إن وجدت)"
+               className="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-4 text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+            />
+          </div>
+          <button 
+            type="submit"
+            disabled={!joinId || joiningRoomId === joinId.trim().toUpperCase()}
+            className="w-full bg-emerald-600 disabled:opacity-50 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-transform active:scale-95 shadow-lg flex items-center justify-center gap-2"
+          >
+            {joiningRoomId === joinId.trim().toUpperCase() ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                جارِ الانضمام...
+              </>
+            ) : 'انضمام للغرفة'}
+          </button>
+        </form>
+      </section>
     </div>
   );
 }

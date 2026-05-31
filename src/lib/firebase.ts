@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment } from 'firebase/firestore';
 import * as config from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -48,7 +48,73 @@ export interface PlayerStats {
   fishingHighestScore?: number;
   fishingTotalFish?: number;
   fishingTotalPoints?: number;
+  // Penalty Stats
+  penaltyGamesPlayed?: number;
+  penaltyWins?: number;
+  penaltyGoals?: number;
+  penaltySaves?: number;
+  penaltyWinStreak?: number;
 }
+
+export const updatePenaltyStats = async (
+  playerId: string,
+  playerName: string,
+  isWin: boolean,
+  goals: number,
+  saves: number
+) => {
+  if (!db) return;
+  try {
+    const playerRef = doc(db, 'users', playerId);
+    const snap = await getDoc(playerRef);
+
+    if (snap.exists()) {
+      const data = snap.data() as PlayerStats;
+      const streak = isWin ? (data.penaltyWinStreak || 0) + 1 : 0;
+      const currentHighestStreak = data.penaltyWinStreak || 0;
+      
+      const newStats: Partial<PlayerStats> = {
+        playerName,
+        penaltyGamesPlayed: (data.penaltyGamesPlayed || 0) + 1,
+        penaltyWins: (data.penaltyWins || 0) + (isWin ? 1 : 0),
+        penaltyGoals: (data.penaltyGoals || 0) + goals,
+        penaltySaves: (data.penaltySaves || 0) + saves,
+        penaltyWinStreak: Math.max(streak, currentHighestStreak), // actually this just keeps the highest streak
+        lastUpdated: Date.now()
+      };
+      
+      // Real win streak logic: we need to track CURRENT and HIGHEST if we actually wanna display it properly.
+      // But adding `currentPenaltyWinStreak` to the db schema inside here is fine
+      await updateDoc(playerRef, {
+        ...newStats,
+        currentPenaltyWinStreak: isWin ? (data['currentPenaltyWinStreak' as keyof PlayerStats] as number || 0) + 1 : 0,
+        penaltyWinStreak: Math.max(isWin ? ((data['currentPenaltyWinStreak' as keyof PlayerStats] as number || 0) + 1) : 0, data.penaltyWinStreak || 0)
+      });
+    } else {
+      const newStats: PlayerStats = {
+        playerId,
+        playerName,
+        gamesPlayed: 0,
+        wins: 0,
+        correctAnswers: 0,
+        wrongAnswers: 0,
+        totalPoints: 0,
+        successRate: 0,
+        categoryCounts: {},
+        mostPlayedCategory: '',
+        lastUpdated: Date.now(),
+        penaltyGamesPlayed: 1,
+        penaltyWins: isWin ? 1 : 0,
+        penaltyGoals: goals,
+        penaltySaves: saves,
+        penaltyWinStreak: isWin ? 1 : 0
+      };
+      await setDoc(playerRef, { ...newStats, currentPenaltyWinStreak: isWin ? 1 : 0 });
+    }
+  } catch (error) {
+    console.error('Error updating penalty stats:', error);
+  }
+};
 
 export const createPublicRoom = async (roomData: PublicRoom) => {
   if (!db) return;
