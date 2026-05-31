@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
-import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon } from 'lucide-react';
-import { subscribeToPublicRooms, PublicRoom } from '../lib/firebase';
+import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound } from 'lucide-react';
+import { subscribeToPublicRooms, PublicRoom, subscribeToOnlineCount } from '../lib/firebase';
 import { RoomVisibility } from '../lib/types';
 
 const CATEGORIES = [
@@ -34,6 +34,7 @@ export default function Home() {
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [joinError, setJoinError] = useState('');
   const [passwordPromptRoomId, setPasswordPromptRoomId] = useState<string | null>(null);
+  const [onlineCount, setOnlineCount] = useState<number>(0);
 
   useEffect(() => {
     const savedName = storage.getPlayerName();
@@ -50,10 +51,16 @@ export default function Home() {
   }, [state?.roomId, navigate]);
 
   useEffect(() => {
-    const unsubscribe = subscribeToPublicRooms((rooms) => {
+    const unsubscribeRooms = subscribeToPublicRooms((rooms) => {
       setPublicRooms(rooms || []);
     });
-    return () => unsubscribe();
+    const unsubscribeOnline = subscribeToOnlineCount((count) => {
+      setOnlineCount(count);
+    });
+    return () => {
+      unsubscribeRooms();
+      unsubscribeOnline();
+    };
   }, []);
 
   const handleSaveName = (e: React.FormEvent) => {
@@ -236,19 +243,43 @@ export default function Home() {
 
   return (
     <div className="min-h-screen max-w-5xl mx-auto p-6 md:p-12 space-y-12">
-      <header className="flex justify-between items-center">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold font-heading bg-gradient-to-l from-indigo-400 to-purple-400 text-transparent bg-clip-text">
             تحدي المعرفة
           </h1>
-          <p className="text-slate-400 mt-2">مرحباً {username}!</p>
+          <div className="flex items-center gap-2 mt-2">
+            <p className="text-slate-400">مرحباً {username}!</p>
+            <span className="text-slate-600">•</span>
+            <div className="flex items-center gap-1.5 text-emerald-400 text-sm font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              متصل الآن {onlineCount > 0 ? onlineCount : ''}
+            </div>
+          </div>
         </div>
-        <button 
-          onClick={() => { setHasName(false); storage.clearPlayerName(); setUsername(''); }}
-          className="text-sm border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg transition-colors border-dashed"
-        >
-          تغيير الاسم
-        </button>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Link
+            to="/leaderboard"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl transition-colors text-amber-400"
+          >
+            <Medal className="w-5 h-5" />
+            المتصدرين
+          </Link>
+          <Link
+            to="/profile"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl transition-colors text-sky-400"
+          >
+            <UserRound className="w-5 h-5" />
+            ملفي
+          </Link>
+          <button 
+            onClick={() => { setHasName(false); storage.clearPlayerName(); setUsername(''); }}
+            className="border border-slate-700 bg-slate-800 hover:bg-slate-700 p-2 rounded-xl transition-colors border-dashed text-slate-400 shrink-0"
+            title="تسجيل الخروج"
+          >
+            <KeyRound className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
       <div className="grid md:grid-cols-3 gap-8">

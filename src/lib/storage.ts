@@ -7,5 +7,13 @@ export const storage = {
   },
   clearPlayerName: () => {
     localStorage.removeItem('know_player_name');
+  },
+  getPlayerId: (): string => {
+    let id = localStorage.getItem('know_player_id');
+    if (!id) {
+      id = 'user_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+      localStorage.setItem('know_player_id', id);
+    }
+    return id;
   }
 };

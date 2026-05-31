@@ -3,16 +3,20 @@ import { useGame } from '../components/GameContext';
 import { RoomPlayer } from '../lib/types';
 import { Check, X, Clock, Brain, Trophy, Crown, Mic, MicOff, UserMinus } from 'lucide-react';
 import { audio } from '../lib/audio';
+import { updatePlayerStats } from '../lib/firebase';
+import { storage } from '../lib/storage';
 
 export default function PlayingField() {
   const { state, submitAnswer, playerId, isHost, startGame, forceNextQuestion, transferHost, kickPlayer, mutePlayer } = useGame();
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15);
+  const [statsSaved, setStatsSaved] = useState(false);
 
   useEffect(() => {
     if (state?.status === 'playing') {
       setSelectedAnswer(null);
       setTimeLeft(15);
+      setStatsSaved(false); // Reset for next game
     }
   }, [state?.round, state?.status]);
 
@@ -53,6 +57,30 @@ export default function PlayingField() {
       }
     } else if (state?.status === 'finished') {
       audio.win();
+      
+      // Save stats once per game
+      if (!statsSaved && state.players[playerId]) {
+        const sortedPlayers = (Object.values(state.players) as RoomPlayer[]).sort((a, b) => b.score - a.score);
+        const me = state.players[playerId];
+        const isWin = sortedPlayers[0].id === playerId && me.score > 0;
+        
+        // Since we don't track correct/wrong answers specifically in the network state for the whole match efficiently here,
+        // we can estimate them if we don't have them in the GameState. 
+        // Wait, score is accumulated. In multiplayer we don't have exact correct answers count stored in `RoomPlayer`. 
+        // We'll estimate based on score or just say correct = round / 2 (just for now) or let's not add correct counts if we don't know.
+        // Actually, we can just save it with what we have. It will update the score!
+        
+        updatePlayerStats(
+          storage.getPlayerId(),
+          storage.getPlayerName() || me.username,
+          isWin,
+          0, // we don't have individual correct count in RoomPlayer yet
+          0,
+          me.score,
+          state.category || 'عام'
+        );
+        setStatsSaved(true);
+      }
     }
   }, [state?.status]);
 

@@ -4,6 +4,7 @@ import { Brain, Trophy, ChevronRight, X, Clock, Target } from 'lucide-react';
 import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC, MATH_EXPANDED as MATH } from '../lib/dynamicQuestions';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
+import { updatePlayerStats } from '../lib/firebase';
 
 const CATEGORIES = [
   { id: 'general', name: 'معلومات عامة', icon: '🌍', data: GENERAL_KNOWLEDGE, color: 'from-blue-500 to-blue-700' },
@@ -29,6 +30,10 @@ export default function SoloPlay() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  
+  // Stats tracking
+  const [correctCount, setCorrectCount] = useState(0);
+  const [wrongCount, setWrongCount] = useState(0);
 
   useEffect(() => {
     let timer: any;
@@ -53,9 +58,32 @@ export default function SoloPlay() {
   const startGame = (category: typeof CATEGORIES[0]) => {
     setSelectedCategory(category);
     
-    // Select 20 random questions from the pool
-    const shuffled = [...category.data].sort(() => 0.5 - Math.random());
-    const preparedQuestions = shuffled.slice(0, 20).map(q => {
+    // Load global seen history from localStorage to prevent repeats across games
+    let globalSeenQuestions: string[] = [];
+    try {
+      const stored = localStorage.getItem('seenQuestionsHistory');
+      if (stored) globalSeenQuestions = JSON.parse(stored);
+    } catch(e) {}
+
+    let unseen = category.data.filter(q => !globalSeenQuestions.includes(q.text));
+    if (unseen.length < 20) {
+      unseen = category.data; // fallback if exhausted
+    }
+
+    // Select 20 random unseen questions from the pool
+    const shuffled = [...unseen].sort(() => 0.5 - Math.random());
+    const selected20 = shuffled.slice(0, 20);
+    
+    // add them to history
+    selected20.forEach(q => globalSeenQuestions.push(q.text));
+    if (globalSeenQuestions.length > 300) {
+      globalSeenQuestions = globalSeenQuestions.slice(globalSeenQuestions.length - 300);
+    }
+    try {
+      localStorage.setItem('seenQuestionsHistory', JSON.stringify(globalSeenQuestions));
+    } catch(e) {}
+
+    const preparedQuestions = selected20.map(q => {
       return {
         ...q,
         options: [q.correctAnswer, ...q.wrongOptions].sort(() => 0.5 - Math.random())
@@ -66,11 +94,32 @@ export default function SoloPlay() {
     setCurrentQuestionIndex(0);
     setScore(0);
     setLives(3);
+    setCorrectCount(0);
+    setWrongCount(0);
     setIsPlaying(true);
     setIsFinished(false);
     setShowResult(false);
     setTimeLeft(15);
     setSelectedAnswer(null);
+  };
+
+  const finishGame = (finalScore: number, finalCorrect: number, finalWrong: number) => {
+    setIsFinished(true);
+    audio.win();
+    
+    const playerId = storage.getPlayerId();
+    const playerName = storage.getPlayerName() || 'لاعب مجهول';
+    const isWin = finalCorrect > finalWrong && finalScore > 0;
+    
+    updatePlayerStats(
+      playerId,
+      playerName,
+      isWin,
+      finalCorrect,
+      finalWrong,
+      finalScore,
+      selectedCategory?.name || 'عام'
+    );
   };
 
   const handleAnswer = (answer: string) => {
@@ -80,20 +129,30 @@ export default function SoloPlay() {
     setShowResult(true);
     
     const currentQ = questions[currentQuestionIndex];
-    if (answer === currentQ.correctAnswer) {
+    const isCorrect = answer === currentQ.correctAnswer;
+    
+    let newScore = score;
+    let newCorrect = correctCount;
+    let newWrong = wrongCount;
+
+    if (isCorrect) {
       audio.correct();
       const timeBonus = Math.max(0, timeLeft * 10);
-      setScore(prev => prev + 100 + timeBonus);
+      newScore += 100 + timeBonus;
+      newCorrect += 1;
+      setScore(newScore);
+      setCorrectCount(newCorrect);
     } else {
       audio.wrong();
+      newWrong += 1;
+      setWrongCount(newWrong);
       setLives(prev => prev - 1);
     }
 
     setTimeout(() => {
       // If lost all lives
-      if (answer !== currentQ.correctAnswer && lives <= 1) {
-         audio.win(); // Or game over sound
-         setIsFinished(true);
+      if (!isCorrect && lives <= 1) {
+         finishGame(newScore, newCorrect, newWrong);
          return;
       }
 
@@ -104,8 +163,7 @@ export default function SoloPlay() {
         setSelectedAnswer(null);
         setTimeLeft(15);
       } else {
-        audio.win();
-        setIsFinished(true);
+        finishGame(newScore, newCorrect, newWrong);
       }
     }, 2000);
   };

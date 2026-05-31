@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment } from 'firebase/firestore';
 import * as config from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -27,6 +27,20 @@ export interface PublicRoom {
   createdAt: number;
   lastActiveAt?: number;
   roomVisibility: 'public' | 'private' | 'link' | 'password';
+}
+
+export interface PlayerStats {
+  playerId: string;
+  playerName: string;
+  gamesPlayed: number;
+  wins: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  totalPoints: number;
+  successRate: number;
+  categoryCounts: Record<string, number>;
+  mostPlayedCategory: string;
+  lastUpdated: number;
 }
 
 export const createPublicRoom = async (roomData: PublicRoom) => {
@@ -107,5 +121,125 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
   });
   
   return () => unsubscribe();
+};
+
+export const updatePlayerStats = async (
+  playerId: string,
+  playerName: string,
+  isWin: boolean,
+  correct: number,
+  wrong: number,
+  points: number,
+  category: string
+) => {
+  if (!db) return;
+  try {
+    const playerRef = doc(db, 'users', playerId);
+    const snap = await getDoc(playerRef);
+    
+    if (snap.exists()) {
+      const data = snap.data() as PlayerStats;
+      const newCategoryCounts = { ...data.categoryCounts };
+      newCategoryCounts[category] = (newCategoryCounts[category] || 0) + 1;
+      
+      let mostPlayedCategory = '';
+      let maxCount = 0;
+      for (const [cat, count] of Object.entries(newCategoryCounts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          mostPlayedCategory = cat;
+        }
+      }
+
+      const totalCorrect = (data.correctAnswers || 0) + correct;
+      const totalWrong = (data.wrongAnswers || 0) + wrong;
+      const totalQuestions = totalCorrect + totalWrong;
+      const successRate = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
+      await setDoc(playerRef, {
+        playerName,
+        gamesPlayed: (data.gamesPlayed || 0) + 1,
+        wins: (data.wins || 0) + (isWin ? 1 : 0),
+        correctAnswers: totalCorrect,
+        wrongAnswers: totalWrong,
+        totalPoints: (data.totalPoints || 0) + points,
+        categoryCounts: newCategoryCounts,
+        mostPlayedCategory,
+        successRate,
+        lastUpdated: Date.now()
+      }, { merge: true });
+    } else {
+      const successRate = (correct + wrong) > 0 ? Math.round((correct / (correct + wrong)) * 100) : 0;
+      const newStats: PlayerStats = {
+        playerId,
+        playerName,
+        gamesPlayed: 1,
+        wins: isWin ? 1 : 0,
+        correctAnswers: correct,
+        wrongAnswers: wrong,
+        totalPoints: points,
+        successRate,
+        categoryCounts: { [category]: 1 },
+        mostPlayedCategory: category,
+        lastUpdated: Date.now()
+      };
+      await setDoc(playerRef, newStats);
+    }
+  } catch(err) {
+    console.error('Error updating player stats:', err);
+  }
+};
+
+export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRate' = 'totalPoints') => {
+  if (!db) return [];
+  try {
+    const q = query(
+      collection(db, 'users'),
+      orderBy(sortBy, 'desc'),
+      limit(50)
+    );
+    // Since Firebase sometimes complains about lacking composite index, if we don't do compound queries, single field orderby works!
+    // But we need to use getDocs. 
+    const { getDocs } = await import('firebase/firestore');
+    const snapshot = await getDocs(q);
+    const results: PlayerStats[] = [];
+    snapshot.forEach(docSnap => {
+      results.push(docSnap.data() as PlayerStats);
+    });
+    return results;
+  } catch (err) {
+    console.error('Error getting leaderboard:', err);
+    return [];
+  }
+};
+
+export const updateOnlinePresence = async (playerId: string) => {
+  if (!db) return;
+  try {
+    const heartRef = doc(db, 'online_players', playerId);
+    await setDoc(heartRef, { lastActive: Date.now() }, { merge: true });
+  } catch (err) {
+    console.error('Error updating online presence:', err);
+  }
+};
+
+export const subscribeToOnlineCount = (callback: (count: number) => void) => {
+  if (!db) return () => {};
+  const activeRef = collection(db, 'online_players');
+  // Simple listener that fetches all docs in online_players
+  // and filters locally. It's OK for our scale. For large scale, we should use a backend job.
+  const unsubscribe = onSnapshot(activeRef, (snapshot) => {
+    const now = Date.now();
+    let count = 0;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      // Considered online if active in the last 15 seconds
+      if (data.lastActive && (now - data.lastActive) < 15000) {
+        count++;
+      }
+    });
+    callback(count);
+  });
+  return unsubscribe;
 };
 
