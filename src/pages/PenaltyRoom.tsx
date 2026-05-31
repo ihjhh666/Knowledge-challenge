@@ -51,6 +51,7 @@ export default function PenaltyRoom() {
   const rafRef = useRef<number>(0);
   const idleRafRef = useRef<number>(0);
   const timerRef = useRef<any>(0);
+  const resetTimeoutRef = useRef<any>(0);
   
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -159,6 +160,21 @@ export default function PenaltyRoom() {
   const lastAnimatedRoundRef = useRef(0);
 
   useEffect(() => {
+    if (gameState === 'playing' && history.length === 0) {
+      console.log("System: Starting fresh penalty match, resetting visual states.");
+      lastAnimatedRoundRef.current = 0;
+      hasUpdatedRef.current = false;
+      setKickState('idle');
+      setAnnouncement(null);
+      setShake(false);
+      cancelAnimationFrame(rafRef.current);
+      clearInterval(timerRef.current);
+      clearTimeout(resetTimeoutRef.current);
+      resetForNextAction();
+    }
+  }, [gameState, history.length]);
+
+  useEffect(() => {
     if (history.length > 0 && history.length > lastAnimatedRoundRef.current) {
       const last = history[history.length - 1];
       if (last && kickState === 'idle') {
@@ -177,6 +193,7 @@ export default function PenaltyRoom() {
   }, [history.length, kickState, turnRole]);
 
   const startAnimation = (kickDir: Direction, saveDir: Direction, forcedMiss: boolean, hitPost: boolean) => {
+    console.log("System: Starting Kick Animation. Role:", turnRole, "- Kick:", kickDir, "- Save:", saveDir, "- Round:", currentRound);
     setKickState('animating');
     
     const isGoal = !forcedMiss && kickDir !== saveDir && !hitPost;
@@ -356,12 +373,13 @@ export default function PenaltyRoom() {
        }
     }
 
-    setTimeout(() => {
+    resetTimeoutRef.current = setTimeout(() => {
        resetForNextAction();
     }, 1500);
   };
 
   const resetForNextAction = () => {
+     console.log("System: Resetting visual positions for next action.");
      const cw = canvasRef.current?.width || 800;
      const ch = canvasRef.current?.height || 400;
      const startY = ch - 50;
@@ -764,18 +782,24 @@ export default function PenaltyRoom() {
   
 
   if (gameState === 'results') {
+    const isDisconnect = allPl.length < 2;
     return (
       <div className="max-w-2xl mx-auto p-6 md:p-12 text-center animate-fade-in relative z-10 w-full">
         <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ${
+           isDisconnect ? 'bg-amber-500/20 shadow-amber-500/20' :
            playerScore > botScore ? 'bg-emerald-500/20 shadow-emerald-500/20' : 'bg-rose-500/20 shadow-rose-500/20'
         }`}>
-          {playerScore > botScore ? <Trophy className="w-16 h-16 text-emerald-400" /> : <XOctagon className="w-16 h-16 text-rose-500" />}
+          {isDisconnect ? <Activity className="w-16 h-16 text-amber-500" /> :
+           playerScore > botScore ? <Trophy className="w-16 h-16 text-emerald-400" /> : <XOctagon className="w-16 h-16 text-rose-500" />}
         </div>
         
         <h2 className="text-5xl font-bold font-heading mb-4 text-white">
-          {playerScore > botScore ? 'انتصار رائع!' : playerScore === botScore ? 'تعادل' : 'حظ أوفر المرة القادمة'}
+          {isDisconnect ? 'انسحاب الخصم!' : playerScore > botScore ? 'انتصار رائع!' : playerScore === botScore ? 'تعادل' : 'حظ أوفر المرة القادمة'}
         </h2>
-        
+        <p className="text-xl text-slate-400 mb-12">
+          {isDisconnect ? 'لقد غادر الخصم المباراة وتم احتساب فوزك.' : playerScore > botScore ? 'لقد تغلبت على خصمك بجدارة في ركلات الترجيح' : playerScore === botScore ? 'مباراة متكافئة' : 'لم يحالفك الحظ هذه المرة'}
+        </p>
+
         <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl mt-8">
            <div className="flex justify-between items-center px-4 md:px-12">
               <div className="text-center w-1/3">
