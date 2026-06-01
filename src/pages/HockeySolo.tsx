@@ -81,6 +81,100 @@ const PUCK_RADIUS = 15;
 const PADDLE_RADIUS = 30;
 const GOAL_WIDTH = 140;
 
+let bgCanvasCache: HTMLCanvasElement | null = null;
+const getBgCanvas = () => {
+   if (bgCanvasCache) return bgCanvasCache;
+   const c = document.createElement('canvas');
+   c.width = CANVAS_WIDTH;
+   c.height = CANVAS_HEIGHT;
+   const ctx = c.getContext('2d');
+   if (ctx) {
+      ctx.fillStyle = '#050b14';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      
+      ctx.fillStyle = '#02040a';
+      for (let i = 10; i < CANVAS_WIDTH; i += 20) {
+        for (let j = 10; j < CANVAS_HEIGHT; j += 20) {
+          ctx.beginPath();
+          ctx.arc(i + (j % 40 === 0 ? 10 : 0), j, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const leftGlow = ctx.createLinearGradient(0, 0, 40, 0);
+      leftGlow.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
+      leftGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = leftGlow;
+      ctx.fillRect(0, 0, 40, CANVAS_HEIGHT);
+
+      const rightGlow = ctx.createLinearGradient(CANVAS_WIDTH, 0, CANVAS_WIDTH - 40, 0);
+      rightGlow.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
+      rightGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = rightGlow;
+      ctx.fillRect(CANVAS_WIDTH - 40, 0, 40, CANVAS_HEIGHT);
+      
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = 'rgba(56, 189, 248, 1)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, CANVAS_HEIGHT / 2);
+      ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT / 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 80, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      
+      const drawChevron = (cx: number, cy: number, color: string, dir: number) => {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = color;
+          ctx.beginPath();
+          ctx.moveTo(cx - 15, cy - 10 * dir);
+          ctx.lineTo(cx, cy + 10 * dir);
+          ctx.lineTo(cx + 15, cy - 10 * dir);
+          ctx.stroke();
+          
+          ctx.beginPath();
+          ctx.moveTo(cx - 15, cy - 25 * dir);
+          ctx.lineTo(cx, cy - 5 * dir);
+          ctx.lineTo(cx + 15, cy - 25 * dir);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+      };
+      
+      drawChevron(60, CANVAS_HEIGHT / 4, 'rgba(239, 68, 68, 0.8)', -1);
+      drawChevron(CANVAS_WIDTH - 60, CANVAS_HEIGHT / 4, 'rgba(239, 68, 68, 0.8)', -1); 
+      drawChevron(60, CANVAS_HEIGHT * 3 / 4, 'rgba(16, 185, 129, 0.8)', 1); 
+      drawChevron(CANVAS_WIDTH - 60, CANVAS_HEIGHT * 3 / 4, 'rgba(16, 185, 129, 0.8)', 1); 
+
+      const drawGoalArea = (y: number, color: string, dir: number) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(CANVAS_WIDTH / 2, y, GOAL_WIDTH / 2, dir === 1 ? 0 : Math.PI, dir === 1 ? Math.PI : 0, false);
+        ctx.fill();
+        
+        const glowStr = color.replace('0.1)', '0.8)');
+        ctx.shadowColor = glowStr;
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = glowStr;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(CANVAS_WIDTH / 2, y, GOAL_WIDTH / 2 + 10, dir === 1 ? 0 : Math.PI, dir === 1 ? Math.PI : 0, false);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      };
+
+      drawGoalArea(0, 'rgba(239, 68, 68, 0.1)', 1); // Guest goal
+      drawGoalArea(CANVAS_HEIGHT, 'rgba(16, 185, 129, 0.1)', -1); // Host goal
+   }
+   bgCanvasCache = c;
+   return c;
+};
+
 interface Vec2 {
   x: number;
   y: number;
@@ -407,98 +501,7 @@ export default function HockeySolo() {
 
     const goalLeft = (CANVAS_WIDTH - GOAL_WIDTH) / 2;
 
-    // Draw field background
-    ctx.fillStyle = '#050b14';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
-    // Perforated dots
-    ctx.fillStyle = '#02040a';
-    for (let i = 10; i < CANVAS_WIDTH; i += 20) {
-      for (let j = 10; j < CANVAS_HEIGHT; j += 20) {
-        ctx.beginPath();
-        ctx.arc(i + (j % 40 === 0 ? 10 : 0), j, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    // Glowing side walls
-    const leftGlow = ctx.createLinearGradient(0, 0, 40, 0);
-    leftGlow.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
-    leftGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
-    ctx.fillStyle = leftGlow;
-    ctx.fillRect(0, 0, 40, CANVAS_HEIGHT);
-
-    const rightGlow = ctx.createLinearGradient(CANVAS_WIDTH, 0, CANVAS_WIDTH - 40, 0);
-    rightGlow.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
-    rightGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
-    ctx.fillStyle = rightGlow;
-    ctx.fillRect(CANVAS_WIDTH - 40, 0, 40, CANVAS_HEIGHT);
-    
-    // Center line (Blue neon)
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = 'rgba(56, 189, 248, 1)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, CANVAS_HEIGHT / 2);
-    ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT / 2);
-    ctx.stroke();
-
-    // Center circle (Blue neon)
-    ctx.beginPath();
-    ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 80, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.shadowBlur = 0; // reset
-    
-    // Arrows pointing to goals (Red top, Green bottom, Blue center)
-    const drawChevron = (cx: number, cy: number, color: string, dir: number) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = color;
-        ctx.beginPath();
-        ctx.moveTo(cx - 15, cy - 10 * dir);
-        ctx.lineTo(cx, cy + 10 * dir);
-        ctx.lineTo(cx + 15, cy - 10 * dir);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(cx - 15, cy - 25 * dir);
-        ctx.lineTo(cx, cy - 5 * dir);
-        ctx.lineTo(cx + 15, cy - 25 * dir);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-    };
-    
-    drawChevron(60, CANVAS_HEIGHT / 4, 'rgba(239, 68, 68, 0.8)', -1); // top left
-    drawChevron(CANVAS_WIDTH - 60, CANVAS_HEIGHT / 4, 'rgba(239, 68, 68, 0.8)', -1); // top right
-    
-    drawChevron(60, CANVAS_HEIGHT * 3 / 4, 'rgba(16, 185, 129, 0.8)', 1); // bottom left
-    drawChevron(CANVAS_WIDTH - 60, CANVAS_HEIGHT * 3 / 4, 'rgba(16, 185, 129, 0.8)', 1); // bottom right
-
-    // Goal areas
-    const drawGoalArea = (y: number, color: string, dir: number) => {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      // Draw inner glowing semi-circle
-      ctx.arc(CANVAS_WIDTH / 2, y, GOAL_WIDTH / 2, dir === 1 ? 0 : Math.PI, dir === 1 ? Math.PI : 0, false);
-      ctx.fill();
-      
-      const glowStr = color.replace('0.1)', '0.8)');
-      ctx.shadowColor = glowStr;
-      ctx.shadowBlur = 15;
-      ctx.strokeStyle = glowStr;
-      ctx.lineWidth = 4;
-      
-      // Arc instead of straight line to match the image!
-      ctx.beginPath();
-      ctx.arc(CANVAS_WIDTH / 2, y, GOAL_WIDTH / 2 + 10, dir === 1 ? 0 : Math.PI, dir === 1 ? Math.PI : 0, false);
-      ctx.stroke();
-      ctx.shadowBlur = 0; // reset
-    };
-
-    drawGoalArea(0, 'rgba(239, 68, 68, 0.1)', 1); // Bot goal (Red)
-    drawGoalArea(CANVAS_HEIGHT, 'rgba(16, 185, 129, 0.1)', -1); // Player goal (Green)
+    ctx.drawImage(getBgCanvas(), 0, 0);
 
     const drawCircle = (x: number, y: number, r: number, color: string, border: string, glow: string) => {
       ctx.shadowColor = glow;

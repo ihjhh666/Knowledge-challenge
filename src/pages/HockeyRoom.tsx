@@ -78,6 +78,100 @@ const PUCK_RADIUS = 15;
 const PADDLE_RADIUS = 30;
 const GOAL_WIDTH = 140;
 
+let bgCanvasCache: HTMLCanvasElement | null = null;
+const getBgCanvas = () => {
+   if (bgCanvasCache) return bgCanvasCache;
+   const c = document.createElement('canvas');
+   c.width = CANVAS_WIDTH;
+   c.height = CANVAS_HEIGHT;
+   const ctx = c.getContext('2d');
+   if (ctx) {
+      ctx.fillStyle = '#050b14';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      
+      ctx.fillStyle = '#02040a';
+      for (let i = 10; i < CANVAS_WIDTH; i += 20) {
+        for (let j = 10; j < CANVAS_HEIGHT; j += 20) {
+          ctx.beginPath();
+          ctx.arc(i + (j % 40 === 0 ? 10 : 0), j, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const leftGlow = ctx.createLinearGradient(0, 0, 40, 0);
+      leftGlow.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
+      leftGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = leftGlow;
+      ctx.fillRect(0, 0, 40, CANVAS_HEIGHT);
+
+      const rightGlow = ctx.createLinearGradient(CANVAS_WIDTH, 0, CANVAS_WIDTH - 40, 0);
+      rightGlow.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
+      rightGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = rightGlow;
+      ctx.fillRect(CANVAS_WIDTH - 40, 0, 40, CANVAS_HEIGHT);
+      
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = 'rgba(56, 189, 248, 1)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, CANVAS_HEIGHT / 2);
+      ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT / 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 80, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      
+      const drawChevron = (cx: number, cy: number, color: string, dir: number) => {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = color;
+          ctx.beginPath();
+          ctx.moveTo(cx - 15, cy - 10 * dir);
+          ctx.lineTo(cx, cy + 10 * dir);
+          ctx.lineTo(cx + 15, cy - 10 * dir);
+          ctx.stroke();
+          
+          ctx.beginPath();
+          ctx.moveTo(cx - 15, cy - 25 * dir);
+          ctx.lineTo(cx, cy - 5 * dir);
+          ctx.lineTo(cx + 15, cy - 25 * dir);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+      };
+      
+      drawChevron(60, CANVAS_HEIGHT / 4, 'rgba(239, 68, 68, 0.8)', -1);
+      drawChevron(CANVAS_WIDTH - 60, CANVAS_HEIGHT / 4, 'rgba(239, 68, 68, 0.8)', -1); 
+      drawChevron(60, CANVAS_HEIGHT * 3 / 4, 'rgba(16, 185, 129, 0.8)', 1); 
+      drawChevron(CANVAS_WIDTH - 60, CANVAS_HEIGHT * 3 / 4, 'rgba(16, 185, 129, 0.8)', 1); 
+
+      const drawGoalArea = (y: number, color: string, dir: number) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(CANVAS_WIDTH / 2, y, GOAL_WIDTH / 2, dir === 1 ? 0 : Math.PI, dir === 1 ? Math.PI : 0, false);
+        ctx.fill();
+        
+        const glowStr = color.replace('0.1)', '0.8)');
+        ctx.shadowColor = glowStr;
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = glowStr;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(CANVAS_WIDTH / 2, y, GOAL_WIDTH / 2 + 10, dir === 1 ? 0 : Math.PI, dir === 1 ? Math.PI : 0, false);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      };
+
+      drawGoalArea(0, 'rgba(239, 68, 68, 0.1)', 1); // Guest goal
+      drawGoalArea(CANVAS_HEIGHT, 'rgba(16, 185, 129, 0.1)', -1); // Host goal
+   }
+   bgCanvasCache = c;
+   return c;
+};
+
 interface Vec2 {
   x: number;
   y: number;
@@ -133,8 +227,10 @@ export default function HockeyRoom() {
   
   const targetMyPosRef = useRef<Vec2 | null>(null);
   const targetOppPosRef = useRef<Vec2 | null>(null);
+  const lastLocalTargetTimeRef = useRef<number>(0);
   
   const syncTimerRef = useRef<number>(0);
+  const lastLoopTimeRef = useRef<number>(0);
   const networkTickRef = useRef<number>(0);
   
   const myPaddleRef = isHost ? hostPaddleRef : guestPaddleRef;
@@ -226,14 +322,14 @@ export default function HockeyRoom() {
          const errY = s.puck.y - puckRef.current.pos.y;
          const dist = Math.hypot(errX, errY);
          
-         if (dist > 60 || localGameState !== 'playing') {
+         if (dist > 30 || localGameState !== 'playing') {
             puckRef.current.pos = { x: s.puck.x, y: s.puck.y };
             puckRef.current.vel = { x: s.puck.vx, y: s.puck.vy };
          } else {
-            puckRef.current.pos.x += errX * 0.2;
-            puckRef.current.pos.y += errY * 0.2;
-            puckRef.current.vel.x += (s.puck.vx - puckRef.current.vel.x) * 0.2;
-            puckRef.current.vel.y += (s.puck.vy - puckRef.current.vel.y) * 0.2;
+            puckRef.current.pos.x += errX * 0.5;
+            puckRef.current.pos.y += errY * 0.5;
+            puckRef.current.vel.x = s.puck.vx;
+            puckRef.current.vel.y = s.puck.vy;
          }
          
          // Host paddle update
@@ -388,89 +484,7 @@ export default function HockeyRoom() {
       screenShakeRef.current = 0;
     }
 
-    const goalLeft = (CANVAS_WIDTH - GOAL_WIDTH) / 2;
-
-    ctx.fillStyle = '#050b14';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
-    ctx.fillStyle = '#02040a';
-    for (let i = 10; i < CANVAS_WIDTH; i += 20) {
-      for (let j = 10; j < CANVAS_HEIGHT; j += 20) {
-        ctx.beginPath();
-        ctx.arc(i + (j % 40 === 0 ? 10 : 0), j, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    const leftGlow = ctx.createLinearGradient(0, 0, 40, 0);
-    leftGlow.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
-    leftGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
-    ctx.fillStyle = leftGlow;
-    ctx.fillRect(0, 0, 40, CANVAS_HEIGHT);
-
-    const rightGlow = ctx.createLinearGradient(CANVAS_WIDTH, 0, CANVAS_WIDTH - 40, 0);
-    rightGlow.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
-    rightGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
-    ctx.fillStyle = rightGlow;
-    ctx.fillRect(CANVAS_WIDTH - 40, 0, 40, CANVAS_HEIGHT);
-    
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = 'rgba(56, 189, 248, 1)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, CANVAS_HEIGHT / 2);
-    ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT / 2);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 80, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.shadowBlur = 0; 
-    
-    const drawChevron = (cx: number, cy: number, color: string, dir: number) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = color;
-        ctx.beginPath();
-        ctx.moveTo(cx - 15, cy - 10 * dir);
-        ctx.lineTo(cx, cy + 10 * dir);
-        ctx.lineTo(cx + 15, cy - 10 * dir);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(cx - 15, cy - 25 * dir);
-        ctx.lineTo(cx, cy - 5 * dir);
-        ctx.lineTo(cx + 15, cy - 25 * dir);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-    };
-    
-    drawChevron(60, CANVAS_HEIGHT / 4, 'rgba(239, 68, 68, 0.8)', -1);
-    drawChevron(CANVAS_WIDTH - 60, CANVAS_HEIGHT / 4, 'rgba(239, 68, 68, 0.8)', -1); 
-    drawChevron(60, CANVAS_HEIGHT * 3 / 4, 'rgba(16, 185, 129, 0.8)', 1); 
-    drawChevron(CANVAS_WIDTH - 60, CANVAS_HEIGHT * 3 / 4, 'rgba(16, 185, 129, 0.8)', 1); 
-
-    const drawGoalArea = (y: number, color: string, dir: number) => {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(CANVAS_WIDTH / 2, y, GOAL_WIDTH / 2, dir === 1 ? 0 : Math.PI, dir === 1 ? Math.PI : 0, false);
-      ctx.fill();
-      
-      const glowStr = color.replace('0.1)', '0.8)');
-      ctx.shadowColor = glowStr;
-      ctx.shadowBlur = 15;
-      ctx.strokeStyle = glowStr;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(CANVAS_WIDTH / 2, y, GOAL_WIDTH / 2 + 10, dir === 1 ? 0 : Math.PI, dir === 1 ? Math.PI : 0, false);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    };
-
-    drawGoalArea(0, 'rgba(239, 68, 68, 0.1)', 1); // Guest goal
-    drawGoalArea(CANVAS_HEIGHT, 'rgba(16, 185, 129, 0.1)', -1); // Host goal
+    ctx.drawImage(getBgCanvas(), 0, 0);
 
     const drawCircle = (x: number, y: number, r: number, color: string, border: string, glow: string) => {
       ctx.shadowColor = glow;
@@ -517,50 +531,50 @@ export default function HockeyRoom() {
       puckTrailRef.current.forEach(t => t.alpha -= 0.12);
 
       const p = myPaddleRef.current;
-      if (targetMyPosRef.current) {
-         let t = targetMyPosRef.current;
-         p.vel.x = (t.x - p.pos.x);
-         p.vel.y = (t.y - p.pos.y);
-         p.pos.x = t.x;
-         p.pos.y = t.y;
-      } else {
-         p.vel.x = 0;
-         p.vel.y = 0;
+      const now = performance.now();
+      const dtLoop = Math.max(1, now - (lastLoopTimeRef.current || now - 16.66)) / 16.66;
+      lastLoopTimeRef.current = now;
+      
+      // Decay local paddle velocity if pointer hasn't moved recently
+      if (now - lastLocalTargetTimeRef.current > 50) {
+         p.vel.x *= 0.5;
+         p.vel.y *= 0.5;
+         if (Math.abs(p.vel.x) < 0.1) p.vel.x = 0;
+         if (Math.abs(p.vel.y) < 0.1) p.vel.y = 0;
       }
       
       const opp = oppPaddleRef.current;
       if (targetOppPosRef.current) {
          const t = targetOppPosRef.current;
-         opp.vel.x = (t.x - opp.pos.x) * 0.6;
-         opp.vel.y = (t.y - opp.pos.y) * 0.6;
+         const interp = Math.min(1, 0.4 * dtLoop);
+         opp.vel.x = (t.x - opp.pos.x) * interp;
+         opp.vel.y = (t.y - opp.pos.y) * interp;
          opp.pos.x += opp.vel.x;
          opp.pos.y += opp.vel.y;
       }
 
       updatePhysics(isHost);
 
-      networkTickRef.current++;
-      if (isHost) {
-         if (networkTickRef.current % 3 === 0) {
-             sendHockeyEvent({
-                 type: 'HOCKEY_SYNC',
-                 state: {
-                     puck: { x: puckRef.current.pos.x, y: puckRef.current.pos.y, vx: puckRef.current.vel.x, vy: puckRef.current.vel.y },
-                     paddle1: hostPaddleRef.current.pos,
-                     paddle2: guestPaddleRef.current.pos,
-                     score1: player1Score,
-                     score2: player2Score,
-                     gameState: localGameState
-                 }
-             });
-         }
-      } else {
-         if (networkTickRef.current % 3 === 0) {
-             sendHockeyEvent({
-                type: 'HOCKEY_ACTION',
-                paddle: { x: p.pos.x, y: p.pos.y, vx: p.vel.x, vy: p.vel.y }
-             });
-         }
+      if (now - syncTimerRef.current > 50) { // ~20 updates per second
+          syncTimerRef.current = now;
+          if (isHost) {
+              sendHockeyEvent({
+                  type: 'HOCKEY_SYNC',
+                  state: {
+                      puck: { x: puckRef.current.pos.x, y: puckRef.current.pos.y, vx: puckRef.current.vel.x, vy: puckRef.current.vel.y },
+                      paddle1: hostPaddleRef.current.pos,
+                      paddle2: guestPaddleRef.current.pos,
+                      score1: player1Score,
+                      score2: player2Score,
+                      gameState: localGameState
+                  }
+              });
+          } else {
+              sendHockeyEvent({
+                 type: 'HOCKEY_ACTION',
+                 paddle: { x: p.pos.x, y: p.pos.y, vx: p.vel.x, vy: p.vel.y }
+              });
+          }
       }
     }
 
@@ -606,6 +620,19 @@ export default function HockeyRoom() {
         targetY = Math.max(pRadius, Math.min(CANVAS_HEIGHT / 2 - pRadius, targetY));
     }
 
+    const now = performance.now();
+    const dt = Math.max(1, now - lastLocalTargetTimeRef.current);
+    lastLocalTargetTimeRef.current = now;
+
+    const p = myPaddleRef.current;
+    
+    if (targetMyPosRef.current) {
+        const vx = ((targetX - targetMyPosRef.current.x) / dt) * 16.66;
+        const vy = ((targetY - targetMyPosRef.current.y) / dt) * 16.66;
+        p.vel = { x: vx, y: vy };
+    }
+
+    p.pos = { x: targetX, y: targetY };
     targetMyPosRef.current = { x: targetX, y: targetY };
   };
 
