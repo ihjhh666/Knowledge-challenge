@@ -82,13 +82,14 @@ export default function Lobby() {
             <label className="block text-slate-400 text-sm mb-2">نوع اللعبة</label>
             <select 
               value={state.gameMode || 'quiz'}
-              onChange={(e) => changeGameMode(e.target.value as 'quiz' | 'fishing' | 'penalty')}
+              onChange={(e) => changeGameMode(e.target.value as 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey')}
               className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none"
             >
               <option value="quiz">🧠 تحدي المعرفة</option>
               <option value="fishing">🎣 صيد السمك</option>
               <option value="penalty">⚽ ركلات الجزاء</option>
               <option value="domino">🎲 الدومينو (1 ضد 1)</option>
+              <option value="hockey">🏒 هوكي (1 ضد 1)</option>
             </select>
           </div>
 

@@ -7,6 +7,7 @@ import SoloPlay from './pages/SoloPlay';
 import FishingSolo from './pages/FishingSolo';
 import PenaltySolo from './pages/PenaltySolo';
 import DominoSolo from './pages/DominoSolo';
+import HockeySolo from './pages/HockeySolo';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
@@ -41,6 +42,7 @@ function AppContent() {
           <Route path="/fishing" element={<FishingSolo />} />
           <Route path="/penalty" element={<PenaltySolo />} />
           <Route path="/domino" element={<DominoSolo />} />
+          <Route path="/hockey-solo" element={<HockeySolo />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

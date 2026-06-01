@@ -169,7 +169,7 @@ export default function Home() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino') ? 10 : createConfig.maxPlayers})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey') ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'quiz' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <Brain className="w-6 h-6 text-indigo-400" />
@@ -177,7 +177,7 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino') ? 10 : createConfig.maxPlayers})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey') ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'fishing' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <div className="text-2xl">🎣</div>
@@ -198,6 +198,14 @@ export default function Home() {
                 >
                   <div className="text-2xl">🎲</div>
                   <span className="text-sm font-bold text-slate-200 text-center">الدومينو</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'hockey', maxPlayers: 2})}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'hockey' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                >
+                  <div className="text-2xl">🏒</div>
+                  <span className="text-sm font-bold text-slate-200 text-center">الهوكي</span>
                 </button>
               </div>
             </div>
@@ -265,8 +273,8 @@ export default function Home() {
               <input 
                 type="number"
                 min="2"
-                max={createConfig.gameMode === 'penalty' ? "2" : "20"}
-                disabled={createConfig.gameMode === 'penalty'}
+                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : "20"}
+                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey'}
                 value={createConfig.maxPlayers}
                 onChange={(e) => setCreateConfig({...createConfig, maxPlayers: parseInt(e.target.value) || 2})}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
@@ -396,6 +404,18 @@ export default function Home() {
              <p className="text-slate-400 text-sm mb-8 leading-relaxed">العب لعبة الدومينو الكلاسيكية ضد الذكاء الاصطناعي وضع استراتيجيتك واهزم خصومك.</p>
              <span className="mt-auto bg-violet-500/10 text-violet-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-violet-500/20 group-hover:bg-violet-500 group-hover:text-white transition-colors">إلعب الآن</span>
           </div>
+
+          <div 
+            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-blue-500/50 hover:bg-slate-800/80 transition-all duration-300 cursor-pointer group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-blue-500/20" 
+            onClick={() => navigate('/hockey-solo')}
+          >
+             <div className="bg-blue-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-300">
+                <div className="text-5xl drop-shadow-md">🏒</div>
+             </div>
+             <h3 className="text-2xl font-bold font-heading text-white mb-3">الهوكي</h3>
+             <p className="text-slate-400 text-sm mb-8 leading-relaxed">لعبة الهوكي الفردية ضد الذكاء الاصطناعي، سجل 10 أهداف لتفوز.</p>
+             <span className="mt-auto bg-blue-500/10 text-blue-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-blue-500/20 group-hover:bg-blue-500 group-hover:text-white transition-colors">إلعب الآن</span>
+          </div>
         </div>
       </section>
 
@@ -471,7 +491,7 @@ export default function Home() {
                         </span>
                       </div>
                       <h4 className="font-bold text-white text-lg pr-8">
-                        {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : room.category}
+                        {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : room.gameMode === 'domino' ? '🎲 الدومينو' : room.gameMode === 'hockey' ? '🏒 الهوكي' : room.category}
                       </h4>
                       <p className="text-slate-400 text-sm mt-1">المضيف: <span className="text-slate-300">{room.hostName}</span></p>
                     </div>

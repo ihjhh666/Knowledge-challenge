@@ -31,7 +31,7 @@ export type RoomVisibility = 'public' | 'private' | 'link' | 'password';
 export interface GameState {
   roomId: string;
   category?: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey';
   roomVisibility?: RoomVisibility;
   maxPlayers?: number;
   password?: string;
@@ -73,6 +73,13 @@ export interface GameState {
       [id: string]: number;
     };
   };
+  hockeyState?: {
+    player1Id: string;
+    player2Id: string;
+    pointsMatch?: {
+      [id: string]: number;
+    };
+  };
   round: number;
   totalRounds: number;
   roundStartTime?: number;
@@ -94,7 +101,7 @@ export type PeerMessage =
   | { type: 'KICKED', reason: string }
   | { type: 'MUTE', playerId: string, isMuted: boolean }
   | { type: 'CHANGE_CATEGORY', category: string }
-  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' }
+  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' }
   | { type: 'FORCE_NEXT_QUESTION' }
   | { type: 'LEAVE', playerId: string }
   | { type: 'TRANSFER_HOST', playerId: string }
@@ -102,5 +109,7 @@ export type PeerMessage =
   | { type: 'FISH_SPAWN', fish: any }
   | { type: 'FISH_CATCH', playerId: string, fishId: number, points: number, fType: string }
   | { type: 'PENALTY_ACTION', playerId: string, action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right' }
-  | { type: 'DOMINO_ACTION', playerId: string, actionDetails: any };
+  | { type: 'DOMINO_ACTION', playerId: string, actionDetails: any }
+  | { type: 'HOCKEY_ACTION', playerId: string, paddle: { x: number, y: number, vx: number, vy: number } }
+  | { type: 'HOCKEY_SYNC', state: { puck: { x: number, y: number, vx: number, vy: number }, paddle1: { x: number, y: number }, paddle2: { x: number, y: number }, goalScorer?: 'player1'|'player2'|null, gameState: 'playing'|'goal'|'results', score1: number, score2: number } };
 

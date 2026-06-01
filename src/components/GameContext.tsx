@@ -23,7 +23,7 @@ export interface GameContextType {
   state: GameState | null;
   playerId: string;
   isHost: boolean;
-  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino') => void;
+  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey') => void;
   joinRoom: (roomId: string, password?: string, onError?: (err: string) => void) => void;
   sendMessage: (text: string) => void;
   toggleReady: () => void;
@@ -33,7 +33,7 @@ export interface GameContextType {
   kickPlayer: (playerId: string) => void;
   mutePlayer: (playerId: string, isMuted: boolean) => void;
   changeCategory: (category: string) => void;
-  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino') => void;
+  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey') => void;
   returnToLobby: () => void;
   requestRematch: () => void;
   forceNextQuestion: () => void;
@@ -42,6 +42,7 @@ export interface GameContextType {
   spawnFish: (fish: any) => void;
   sendPenaltyAction: (action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right') => void;
   sendDominoAction: (actionDetails: any) => void;
+  sendHockeyEvent: (event: any) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -292,6 +293,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             startPenaltyMode(currentState);
           } else if (currentState.gameMode === 'domino') {
             startDominoMode(currentState);
+          } else if (currentState.gameMode === 'hockey') {
+            startHockeyMode(currentState);
           } else {
             startNextRound(currentState);
           }
@@ -313,6 +316,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           setState(newState);
           broadcast({ type: 'STATE_UPDATE', state: newState });
+        }
+        break;
+      case 'HOCKEY_ACTION':
+      case 'HOCKEY_SYNC':
+        if (stateRef.current && stateRef.current.gameMode === 'hockey') {
+          window.dispatchEvent(new CustomEvent('hockey_event', { detail: message }));
         }
         break;
       case 'SUBMIT_ANSWER':
@@ -372,7 +381,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'CHANGE_MODE':
         if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
-           const newCat = message.gameMode === 'fishing' ? '🎣 صيد السمك' : message.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : message.gameMode === 'domino' ? '🎲 الدومينو' : '🧠 معلومات عامة';
+           const newCat = message.gameMode === 'fishing' ? '🎣 صيد السمك' : message.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : message.gameMode === 'domino' ? '🎲 الدومينو' : message.gameMode === 'hockey' ? '🏒 هوكي' : '🧠 معلومات عامة';
            const newState = { ...stateRef.current, gameMode: message.gameMode, category: message.gameMode === 'quiz' && stateRef.current.category ? stateRef.current.category : newCat };
            setState(newState);
            broadcast({ type: 'STATE_UPDATE', state: newState });
@@ -644,6 +653,34 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            [p1]: 0,
            [p2]: 0
          }
+      }
+    };
+    
+    setState(initialState);
+    broadcast({ type: 'STATE_UPDATE', state: initialState });
+    updatePublicRoom(initialState.roomId, { status: 'playing' });
+  };
+
+  const startHockeyMode = (currentState: GameState) => {
+    const pIds = Object.keys(currentState.players);
+    if (pIds.length < 2) return;
+    const p1 = pIds[0];
+    const p2 = pIds[1];
+    
+    // reset scores
+    const updatedPlayers = { ...currentState.players };
+    updatedPlayers[p1] = { ...updatedPlayers[p1], score: 0 };
+    updatedPlayers[p2] = { ...updatedPlayers[p2], score: 0 };
+
+    const initialState: GameState = {
+      ...currentState,
+      status: 'playing',
+      round: 1,
+      totalRounds: 1,
+      players: updatedPlayers,
+      hockeyState: {
+        player1Id: p1,
+        player2Id: p2,
       }
     };
     
@@ -951,12 +988,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAllAnswered(newState);
   };
 
-  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' = 'quiz') => {
+  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' = 'quiz') => {
     intentionalLeaveRef.current = false;
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
-    const roomCategory = gameMode === 'fishing' ? '🎣 صيد السمك' : gameMode === 'penalty' ? '⚽ ركلات الجزاء' : gameMode === 'domino' ? '🎲 الدومينو' : category || '🧠 معلومات عامة';
+    const roomCategory = gameMode === 'fishing' ? '🎣 صيد السمك' : gameMode === 'penalty' ? '⚽ ركلات الجزاء' : gameMode === 'domino' ? '🎲 الدومينو' : gameMode === 'hockey' ? '🏒 هوكي' : category || '🧠 معلومات عامة';
     
     setPlayerId(myId);
     setIsHost(true);
@@ -1078,6 +1115,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           conn.close();
         } else if (msg.type === 'FISH_CATCH' || msg.type === 'FISH_SPAWN') {
           window.dispatchEvent(new CustomEvent('fishing_event', { detail: msg }));
+        } else if (msg.type === 'HOCKEY_ACTION' || msg.type === 'HOCKEY_SYNC') {
+          window.dispatchEvent(new CustomEvent('hockey_event', { detail: msg }));
         }
       });
       
@@ -1335,8 +1374,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [playerId]);
 
+  const sendHockeyEvent = React.useCallback((event: any) => {
+    if (isHostRef.current) {
+      broadcast(event);
+    } else if (hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ ...event, playerId });
+    }
+  }, [playerId]);
+
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent }}>
       {children}
     </GameContext.Provider>
   );

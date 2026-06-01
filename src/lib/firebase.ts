@@ -21,7 +21,7 @@ export interface PublicRoom {
   roomId: string;
   hostName: string;
   category: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey';
   playerCount: number;
   maxPlayers: number;
   status: 'waiting' | 'playing' | 'finished' | 'revealing';
@@ -54,6 +54,14 @@ export interface PlayerStats {
   penaltyGoals?: number;
   penaltySaves?: number;
   penaltyWinStreak?: number;
+  // Hockey Stats
+  hockeyGamesPlayed?: number;
+  hockeyWins?: number;
+  hockeyLosses?: number;
+  hockeyGoalsScored?: number;
+  hockeyGoalsConceded?: number;
+  hockeyWinStreak?: number;
+  currentHockeyWinStreak?: number;
 }
 
 export const updatePenaltyStats = async (
@@ -308,6 +316,84 @@ export const updateFishingStats = async (
     }
   } catch(err) {
     console.error('Error updating fishing stats:', err);
+  }
+};
+
+export const updateHockeyStats = async (
+  playerId: string,
+  playerName: string,
+  isWin: boolean,
+  goalsScored: number,
+  goalsConceded: number,
+  pointsAwarded: number
+) => {
+  if (!db) return;
+  try {
+    const playerRef = doc(db, 'users', playerId);
+    const snap = await getDoc(playerRef);
+    
+    const category = '🏒 هوكي';
+    
+    if (snap.exists()) {
+      const data = snap.data() as PlayerStats;
+      const currentStreak = isWin ? ((data.currentHockeyWinStreak || 0) + 1) : 0;
+      const maxStreak = Math.max(currentStreak, data.hockeyWinStreak || 0);
+      
+      const newCategoryCounts = { ...data.categoryCounts };
+      newCategoryCounts[category] = (newCategoryCounts[category] || 0) + 1;
+      
+      let mostPlayedCategory = '';
+      let maxCount = 0;
+      for (const [cat, count] of Object.entries(newCategoryCounts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          mostPlayedCategory = cat;
+        }
+      }
+
+      await setDoc(playerRef, {
+        hockeyGamesPlayed: (data.hockeyGamesPlayed || 0) + 1,
+        hockeyWins: (data.hockeyWins || 0) + (isWin ? 1 : 0),
+        hockeyLosses: (data.hockeyLosses || 0) + (isWin ? 0 : 1),
+        hockeyGoalsScored: (data.hockeyGoalsScored || 0) + goalsScored,
+        hockeyGoalsConceded: (data.hockeyGoalsConceded || 0) + goalsConceded,
+        hockeyWinStreak: maxStreak,
+        currentHockeyWinStreak: currentStreak,
+
+        gamesPlayed: (data.gamesPlayed || 0) + 1,
+        wins: (data.wins || 0) + (isWin ? 1 : 0),
+        totalPoints: (data.totalPoints || 0) + pointsAwarded,
+        categoryCounts: newCategoryCounts,
+        mostPlayedCategory,
+        lastUpdated: Date.now()
+      }, { merge: true });
+    } else {
+      const newStats: PlayerStats = {
+        playerId,
+        playerName,
+        gamesPlayed: 1,
+        wins: isWin ? 1 : 0,
+        correctAnswers: 0,
+        wrongAnswers: 0,
+        totalPoints: pointsAwarded,
+        successRate: 0,
+        categoryCounts: { [category]: 1 },
+        mostPlayedCategory: category,
+        
+        hockeyGamesPlayed: 1,
+        hockeyWins: isWin ? 1 : 0,
+        hockeyLosses: isWin ? 0 : 1,
+        hockeyGoalsScored: goalsScored,
+        hockeyGoalsConceded: goalsConceded,
+        hockeyWinStreak: isWin ? 1 : 0,
+        currentHockeyWinStreak: isWin ? 1 : 0,
+        
+        lastUpdated: Date.now()
+      };
+      await setDoc(playerRef, newStats);
+    }
+  } catch(err) {
+    console.error('Error updating hockey stats:', err);
   }
 };
 

@@ -89,13 +89,40 @@ export default function Profile() {
 
           {(stats.fishingGamesPlayed || 0) > 0 && (
             <div className="mt-8 space-y-4">
-              <h3 className="text-2xl font-bold font-heading text-sky-400 mb-4">إحصائيات صيد السمك 🎣</h3>
+              <h3 className="text-2xl font-bold font-heading text-sky-400 mb-4 flex items-center gap-2">🎣 إحصائيات صيد السمك</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <StatCard icon={Gamepad2} label="مباريات الصيد" value={stats.fishingGamesPlayed || 0} color="text-blue-400" bg="bg-blue-500/20" />
                 <StatCard icon={Trophy} label="مرات الفوز" value={stats.fishingWins || 0} color="text-emerald-400" bg="bg-emerald-500/20" />
                 <StatCard icon={Star} label="إجمالي النقاط" value={(stats.fishingTotalPoints || 0).toLocaleString()} color="text-amber-400" bg="bg-amber-500/20" />
                 <StatCard icon={Target} label="أعلى نتيجة" value={(stats.fishingHighestScore || 0).toLocaleString()} color="text-sky-400" bg="bg-sky-500/20" />
                 <StatCard icon={CheckCircle} label="إجمالي الأسماك" value={stats.fishingTotalFish || 0} color="text-purple-400" bg="bg-purple-500/20" colSpan="col-span-2 md:col-span-1 lg:col-span-2" />
+              </div>
+            </div>
+          )}
+
+          {(stats.penaltyGamesPlayed || 0) > 0 && (
+            <div className="mt-8 space-y-4">
+              <h3 className="text-2xl font-bold font-heading text-green-400 mb-4 flex items-center gap-2">⚽ إحصائيات ركلات الجزاء</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <StatCard icon={Gamepad2} label="إجمالي المباريات" value={stats.penaltyGamesPlayed || 0} color="text-blue-400" bg="bg-blue-500/20" />
+                <StatCard icon={Trophy} label="مرات الفوز" value={stats.penaltyWins || 0} color="text-emerald-400" bg="bg-emerald-500/20" />
+                <StatCard icon={Target} label="أهداف مسجلة" value={stats.penaltyGoals || 0} color="text-emerald-500" bg="bg-emerald-500/20" />
+                <StatCard icon={CheckCircle} label="تصديات ناجحة" value={stats.penaltySaves || 0} color="text-amber-400" bg="bg-amber-500/20" />
+                <StatCard icon={Star} label="أعلى سلسلة انتصارات" value={stats.penaltyWinStreak || 0} color="text-purple-400" bg="bg-purple-500/20" />
+              </div>
+            </div>
+          )}
+
+          {(stats.hockeyGamesPlayed || 0) > 0 && (
+            <div className="mt-8 space-y-4">
+              <h3 className="text-2xl font-bold font-heading text-rose-400 mb-4 flex items-center gap-2">🏒 إحصائيات الهوكي</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <StatCard icon={Gamepad2} label="إجمالي المباريات" value={stats.hockeyGamesPlayed || 0} color="text-blue-400" bg="bg-blue-500/20" />
+                <StatCard icon={Trophy} label="مرات الفوز" value={stats.hockeyWins || 0} color="text-emerald-400" bg="bg-emerald-500/20" />
+                <StatCard icon={XCircle} label="مرات الخسارة" value={stats.hockeyLosses || 0} color="text-rose-400" bg="bg-rose-500/20" />
+                <StatCard icon={Target} label="أهداف لك" value={stats.hockeyGoalsScored || 0} color="text-emerald-500" bg="bg-emerald-500/20" />
+                <StatCard icon={CheckCircle} label="أهداف عليك" value={stats.hockeyGoalsConceded || 0} color="text-rose-500" bg="bg-rose-500/20" />
+                <StatCard icon={Star} label="أعلى سلسلة انتصارات" value={stats.hockeyWinStreak || 0} color="text-purple-400" bg="bg-purple-500/20" />
               </div>
             </div>
           )}
