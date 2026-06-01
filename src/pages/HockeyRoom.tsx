@@ -228,11 +228,13 @@ export default function HockeyRoom() {
          
          if (dist > 60 || localGameState !== 'playing') {
             puckRef.current.pos = { x: s.puck.x, y: s.puck.y };
+            puckRef.current.vel = { x: s.puck.vx, y: s.puck.vy };
          } else {
-            puckRef.current.pos.x += errX * 0.3;
-            puckRef.current.pos.y += errY * 0.3;
+            puckRef.current.pos.x += errX * 0.2;
+            puckRef.current.pos.y += errY * 0.2;
+            puckRef.current.vel.x += (s.puck.vx - puckRef.current.vel.x) * 0.2;
+            puckRef.current.vel.y += (s.puck.vy - puckRef.current.vel.y) * 0.2;
          }
-         puckRef.current.vel = { x: s.puck.vx, y: s.puck.vy };
          
          // Host paddle update
          targetOppPosRef.current = { x: s.paddle1.x, y: s.paddle1.y };
@@ -347,8 +349,10 @@ export default function HockeyRoom() {
         
         const dot = puck.vel.x*nx + puck.vel.y*ny;
         const bounce = 0.95; 
-        const hitX = (paddle.vel.x || 0) * 1.0;
-        const hitY = (paddle.vel.y || 0) * 1.0;
+        const tVelX = Math.max(-20, Math.min(20, paddle.vel.x || 0));
+        const tVelY = Math.max(-20, Math.min(20, paddle.vel.y || 0));
+        const hitX = tVelX * 0.5;
+        const hitY = tVelY * 0.5;
         
         if (dot < 0) {
            puck.vel.x = puck.vel.x - 2 * dot * nx * bounce;
@@ -527,8 +531,8 @@ export default function HockeyRoom() {
       const opp = oppPaddleRef.current;
       if (targetOppPosRef.current) {
          const t = targetOppPosRef.current;
-         opp.vel.x = (t.x - opp.pos.x) * 0.4;
-         opp.vel.y = (t.y - opp.pos.y) * 0.4;
+         opp.vel.x = (t.x - opp.pos.x) * 0.6;
+         opp.vel.y = (t.y - opp.pos.y) * 0.6;
          opp.pos.x += opp.vel.x;
          opp.pos.y += opp.vel.y;
       }
@@ -551,7 +555,7 @@ export default function HockeyRoom() {
              });
          }
       } else {
-         if (p.vel.x !== 0 || p.vel.y !== 0 || networkTickRef.current % 3 === 0) {
+         if (networkTickRef.current % 3 === 0) {
              sendHockeyEvent({
                 type: 'HOCKEY_ACTION',
                 paddle: { x: p.pos.x, y: p.pos.y, vx: p.vel.x, vy: p.vel.y }
