@@ -38,7 +38,7 @@ export default function Leaderboard() {
       <div className="flex gap-2 bg-slate-900 border border-slate-800 p-2 rounded-2xl w-fit">
         <SortButton active={sortMethod === 'totalPoints'} onClick={() => setSortMethod('totalPoints')} icon={Star} label="النقاط" />
         <SortButton active={sortMethod === 'wins'} onClick={() => setSortMethod('wins')} icon={Medal} label="الانتصارات" />
-        <SortButton active={sortMethod === 'successRate'} onClick={() => setSortMethod('successRate')} icon={Target} label="نسبة النجاح" />
+        <SortButton active={sortMethod === 'successRate'} onClick={() => setSortMethod('successRate')} icon={Target} label="نسبة الفوز / الإجابات" />
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
