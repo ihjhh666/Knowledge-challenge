@@ -382,20 +382,30 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'REQUEST_REMATCH':
         if (isHostRef.current && stateRef.current && (stateRef.current.status === 'finished' || (stateRef.current.gameMode === 'domino' && stateRef.current.dominoState?.winnerId))) {
            const oldState = stateRef.current;
-           const approvals = oldState.rematchApprovals || [];
-           if (!approvals.includes(message.playerId)) {
-              approvals.push(message.playerId);
-              const newState = { ...oldState, rematchApprovals: approvals };
-              setState(newState);
-              broadcast({ type: 'STATE_UPDATE', state: newState });
-              
-              if (approvals.length === Object.keys(newState.players).length) {
-                 if (newState.gameMode === 'domino') {
-                   startDominoMode({ ...newState, rematchApprovals: [] });
-                 } else {
+           const isHostSender = message.playerId === playerId;
+           
+           if (isHostSender) {
+               if (oldState.gameMode === 'domino') {
+                   startDominoMode({ ...oldState, rematchApprovals: [] });
+               } else {
                    handleMessage({ type: 'START_GAME' });
-                 }
-              }
+               }
+           } else {
+               const approvals = oldState.rematchApprovals || [];
+               if (!approvals.includes(message.playerId)) {
+                  approvals.push(message.playerId);
+                  const newState = { ...oldState, rematchApprovals: approvals };
+                  setState(newState);
+                  broadcast({ type: 'STATE_UPDATE', state: newState });
+                  
+                  if (approvals.length >= Object.keys(newState.players).length) {
+                     if (newState.gameMode === 'domino') {
+                       startDominoMode({ ...newState, rematchApprovals: [] });
+                     } else {
+                       handleMessage({ type: 'START_GAME' });
+                     }
+                  }
+               }
            }
         }
         break;
