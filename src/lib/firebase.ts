@@ -21,7 +21,7 @@ export interface PublicRoom {
   roomId: string;
   hostName: string;
   category: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino';
   playerCount: number;
   maxPlayers: number;
   status: 'waiting' | 'playing' | 'finished' | 'revealing';

@@ -31,7 +31,7 @@ export type RoomVisibility = 'public' | 'private' | 'link' | 'password';
 export interface GameState {
   roomId: string;
   category?: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino';
   roomVisibility?: RoomVisibility;
   maxPlayers?: number;
   password?: string;
@@ -58,6 +58,21 @@ export interface GameState {
     }[];
     countdown?: number;
   };
+  dominoState?: {
+    turnId: string;
+    player1Id: string;
+    player2Id: string;
+    boneyard: any[];
+    board: any[];
+    player1Tiles: any[];
+    player2Tiles: any[];
+    passCount: number;
+    winnerId?: string;
+    isBlocked?: boolean;
+    pointsMatch?: {
+      [id: string]: number;
+    };
+  };
   round: number;
   totalRounds: number;
   roundStartTime?: number;
@@ -79,12 +94,13 @@ export type PeerMessage =
   | { type: 'KICKED', reason: string }
   | { type: 'MUTE', playerId: string, isMuted: boolean }
   | { type: 'CHANGE_CATEGORY', category: string }
-  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' }
+  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' }
   | { type: 'FORCE_NEXT_QUESTION' }
   | { type: 'LEAVE', playerId: string }
   | { type: 'TRANSFER_HOST', playerId: string }
   | { type: 'PING', playerId: string }
   | { type: 'FISH_SPAWN', fish: any }
   | { type: 'FISH_CATCH', playerId: string, fishId: number, points: number, fType: string }
-  | { type: 'PENALTY_ACTION', playerId: string, action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right' };
+  | { type: 'PENALTY_ACTION', playerId: string, action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right' }
+  | { type: 'DOMINO_ACTION', playerId: string, actionDetails: any };
 

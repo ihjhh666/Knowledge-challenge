@@ -39,9 +39,9 @@ export default function Lobby() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h2 className="text-xl font-bold font-heading text-slate-200">اللاعبين في الغرفة</h2>
-            {state.category && (
+             {state.category && (
                <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-md text-xs font-bold border border-indigo-500/30">
-                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.category}
+                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.gameMode === 'domino' ? '🎲 الدومينو' : state.category}
                </span>
             )}
             {state.gameMode === 'fishing' && (
@@ -88,6 +88,7 @@ export default function Lobby() {
               <option value="quiz">🧠 تحدي المعرفة</option>
               <option value="fishing">🎣 صيد السمك</option>
               <option value="penalty">⚽ ركلات الجزاء</option>
+              <option value="domino">🎲 الدومينو (1 ضد 1)</option>
             </select>
           </div>
 
@@ -187,8 +188,8 @@ export default function Lobby() {
         {isHost && (
           <button
             onClick={startGame}
-            disabled={!allReady || players.length < 2}
-            className="flex-1 max-w-[200px] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:border-slate-800 disabled:text-slate-500 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 border-b-4 border-indigo-800 disabled:border-b-0"
+            disabled={!allReady || players.length < 2 || (state.gameMode === 'domino' && players.length !== 2) || (state.gameMode === 'penalty' && players.length !== 2)}
+            className="flex-1 max-w-[200px] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:border-slate-800 disabled:text-slate-500 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 border-b-4 border-indigo-800 disabled:cursor-not-allowed disabled:border-b-0"
           >
             <Play className="w-5 h-5" />
             ابدأ اللعب

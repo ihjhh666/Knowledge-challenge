@@ -166,22 +166,22 @@ export default function Home() {
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
             <div>
               <label className="block text-slate-400 mb-3 font-bold">نمط اللعب</label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: createConfig.gameMode === 'penalty' ? 10 : createConfig.maxPlayers})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino') ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'quiz' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <Brain className="w-6 h-6 text-indigo-400" />
-                  <span className="text-sm font-bold text-slate-200">تحدي المعرفة</span>
+                  <span className="text-sm font-bold text-slate-200 text-center">تحدي المعرفة</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: createConfig.gameMode === 'penalty' ? 10 : createConfig.maxPlayers})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino') ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'fishing' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <div className="text-2xl">🎣</div>
-                  <span className="text-sm font-bold text-slate-200">صيد السمك</span>
+                  <span className="text-sm font-bold text-slate-200 text-center">صيد السمك</span>
                 </button>
                 <button
                   type="button"
@@ -189,7 +189,15 @@ export default function Home() {
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'penalty' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <Goal className="w-6 h-6 text-emerald-400" />
-                  <span className="text-sm font-bold text-slate-200">ركلات الجزاء</span>
+                  <span className="text-sm font-bold text-slate-200 text-center">ركلات الجزاء</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'domino', maxPlayers: 2})}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'domino' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                >
+                  <div className="text-2xl">🎲</div>
+                  <span className="text-sm font-bold text-slate-200 text-center">الدومينو</span>
                 </button>
               </div>
             </div>
