@@ -861,62 +861,58 @@ export default function DominoSolo() {
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-lg z-40 overflow-y-auto w-full flex items-center justify-center p-4">
-             <div className="bg-slate-900 p-8 md:p-12 rounded-3xl border border-slate-700 text-center max-w-xl w-full mx-auto flex flex-col items-center shadow-[0_0_100px_rgba(0,0,0,0.8)] relative overflow-hidden">
+          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-40 overflow-y-auto w-full flex items-center justify-center p-4">
+             <div className="bg-slate-900/90 p-5 md:p-6 rounded-3xl border border-slate-700 text-center max-w-sm w-full mx-auto flex flex-col items-center shadow-2xl relative overflow-hidden backdrop-blur-xl">
                 <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
-                <div className={`absolute -left-20 -top-20 w-80 h-80 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${winner === 'player' ? 'bg-emerald-500/20 scale-150' : winner === 'bot' ? 'bg-rose-500/20' : 'bg-slate-400/20'}`}></div>
+                <div className={`absolute -left-20 -top-20 w-80 h-80 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${winner === 'player' ? 'bg-emerald-500/10' : winner === 'bot' ? 'bg-rose-500/10' : 'bg-slate-400/10'}`}></div>
 
-                <div className={`w-32 h-32 md:w-40 md:h-40 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl relative z-10 border-4 transition-transform duration-700 hover:scale-110 ${winner === 'player' ? 'bg-emerald-500/10 border-emerald-500/30 shadow-emerald-500/30' : winner === 'bot' ? 'bg-rose-500/10 border-rose-500/30 shadow-rose-500/30' : 'bg-slate-800 border-slate-600 shadow-slate-900/50'}`}>
-                  {winner === 'player' && <Trophy className="w-16 h-16 md:w-20 md:h-20 text-emerald-400 drop-shadow-md animate-bounce" />}
-                  {winner === 'bot' && <Target className="w-16 h-16 md:w-20 md:h-20 text-rose-400 drop-shadow-md" />}
-                  {winner === 'draw' && <Grid2X2 className="w-16 h-16 md:w-20 md:h-20 text-slate-400 drop-shadow-md" />}
+                <div className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mb-4 shadow-xl relative z-10 border-2 ${winner === 'player' ? 'bg-emerald-500/20 border-emerald-500/40' : winner === 'bot' ? 'bg-rose-500/20 border-rose-500/40' : 'bg-slate-800 border-slate-600'}`}>
+                  {winner === 'player' && <Trophy className="w-8 h-8 md:w-10 md:h-10 text-emerald-400 animate-bounce" />}
+                  {winner === 'bot' && <Target className="w-8 h-8 md:w-10 md:h-10 text-rose-400" />}
+                  {winner === 'draw' && <Grid2X2 className="w-8 h-8 md:w-10 md:h-10 text-slate-400" />}
                 </div>
                 
-                <h2 className={`text-4xl md:text-5xl font-bold mb-4 font-heading relative z-10 drop-shadow-md tracking-wide ${winner === 'player' ? 'text-emerald-400' : winner === 'bot' ? 'text-rose-400' : 'text-slate-300'}`}>
-                   {winner === 'player' ? 'أنت الفائز!' : winner === 'bot' ? 'لقد خسرت!' : 'انسداد اللعب!'}
+                <h2 className="text-2xl md:text-3xl font-bold mb-1 text-white relative z-10">
+                   {winner === 'player' ? 'أنت الفائز!' : winner === 'bot' ? 'لقد خسرت!' : 'انسداد (تعادل)'}
                 </h2>
-                <p className="text-xl md:text-2xl text-slate-300 relative z-10 font-bold mb-2">
-                   {winner === 'player' ? 'تهانينا، لقد أنهيت الجولة بنجاح كبير!' : winner === 'bot' ? 'تمكن الخصم من التغلب عليك هذه المرة.' : 'اللاعب صاحب أقل مجموع نقاط هو الفائز.'}
-                </p>
+                {winner === 'draw' && <p className="text-amber-400 mb-3 text-xs md:text-sm font-bold relative z-10">تم الإغلاق - الأقل نقاطاً يفوز</p>}
+                {winner !== 'draw' && <div className="mb-3"></div>}
 
-                <div className="bg-slate-950 border border-slate-800 w-full p-6 md:p-8 rounded-3xl mt-10 mb-10 text-white grid grid-cols-2 gap-4 md:gap-6 relative z-10 shadow-inner">
-                   <div className="bg-slate-900 rounded-2xl p-4 md:p-6 text-center border-b-4 border-emerald-500 relative overflow-hidden group shadow-lg">
-                      <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <p className="text-slate-400 text-sm md:text-base mb-2 font-bold tracking-wide">النقاط المكتسبة</p>
-                      <p className={`text-4xl md:text-5xl font-bold font-mono ${winner === 'player' ? 'text-emerald-400' : 'text-slate-200'}`}>+{scoreEarned}</p>
+                <div className="bg-slate-950/50 border border-slate-800/80 w-full p-4 rounded-2xl mt-4 mb-6 text-white grid grid-cols-2 gap-4 relative z-10">
+                   <div className="bg-slate-800/80 rounded-xl p-3 text-center border-b-2 border-emerald-500/50 flex flex-col justify-center items-center">
+                      <p className="text-slate-400 text-xs mb-1">النقاط المكتسبة</p>
+                      <p className={`text-2xl font-bold font-mono ${winner === 'player' ? 'text-emerald-300' : 'text-slate-300'}`}>{winner === 'player' ? `+${scoreEarned}` : 0}</p>
                    </div>
-                   <div className="bg-slate-900 rounded-2xl p-4 md:p-6 text-center border-b-4 border-slate-600 relative overflow-hidden group shadow-lg">
-                      <div className="absolute inset-0 bg-slate-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <p className="text-slate-400 text-sm md:text-base mb-2 font-bold tracking-wide">أحجارك المتبقية</p>
-                      <p className="text-4xl md:text-5xl font-bold font-mono text-slate-200">{playerHand.length}</p>
+                   <div className="bg-slate-800/80 rounded-xl p-3 text-center border-b-2 border-slate-500/50 flex flex-col justify-center items-center">
+                      <p className="text-slate-400 text-xs mb-1">أحجارك المتبقية</p>
+                      <p className="text-2xl font-bold font-mono text-slate-300">{playerHand.length}</p>
                    </div>
                 </div>
 
-                <div className="flex flex-col gap-4 w-full relative z-10">
+                <div className="flex flex-col gap-3 w-full relative z-10">
                   <button
                     onClick={startGame}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-5 md:py-6 rounded-2xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 text-xl border border-emerald-400/20"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 md:py-4 rounded-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 shadow-lg text-lg border border-emerald-500/20"
                   >
-                    <RotateCcw className="w-7 h-7" />
+                    <RotateCcw className="w-5 h-5" />
                     جولة جديدة ({difficulty === 'easy' ? 'سهل' : difficulty === 'medium' ? 'متوسط' : 'صعب'})
                   </button>
                   
-                  <div className="flex gap-4">
-                     <button
-                       onClick={() => setGameState('setup')}
-                       className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-5 md:py-5 rounded-xl transition-all duration-300 active:scale-95 border border-slate-700 flex items-center justify-center gap-2 shadow-md text-lg"
-                     >
-                       <Settings2 className="w-6 h-6" />
-                       الإعدادات
-                     </button>
-                     <button
-                       onClick={() => navigate('/')}
-                       className="flex-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-bold py-5 md:py-5 rounded-xl transition-all duration-300 active:scale-95 border border-indigo-500/20 flex items-center justify-center gap-2 shadow-md text-lg"
-                     >
-                       <HomeIcon className="w-6 h-6" />
-                       الرئيسية
-                     </button>
-                  </div>
+                  <button
+                    onClick={() => setGameState('setup')}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 md:py-4 rounded-xl transition-all duration-300 active:scale-95 border border-slate-700 flex items-center justify-center gap-2 shadow-sm text-lg"
+                  >
+                    <Settings2 className="w-5 h-5" />
+                    تغيير الطور / الإعدادات
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/')}
+                    className="w-full bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white font-bold py-4 md:py-4 rounded-xl transition-all duration-300 active:scale-95 border border-slate-700/50 flex items-center justify-center gap-2 shadow-sm text-lg"
+                  >
+                    <HomeIcon className="w-5 h-5" />
+                    العودة للرئيسية
+                  </button>
                 </div>
              </div>
           </div>

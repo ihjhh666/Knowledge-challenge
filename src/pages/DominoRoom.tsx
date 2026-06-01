@@ -524,48 +524,65 @@ export default function DominoRoom() {
          )}
          
          {ds.winnerId && (
-           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-              <div className="bg-slate-900 p-8 rounded-3xl border border-slate-700 text-center max-w-md w-full shadow-2xl">
-                 <div className={`w-24 h-24 mx-auto rounded-2xl flex items-center justify-center mb-6 shadow-xl border-4 ${ds.winnerId === playerId ? 'bg-emerald-500/20 border-emerald-500/30' : ds.winnerId === 'draw' ? 'bg-slate-800 border-slate-600' : 'bg-rose-500/20 border-rose-500/30'}`}>
-                   {ds.winnerId === playerId && <Trophy className="w-12 h-12 text-emerald-400 animate-bounce" />}
-                   {ds.winnerId !== playerId && ds.winnerId !== 'draw' && <Target className="w-12 h-12 text-rose-400" />}
-                   {ds.winnerId === 'draw' && <Grid2X2 className="w-12 h-12 text-slate-400" />}
+           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-slate-900/90 p-5 md:p-6 rounded-3xl border border-slate-700 text-center w-full max-w-sm shadow-2xl backdrop-blur-xl">
+                 <div className={`w-16 h-16 md:w-20 md:h-20 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-xl border-2 ${ds.winnerId === playerId ? 'bg-emerald-500/20 border-emerald-500/40' : ds.winnerId === 'draw' ? 'bg-slate-800 border-slate-600' : 'bg-rose-500/20 border-rose-500/40'}`}>
+                   {ds.winnerId === playerId && <Trophy className="w-8 h-8 md:w-10 md:h-10 text-emerald-400 animate-bounce" />}
+                   {ds.winnerId !== playerId && ds.winnerId !== 'draw' && <Target className="w-8 h-8 md:w-10 md:h-10 text-rose-400" />}
+                   {ds.winnerId === 'draw' && <Grid2X2 className="w-8 h-8 md:w-10 md:h-10 text-slate-400" />}
                  </div>
                  
-                 <h2 className="text-3xl font-bold mb-2 text-white">
-                    {ds.winnerId === playerId ? 'لقد فزت!' : ds.winnerId === 'draw' ? 'انسداد (تعادل)' : 'لقد خسرت!'}
+                 <h2 className="text-2xl md:text-3xl font-bold mb-1 text-white">
+                    {ds.winnerId === playerId ? 'لقد فزت!' : ds.winnerId === 'draw' ? 'تعادل (انسداد)' : 'هاردلك!'}
                  </h2>
-                 {ds.isBlocked && <p className="text-amber-400 mb-4 text-sm font-bold">اللاعب صاحب مجموع النقاط الأقل هو الفائز</p>}
+                 {ds.isBlocked && <p className="text-amber-400 mb-3 text-xs md:text-sm font-bold">تم الإغلاق - الأقل نقاطاً يفوز</p>}
+                 {!ds.isBlocked && <div className="mb-3"></div>}
                  
-                 <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl mt-6 mb-8 text-white grid grid-cols-2 gap-4">
-                    <div className="bg-slate-900 rounded-xl p-3 text-center border-b-2 border-emerald-500">
-                       <p className="text-slate-400 text-xs mb-1">نقاطك</p>
-                       <p className="text-2xl font-bold font-mono">{ds.pointsMatch?.[playerId] || 0}</p>
+                 <div className="bg-slate-950/50 border border-slate-800/80 p-3 rounded-2xl mt-4 mb-6 text-white grid grid-cols-2 gap-3">
+                    <div className="bg-slate-800/80 rounded-xl p-2 md:p-3 text-center border-b-2 border-emerald-500/50 flex flex-col items-center justify-center">
+                       <p className="text-slate-400 text-[10px] md:text-xs mb-1">النقاط (أنت)</p>
+                       <p className="text-xl md:text-2xl font-bold font-mono text-emerald-300">{ds.pointsMatch?.[playerId] || 0}</p>
                     </div>
-                    <div className="bg-slate-900 rounded-xl p-3 text-center border-b-2 border-rose-500">
-                       <p className="text-slate-400 text-xs mb-1">نقاط الخصم</p>
-                       <p className="text-2xl font-bold font-mono">{ds.pointsMatch?.[opponentId] || 0}</p>
+                    <div className="bg-slate-800/80 rounded-xl p-2 md:p-3 text-center border-b-2 border-rose-500/50 flex flex-col items-center justify-center">
+                       <p className="text-slate-400 text-[10px] md:text-xs mb-1">النقاط ({opponent?.username})</p>
+                       <p className="text-xl md:text-2xl font-bold font-mono text-rose-300">{ds.pointsMatch?.[opponentId] || 0}</p>
                     </div>
                  </div>
 
-                 {isHost ? (
-                    <div className="flex flex-col gap-3">
-                      <button onClick={requestRematch} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg">
-                        <RotateCcw className="w-5 h-5" /> إعادة اللعب
-                      </button>
-                      <button onClick={returnToLobby} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Grid2X2 className="w-5 h-5" />العودة للغرفة (تغيير الطور)</button>
-                      <button onClick={() => { leaveRoom(); navigate('/'); }} className="w-full text-rose-400 hover:text-rose-300 font-bold py-2 mt-2">مغادرة الغرفة</button>
-                    </div>
-                 ) : (
-                    <div className="flex flex-col gap-3">
-                       {state.rematchApprovals?.includes(playerId) ? (
-                         <div className="bg-slate-800 text-slate-300 p-4 rounded-xl font-bold">في انتظار الهوست...</div>
-                       ) : (
-                         <button onClick={requestRematch} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"><RotateCcw className="w-5 h-5" /> طلب إعادة اللعب</button>
-                       )}
-                       <button onClick={() => { leaveRoom(); navigate('/'); }} className="w-full text-rose-400 hover:text-rose-300 font-bold py-2 mt-2">مغادرة الغرفة</button>
-                    </div>
-                 )}
+                 <div className="flex flex-col gap-2.5">
+                    {isHost ? (
+                      <>
+                        <button onClick={requestRematch} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 md:py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 text-sm md:text-base">
+                          <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> إعادة اللعب
+                        </button>
+                        <button onClick={returnToLobby} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 md:py-3.5 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm md:text-base">
+                          <Settings2 className="w-4 h-4 md:w-5 md:h-5" /> تغيير الطور
+                        </button>
+                        <button onClick={returnToLobby} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 md:py-3.5 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm md:text-base">
+                          <Grid2X2 className="w-4 h-4 md:w-5 md:h-5" /> العودة إلى الغرفة
+                        </button>
+                        <button onClick={() => { leaveRoom(); navigate('/'); }} className="w-full bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white font-bold py-3 md:py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm md:text-base">
+                          <HomeIcon className="w-4 h-4 md:w-5 md:h-5" /> العودة للرئيسية
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                         {state.rematchApprovals?.includes(playerId) ? (
+                           <div className="bg-slate-800/80 text-emerald-400 p-3 md:p-3.5 rounded-xl font-bold text-sm md:text-base flex justify-center items-center gap-2 border border-slate-700/50">
+                             <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                             في انتظار الهوست...
+                           </div>
+                         ) : (
+                           <button onClick={requestRematch} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 md:py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm md:text-base">
+                              <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> طلب إعادة اللعب
+                           </button>
+                         )}
+                         <button onClick={() => { leaveRoom(); navigate('/'); }} className="w-full bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white font-bold py-3 md:py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm md:text-base">
+                            <HomeIcon className="w-4 h-4 md:w-5 md:h-5" /> العودة للرئيسية
+                         </button>
+                      </>
+                    )}
+                 </div>
               </div>
            </div>
          )}
