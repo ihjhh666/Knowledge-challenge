@@ -62,6 +62,7 @@ export interface GameState {
   totalRounds: number;
   roundStartTime?: number;
   askedQuestions: string[];
+  rematchApprovals?: string[];
 }
 
 export type PeerMessage = 
@@ -71,6 +72,8 @@ export type PeerMessage =
   | { type: 'CHAT', message: ChatMessage }
   | { type: 'TOGGLE_READY', playerId: string }
   | { type: 'START_GAME' }
+  | { type: 'RETURN_TO_LOBBY' }
+  | { type: 'REQUEST_REMATCH', playerId: string }
   | { type: 'SUBMIT_ANSWER', playerId: string, answer: string, timeToAnswerMs: number }
   | { type: 'KICK', playerId: string }
   | { type: 'KICKED', reason: string }

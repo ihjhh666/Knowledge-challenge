@@ -6,6 +6,8 @@ import { audio } from '../lib/audio';
 import { updatePlayerStats } from '../lib/firebase';
 import { storage } from '../lib/storage';
 
+import { MatchEndScreen } from '../components/MatchEndScreen';
+
 export default function PlayingField() {
   const { state, submitAnswer, playerId, isHost, startGame, forceNextQuestion, transferHost, kickPlayer, mutePlayer } = useGame();
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -91,38 +93,7 @@ export default function PlayingField() {
     const winner = sortedPlayers[0];
 
     return (
-      <div className="bg-slate-800 p-8 md:p-12 rounded-3xl border border-slate-700 text-center max-w-2xl mx-auto space-y-8 animate-fade-in">
-        <div className="bg-emerald-500/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto">
-          <Trophy className="w-12 h-12 text-emerald-400" />
-        </div>
-        <div>
-          <h2 className="text-4xl font-bold font-heading mb-4 bg-gradient-to-l from-emerald-400 to-teal-400 text-transparent bg-clip-text">اللعبة انتهت!</h2>
-          <p className="text-xl text-slate-300">
-            الفائز هو <span className="font-bold text-white">{winner.username}</span> برصيد {winner.score} نقطة
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {sortedPlayers.map((p, i) => (
-            <div key={p.id} className="flex justify-between items-center p-4 bg-slate-900 rounded-2xl border border-slate-700">
-              <div className="flex items-center gap-4">
-                <span className={`font-bold ${i === 0 ? 'text-emerald-400' : 'text-slate-500'}`}>#{i + 1}</span>
-                <span className="font-bold">{p.username}</span>
-              </div>
-              <span className="text-indigo-400 font-bold">{p.score} نقطة</span>
-            </div>
-          ))}
-        </div>
-
-        {isHost && (
-           <button 
-             onClick={startGame}
-             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all"
-           >
-             العب مرة أخرى
-           </button>
-        )}
-      </div>
+      <MatchEndScreen winner={winner} sortedPlayers={sortedPlayers} />
     );
   }
 

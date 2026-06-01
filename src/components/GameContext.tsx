@@ -34,6 +34,8 @@ export interface GameContextType {
   mutePlayer: (playerId: string, isMuted: boolean) => void;
   changeCategory: (category: string) => void;
   changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty') => void;
+  returnToLobby: () => void;
+  requestRematch: () => void;
   forceNextQuestion: () => void;
   transferHost: (playerId: string) => void;
   catchFish: (fishId: number, points: number, fType: string) => void;
@@ -281,7 +283,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             (Object.values(updatedPlayers) as RoomPlayer[]).forEach(p => {
               updatedPlayers[p.id] = { ...p, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false };
             });
-            currentState = { ...currentState, players: updatedPlayers, round: 0 };
+            currentState = { ...currentState, players: updatedPlayers, round: 0, rematchApprovals: [] };
           }
           if (currentState.gameMode === 'fishing') {
             startFishingMode(currentState);
@@ -354,10 +356,47 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'CHANGE_MODE':
         if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
-           const newState = { ...stateRef.current, gameMode: message.gameMode, category: message.gameMode === 'fishing' ? '🎣 صيد السمك' : stateRef.current.category };
+           const newCat = message.gameMode === 'fishing' ? '🎣 صيد السمك' : message.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : '🧠 معلومات عامة';
+           const newState = { ...stateRef.current, gameMode: message.gameMode, category: message.gameMode === 'quiz' && stateRef.current.category ? stateRef.current.category : newCat };
            setState(newState);
            broadcast({ type: 'STATE_UPDATE', state: newState });
            updatePublicRoom(newState.roomId, { gameMode: message.gameMode, category: newState.category });
+        }
+        break;
+      case 'REQUEST_REMATCH':
+        if (isHostRef.current && stateRef.current && stateRef.current.status === 'finished') {
+           const oldState = stateRef.current;
+           const approvals = oldState.rematchApprovals || [];
+           if (!approvals.includes(message.playerId)) {
+              approvals.push(message.playerId);
+              const newState = { ...oldState, rematchApprovals: approvals };
+              setState(newState);
+              broadcast({ type: 'STATE_UPDATE', state: newState });
+              
+              if (approvals.length === Object.keys(newState.players).length) {
+                 handleMessage({ type: 'START_GAME' });
+              }
+           }
+        }
+        break;
+      case 'RETURN_TO_LOBBY':
+        if (isHostRef.current && stateRef.current) {
+           const oldState = stateRef.current;
+           const updatedPlayers = { ...oldState.players };
+           (Object.values(updatedPlayers) as RoomPlayer[]).forEach(p => {
+              updatedPlayers[p.id] = { ...p, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false, isReady: false };
+           });
+           const newState = { 
+               ...oldState, 
+               status: 'waiting' as const, 
+               players: updatedPlayers, 
+               round: 0,
+               fishingTimeLeft: undefined,
+               penaltyState: undefined
+           };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+           updatePublicRoom(newState.roomId, { status: 'waiting' });
         }
         break;
       case 'FISH_SPAWN':
@@ -1128,6 +1167,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const returnToLobby = React.useCallback(() => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'RETURN_TO_LOBBY' });
+    }
+  }, []);
+
   const catchFish = React.useCallback((fishId: number, points: number, fType: string) => {
     if (isHostRef.current) {
       handleMessage({ type: 'FISH_CATCH', playerId, fishId, points, fType });
@@ -1141,6 +1186,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleMessage({ type: 'FISH_SPAWN', fish });
     }
   }, []);
+
+  const requestRematch = React.useCallback(() => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'REQUEST_REMATCH', playerId });
+    } else if (hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ type: 'REQUEST_REMATCH', playerId });
+    }
+  }, [playerId]);
 
   const forceNextQuestion = React.useCallback(() => {
     if (isHostRef.current) {
@@ -1163,7 +1216,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [playerId]);
 
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction }}>
       {children}
     </GameContext.Provider>
   );

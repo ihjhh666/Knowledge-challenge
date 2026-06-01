@@ -5,6 +5,7 @@ import { fishingAudio } from '../lib/fishingAudio';
 import { updateFishingStats } from '../lib/firebase';
 import { storage } from '../lib/storage';
 import { RoomPlayer } from '../lib/types';
+import { MatchEndScreen } from '../components/MatchEndScreen';
 
 interface Fish {
   id: number;
@@ -217,7 +218,7 @@ export default function FishingRoom() {
           const rect = canvas.parentElement?.getBoundingClientRect();
           if (rect) {
               width = rect.width;
-              height = 400; // fixed height
+              height = rect.height || 400; 
               canvas.width = width * dpr;
               canvas.height = height * dpr;
               ctx.scale(1, 1);
@@ -396,67 +397,26 @@ export default function FishingRoom() {
 
   if (!state) return null;
 
-  // Debug Data
-  const debugData = {
-      status: state.status,
-      round: state.round,
-      players: Object.keys(state.players).length,
-      fishCount: fishesRef.current?.length || 0,
-      timeLeft: state.fishingTimeLeft,
-      hasInterval: !!animationRef.current
-  };
-
   if (state.status === 'finished') {
     const sortedPlayers = (Object.values(state.players) as RoomPlayer[]).sort((a, b) => b.score - a.score);
     const winner = sortedPlayers[0];
 
     return (
-      <div className="bg-slate-800 p-8 md:p-12 rounded-3xl border border-slate-700 text-center max-w-2xl mx-auto space-y-8 animate-fade-in">
-        <div className="bg-emerald-500/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto">
-          <Trophy className="w-12 h-12 text-emerald-400" />
-        </div>
-        <div>
-          <h2 className="text-4xl font-bold font-heading mb-4 bg-gradient-to-l from-emerald-400 to-teal-400 text-transparent bg-clip-text">اللعبة انتهت!</h2>
-          <p className="text-xl text-slate-300">
-            الفائز هو <span className="font-bold text-white">{winner.username}</span> برصيد {winner.score} نقطة
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {sortedPlayers.map((p, i) => (
-            <div key={p.id} className="flex justify-between items-center p-4 bg-slate-900 rounded-2xl border border-slate-700">
-              <div className="flex items-center gap-4">
-                <span className={`font-bold ${i === 0 ? 'text-emerald-400' : 'text-slate-500'}`}>#{i + 1}</span>
-                <span className="font-bold">{p.username}</span>
-              </div>
-              <span className="text-indigo-400 font-bold">{p.score} نقطة</span>
-            </div>
-          ))}
-        </div>
-
-        {isHost && (
-           <button 
-             onClick={startGame}
-             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all"
-           >
-             العب مرة أخرى
-           </button>
-        )}
-      </div>
+      <MatchEndScreen winner={winner} sortedPlayers={sortedPlayers} />
     );
   }
 
   return (
-    <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between gap-4">
+    <div className="flex flex-col space-y-4 h-[calc(100dvh-120px)] lg:h-auto lg:space-y-6 select-none touch-none">
+        <div className="flex justify-between gap-4 shrink-0">
            {state.status === 'playing' && (
-              <div className="bg-slate-800 border border-slate-700 px-6 py-4 rounded-2xl flex items-center gap-4 w-full md:w-auto">
-                <div className={`p-3 rounded-xl ${(state.fishingTimeLeft || 0) <= 10 ? 'bg-red-500/20 animate-pulse' : 'bg-slate-900'}`}>
-                  <Clock className={`w-6 h-6 ${(state.fishingTimeLeft || 0) <= 10 ? 'text-red-400' : 'text-emerald-400'}`} />
+              <div className="bg-slate-800 border border-slate-700 px-4 py-3 md:px-6 md:py-4 rounded-2xl flex items-center gap-3 w-full">
+                <div className={`p-2 md:p-3 rounded-xl ${(state.fishingTimeLeft || 0) <= 10 ? 'bg-red-500/20 animate-pulse' : 'bg-slate-900'}`}>
+                  <Clock className={`w-5 h-5 md:w-6 md:h-6 ${(state.fishingTimeLeft || 0) <= 10 ? 'text-red-400' : 'text-emerald-400'}`} />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">الوقت المتبقي</p>
-                  <p className={`font-bold text-xl font-mono ${(state.fishingTimeLeft || 0) <= 10 ? 'text-red-400' : ''}`}>
+                  <p className="text-xs md:text-sm text-slate-400">الوقت المتبقي</p>
+                  <p className={`font-bold text-lg md:text-xl font-mono ${(state.fishingTimeLeft || 0) <= 10 ? 'text-red-400' : ''}`}>
                     00:{(state.fishingTimeLeft || 0).toString().padStart(2, '0')}
                   </p>
                 </div>
@@ -465,23 +425,23 @@ export default function FishingRoom() {
 
             <button 
               onClick={toggleMute}
-              className="bg-slate-800 p-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700 transition-colors border border-slate-700 h-16 w-16 flex items-center justify-center shrink-0"
+              className="bg-slate-800 p-3 rounded-2xl text-slate-300 hover:text-white hover:bg-slate-700 transition-colors border border-slate-700 aspect-square flex items-center justify-center shrink-0"
               title={isMuted ? "تشغيل الصوت" : "كتم الصوت"}
             >
               {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
             </button>
         </div>
 
-        <div className="bg-slate-900 border-4 border-slate-800 p-1 rounded-3xl overflow-hidden relative shadow-2xl">
+        <div className="bg-slate-900 border-4 border-slate-800 p-1 rounded-3xl overflow-hidden relative shadow-2xl flex-1 flex min-h-[300px]">
            <canvas 
               ref={canvasRef}
               onClick={handleCanvasClick}
-              className="w-full bg-slate-950 rounded-2xl cursor-crosshair touch-none"
+              className="w-full h-full bg-slate-950 rounded-2xl cursor-crosshair touch-none"
               style={{ display: 'block' }}
            />
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 h-fit space-y-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-3xl p-4 md:p-6 shrink-0 md:h-fit hidden lg:block space-y-4">
           <h3 className="font-bold text-lg border-b border-slate-700 pb-4">نتائج الصيد (مباشر)</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {(Object.values(state.players) as RoomPlayer[]).sort((a,b) => b.score - a.score).map((p, i) => (
@@ -501,11 +461,6 @@ export default function FishingRoom() {
           </div>
         </div>
 
-        {/* Temporary Debug Panel */}
-        <div className="fixed bottom-4 left-4 bg-black/80 p-4 rounded-lg font-mono text-xs text-green-400 z-50 pointer-events-none">
-           <p>Debug Info:</p>
-           <pre>{JSON.stringify(debugData, null, 2)}</pre>
-        </div>
     </div>
   );
 }

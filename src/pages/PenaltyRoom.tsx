@@ -6,6 +6,7 @@ import { ChevronRight, ChevronLeft, Trophy, Goal, Shield, Save, XOctagon, Rotate
 import { updatePenaltyStats } from '../lib/firebase';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
+import { MatchEndScreen } from '../components/MatchEndScreen';
 
 type Direction = 'left' | 'center' | 'right';
 type BotDifficulty = 'easy' | 'medium' | 'hard';
@@ -783,24 +784,15 @@ export default function PenaltyRoom() {
 
   if (gameState === 'results') {
     const isDisconnect = allPl.length < 2;
+    const isWin = playerScore > botScore;
+    const isDraw = playerScore === botScore;
+    
     return (
-      <div className="max-w-2xl mx-auto p-6 md:p-12 text-center animate-fade-in relative z-10 w-full">
-        <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ${
-           isDisconnect ? 'bg-amber-500/20 shadow-amber-500/20' :
-           playerScore > botScore ? 'bg-emerald-500/20 shadow-emerald-500/20' : 'bg-rose-500/20 shadow-rose-500/20'
-        }`}>
-          {isDisconnect ? <Activity className="w-16 h-16 text-amber-500" /> :
-           playerScore > botScore ? <Trophy className="w-16 h-16 text-emerald-400" /> : <XOctagon className="w-16 h-16 text-rose-500" />}
-        </div>
-        
-        <h2 className="text-5xl font-bold font-heading mb-4 text-white">
-          {isDisconnect ? 'انسحاب الخصم!' : playerScore > botScore ? 'انتصار رائع!' : playerScore === botScore ? 'تعادل' : 'حظ أوفر المرة القادمة'}
-        </h2>
-        <p className="text-xl text-slate-400 mb-12">
-          {isDisconnect ? 'لقد غادر الخصم المباراة وتم احتساب فوزك.' : playerScore > botScore ? 'لقد تغلبت على خصمك بجدارة في ركلات الترجيح' : playerScore === botScore ? 'مباراة متكافئة' : 'لم يحالفك الحظ هذه المرة'}
-        </p>
-
-        <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl mt-8">
+       <MatchEndScreen 
+         messageTitle={isDisconnect ? 'انسحاب الخصم!' : isWin ? 'انتصار رائع!' : isDraw ? 'تعادل' : 'حظ أوفر المرة القادمة'}
+         messageSubtitle={isDisconnect ? 'لقد غادر الخصم المباراة وتم احتساب فوزك.' : isWin ? 'لقد تغلبت على خصمك بجدارة في ركلات الترجيح' : isDraw ? 'مباراة متكافئة' : 'لم يحالفك الحظ هذه المرة'}
+       >
+        <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl mt-8 mb-8 text-white text-right">
            <div className="flex justify-between items-center px-4 md:px-12">
               <div className="text-center w-1/3">
                  <p className="text-slate-400 mb-2 font-bold">أنت</p>
@@ -829,34 +821,7 @@ export default function PenaltyRoom() {
               </div>
            </div>
         </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          {isHost && (
-            <button
-              onClick={() => startAg()}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
-            >
-              <RotateCcw className="w-5 h-5" />
-              مجاراة جديدة
-            </button>
-          )}
-          {isHost && (
-            <button
-              onClick={() => changeGameMode('quiz')}
-              className="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
-            >
-              تغيير الطور
-            </button>
-          )}
-          <button
-            onClick={() => leaveRoom()}
-            className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-all border border-slate-700 flex items-center justify-center gap-2"
-          >
-            <HomeIcon className="w-5 h-5" />
-            مغادرة الغرفة
-          </button>
-        </div>
-      </div>
+      </MatchEndScreen>
     );
   }
 
