@@ -5,12 +5,18 @@ import { Send } from 'lucide-react';
 export default function Chat() {
   const { state, sendMessage, playerId } = useGame();
   const [text, setText] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Add a slight delay to ensure DOM updates before scrolling
     const timer = setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      if (containerRef.current) {
+        containerRef.current.scrollTo({
+          top: containerRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
     }, 100);
     return () => clearTimeout(timer);
   }, [state?.messages]);
@@ -31,7 +37,7 @@ export default function Chat() {
         <h3 className="font-bold text-slate-200">الدردشة <span className="text-slate-400 text-xs mr-2">({state?.messages.length} رسالة)</span></h3>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide min-h-0">
+      <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide min-h-0">
         {state?.messages.map((msg) => {
           const isMe = msg.senderId === playerId;
           return (
@@ -43,7 +49,6 @@ export default function Chat() {
             </div>
           );
         })}
-        <div ref={messagesEndRef} className="h-1" />
       </div>
       
       <form onSubmit={handleSend} className="p-3 md:p-4 bg-slate-950/50 border-t border-slate-800 flex gap-2 shrink-0">

@@ -63,6 +63,15 @@ export default function FishingRoom() {
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number>(0);
 
+  const [forceRender, setForceRender] = useState(0);
+
+  useEffect(() => {
+     if (state?.status === 'playing') {
+        const int = setInterval(() => setForceRender(v => v + 1), 500);
+        return () => clearInterval(int);
+     }
+  }, [state?.status]);
+
   const toggleMute = () => {
     setIsMuted(fishingAudio.toggleMute());
   };
@@ -187,6 +196,14 @@ export default function FishingRoom() {
   }, [isHost, state?.status]);
 
   useEffect(() => {
+      if (state?.status !== 'playing') return;
+      
+      // Clear elements for fresh start
+      fishesRef.current = [];
+      textsRef.current = [];
+      ripplesRef.current = [];
+      particlesRef.current = [];
+
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -345,7 +362,7 @@ export default function FishingRoom() {
           window.removeEventListener('resize', resize);
           cancelAnimationFrame(animationRef.current);
       };
-  }, []);
+  }, [state?.status]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (state?.status !== 'playing') return;
@@ -378,6 +395,16 @@ export default function FishingRoom() {
   };
 
   if (!state) return null;
+
+  // Debug Data
+  const debugData = {
+      status: state.status,
+      round: state.round,
+      players: Object.keys(state.players).length,
+      fishCount: fishesRef.current?.length || 0,
+      timeLeft: state.fishingTimeLeft,
+      hasInterval: !!animationRef.current
+  };
 
   if (state.status === 'finished') {
     const sortedPlayers = (Object.values(state.players) as RoomPlayer[]).sort((a, b) => b.score - a.score);
@@ -472,6 +499,12 @@ export default function FishingRoom() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Temporary Debug Panel */}
+        <div className="fixed bottom-4 left-4 bg-black/80 p-4 rounded-lg font-mono text-xs text-green-400 z-50 pointer-events-none">
+           <p>Debug Info:</p>
+           <pre>{JSON.stringify(debugData, null, 2)}</pre>
         </div>
     </div>
   );
