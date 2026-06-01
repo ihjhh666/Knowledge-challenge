@@ -169,8 +169,10 @@ function layoutBranch(
 }
 
 export default function DominoRoom() {
-  const { state, playerId, isHost, sendDominoAction, requestRematch, returnToLobby } = useGame();
+  const { state, playerId, isHost, sendDominoAction, requestRematch, returnToLobby, leaveRoom } = useGame();
+  const navigate = useNavigate();
   
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<any | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -414,7 +416,7 @@ export default function DominoRoom() {
              <span>الخصم ({opponent?.username}):</span> <span className="text-white">{opponentTilesLength}</span> أحجار
            </div>
          </div>
-         <div className="flex items-center gap-4">
+         <div className="flex items-center gap-4 relative">
            {boneyard.length > 0 && (
              <div className="text-sm font-bold text-slate-400 flex items-center gap-2">
                أحجار السحب: <span className="text-emerald-400">{boneyard.length}</span>
@@ -426,11 +428,28 @@ export default function DominoRoom() {
            >
               {isMuted ? <VolumeX className="w-4 h-4 text-slate-400"/> : <Volume2 className="w-4 h-4 text-indigo-400"/>}
            </button>
+           
+           <div className="relative">
+             <button
+               onClick={() => setIsMenuOpen(!isMenuOpen)}
+               className="p-2 bg-slate-800 rounded-xl hover:bg-slate-700 border border-slate-700 transition"
+             >
+               <Settings2 className="w-4 h-4 text-slate-300" />
+             </button>
+             {isMenuOpen && (
+               <div className="absolute left-0 top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 flex flex-col gap-1">
+                 <button onClick={() => { setIsMenuOpen(false); requestRematch(); }} className="px-4 py-2 text-right hover:bg-slate-700 w-full text-slate-200">إعادة اللعب</button>
+                 {isHost && <button onClick={() => { setIsMenuOpen(false); returnToLobby(); }} className="px-4 py-2 text-right hover:bg-slate-700 w-full text-slate-200">تغيير الطور</button>}
+                 <button onClick={() => { setIsMenuOpen(false); leaveRoom(); navigate('/'); }} className="px-4 py-2 text-right hover:bg-slate-700 w-full text-rose-400">مغادرة الغرفة</button>
+                 <button onClick={() => { setIsMenuOpen(false); navigate('/'); }} className="px-4 py-2 text-right hover:bg-slate-700 w-full text-slate-200">العودة للرئيسية</button>
+               </div>
+             )}
+           </div>
          </div>
       </div>
 
-      <div className="flex-1 min-h-0 relative bg-emerald-950 overflow-hidden shadow-[inset_0_0_100px_rgba(0,0,0,0.85)] z-0">
-         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-800 via-emerald-950 to-slate-950 z-0 pointer-events-none"></div>
+      <div className="flex-1 min-h-0 relative bg-[#0f4d36] overflow-hidden shadow-[inset_0_0_120px_rgba(0,0,0,0.85)] z-0">
+         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#146647] via-[#0f4d36] to-[#0a3122] z-0 pointer-events-none"></div>
          
          <div ref={boardRef} className="absolute inset-0 overflow-hidden flex items-center justify-center">
             <div 
@@ -534,15 +553,17 @@ export default function DominoRoom() {
                       <button onClick={requestRematch} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg">
                         <RotateCcw className="w-5 h-5" /> إعادة اللعب
                       </button>
-                      <button onClick={returnToLobby} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl">العودة للغرفة</button>
+                      <button onClick={returnToLobby} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Grid2X2 className="w-5 h-5" />العودة للغرفة (تغيير الطور)</button>
+                      <button onClick={() => { leaveRoom(); navigate('/'); }} className="w-full text-rose-400 hover:text-rose-300 font-bold py-2 mt-2">مغادرة الغرفة</button>
                     </div>
                  ) : (
                     <div className="flex flex-col gap-3">
                        {state.rematchApprovals?.includes(playerId) ? (
-                         <div className="bg-slate-800 text-slate-300 p-4 rounded-xl font-bold">في انتظار המضيف...</div>
+                         <div className="bg-slate-800 text-slate-300 p-4 rounded-xl font-bold">في انتظار الهوست...</div>
                        ) : (
-                         <button onClick={requestRematch} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg">طلب إعادة اللعب</button>
+                         <button onClick={requestRematch} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"><RotateCcw className="w-5 h-5" /> طلب إعادة اللعب</button>
                        )}
+                       <button onClick={() => { leaveRoom(); navigate('/'); }} className="w-full text-rose-400 hover:text-rose-300 font-bold py-2 mt-2">مغادرة الغرفة</button>
                     </div>
                  )}
               </div>
@@ -560,7 +581,7 @@ export default function DominoRoom() {
                {boneyard.length > 0 ? (
                  <>سحب حجر <Grid2X2 className="w-4 h-4"/></>
                ) : (
-                 <>تمرير <ChevronRight className="w-4 h-4"/></>
+                 <>تمرير الدور <ChevronRight className="w-4 h-4"/></>
                )}
              </button>
           )}

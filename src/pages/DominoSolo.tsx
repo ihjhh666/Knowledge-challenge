@@ -217,6 +217,7 @@ export default function DominoSolo() {
   const [turn, setTurn] = useState<'player' | 'bot'>('player');
   const [winner, setWinner] = useState<'player' | 'bot' | 'draw' | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<Domino | null>(null);
   const [scoreEarned, setScoreEarned] = useState(0);
   
@@ -694,7 +695,7 @@ export default function DominoSolo() {
               {difficulty === 'easy' ? 'سهل' : difficulty === 'medium' ? 'متوسط' : 'صعب'}
             </span>
           </div>
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4 relative">
              <div className="bg-slate-950 border border-slate-800 px-3 md:px-4 py-2 rounded-xl text-sm font-bold flex gap-2 md:gap-4 shadow-inner items-center">
                 <span className="text-slate-400 hidden sm:inline">أحجار السحب:</span>
                 <span className="text-emerald-400 text-lg">{boneyard.length}</span>
@@ -705,6 +706,22 @@ export default function DominoSolo() {
              >
                 {isMuted ? <VolumeX className="w-5 h-5 text-slate-400"/> : <Volume2 className="w-5 h-5 text-indigo-400"/>}
              </button>
+             
+             <div className="relative">
+               <button
+                 onClick={() => setIsMenuOpen(!isMenuOpen)}
+                 className="p-2 bg-slate-800 rounded-xl hover:bg-slate-700 border border-slate-700 transition"
+               >
+                 <Settings2 className="w-5 h-5 text-slate-300" />
+               </button>
+               {isMenuOpen && (
+                 <div className="absolute left-0 top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 flex flex-col gap-1">
+                   <button onClick={() => { setIsMenuOpen(false); startGame(); }} className="px-4 py-2 text-right hover:bg-slate-700 w-full text-slate-200">إعادة اللعب</button>
+                   <button onClick={() => { setIsMenuOpen(false); setGameState('setup'); }} className="px-4 py-2 text-right hover:bg-slate-700 w-full text-slate-200">تغيير الطور</button>
+                   <button onClick={() => { setIsMenuOpen(false); navigate('/'); }} className="px-4 py-2 text-right hover:bg-slate-700 w-full text-slate-200">العودة للرئيسية</button>
+                 </div>
+               )}
+             </div>
           </div>
         </div>
       </header>
@@ -725,8 +742,8 @@ export default function DominoSolo() {
                </div>
             </div>
 
-            <div className="flex-1 min-h-0 relative bg-emerald-950 overflow-hidden shadow-[inset_0_0_100px_rgba(0,0,0,0.85)] z-0">
-               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-800 via-emerald-950 to-slate-950 z-0 pointer-events-none"></div>
+            <div className="flex-1 min-h-0 relative bg-[#0f4d36] overflow-hidden shadow-[inset_0_0_120px_rgba(0,0,0,0.85)] z-0">
+               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#146647] via-[#0f4d36] to-[#0a3122] z-0 pointer-events-none"></div>
                <div className="absolute inset-0 opacity-20 pointer-events-none z-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`}}></div>
                <div className="absolute inset-0 bg-black/20 mix-blend-overlay pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)', backgroundSize: '48px 48px' }}></div>
                

@@ -380,7 +380,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         break;
       case 'REQUEST_REMATCH':
-        if (isHostRef.current && stateRef.current && stateRef.current.status === 'finished') {
+        if (isHostRef.current && stateRef.current && (stateRef.current.status === 'finished' || (stateRef.current.gameMode === 'domino' && stateRef.current.dominoState?.winnerId))) {
            const oldState = stateRef.current;
            const approvals = oldState.rematchApprovals || [];
            if (!approvals.includes(message.playerId)) {
@@ -390,7 +390,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               broadcast({ type: 'STATE_UPDATE', state: newState });
               
               if (approvals.length === Object.keys(newState.players).length) {
-                 handleMessage({ type: 'START_GAME' });
+                 if (newState.gameMode === 'domino') {
+                   startDominoMode({ ...newState, rematchApprovals: [] });
+                 } else {
+                   handleMessage({ type: 'START_GAME' });
+                 }
               }
            }
         }
@@ -614,6 +618,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initialState: GameState = {
       ...currentState,
       status: 'playing',
+      rematchApprovals: [],
       round: 1,
       totalRounds: 1,
       dominoState: {
