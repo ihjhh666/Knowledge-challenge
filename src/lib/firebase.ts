@@ -317,17 +317,53 @@ export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRa
     const q = query(
       collection(db, 'users'),
       orderBy(sortBy, 'desc'),
-      limit(50)
+      limit(200)
     );
-    // Since Firebase sometimes complains about lacking composite index, if we don't do compound queries, single field orderby works!
-    // But we need to use getDocs. 
-    const { getDocs } = await import('firebase/firestore');
+    const { getDocs, deleteDoc } = await import('firebase/firestore');
     const snapshot = await getDocs(q);
-    const results: PlayerStats[] = [];
+    
+    const nameMap = new Map<string, PlayerStats>();
+    const docsToDelete: string[] = [];
+    
     snapshot.forEach(docSnap => {
-      results.push(docSnap.data() as PlayerStats);
+      const data = docSnap.data() as PlayerStats;
+      const normalizedName = (data.playerName || 'مجهول').trim().toLowerCase();
+      
+      if (nameMap.has(normalizedName)) {
+        const existing = nameMap.get(normalizedName)!;
+        existing.gamesPlayed = (existing.gamesPlayed || 0) + (data.gamesPlayed || 0);
+        existing.wins = (existing.wins || 0) + (data.wins || 0);
+        existing.totalPoints = (existing.totalPoints || 0) + (data.totalPoints || 0);
+        existing.correctAnswers = (existing.correctAnswers || 0) + (data.correctAnswers || 0);
+        existing.wrongAnswers = (existing.wrongAnswers || 0) + (data.wrongAnswers || 0);
+        
+        const totalQ = existing.correctAnswers + existing.wrongAnswers;
+        existing.successRate = totalQ > 0 ? Math.round((existing.correctAnswers / totalQ) * 100) : 0;
+        
+        docsToDelete.push(docSnap.id);
+      } else {
+        nameMap.set(normalizedName, data);
+      }
     });
-    return results;
+
+    // Cleanup duplicates asynchronously
+    docsToDelete.forEach(async (id) => {
+      try {
+        await deleteDoc(doc(db, 'users', id));
+      } catch (e) {}
+    });
+
+    const results = Array.from(nameMap.values());
+    
+    // Apply final sort
+    results.sort((a, b) => {
+      if (sortBy === 'totalPoints') return (b.totalPoints || 0) - (a.totalPoints || 0);
+      if (sortBy === 'wins') return (b.wins || 0) - (a.wins || 0);
+      if (sortBy === 'successRate') return (b.successRate || 0) - (a.successRate || 0);
+      return 0;
+    });
+
+    return results.slice(0, 50);
   } catch (err) {
     console.error('Error getting leaderboard:', err);
     return [];

@@ -89,7 +89,7 @@ export default function PenaltyRoom() {
       const playerSaves = history.filter(h => h.goalieId === playerId && !h.isGoal).length;
       const playerName = storage.getPlayerName() || 'لاعب مجهول';
       updatePenaltyStats(
-         playerId,
+         storage.getPlayerId(),
          playerName,
          isPlayerWin,
          playerScore,

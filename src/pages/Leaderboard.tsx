@@ -50,24 +50,44 @@ export default function Leaderboard() {
           <div className="p-12 text-center text-slate-500">لا توجد بيانات حالياً</div>
         ) : (
           <div className="divide-y divide-slate-800">
-            {leaders.map((player, idx) => (
+            {leaders.map((player, idx) => {
+              const winRate = player.gamesPlayed > 0 ? Math.round((player.wins / player.gamesPlayed) * 100) : 0;
+              return (
               <div 
-                key={player.playerId} 
-                className={`flex gap-4 items-center p-4 hover:bg-slate-800/50 transition-colors ${idx < 3 ? 'bg-slate-800/30' : ''}`}
+                key={player.playerId || `rank-${idx}`} 
+                className={`flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center p-4 hover:bg-slate-800/50 transition-colors ${idx === 0 ? 'bg-amber-500/10 border-r-4 border-amber-500' : idx === 1 ? 'bg-slate-300/10 border-r-4 border-slate-300' : idx === 2 ? 'bg-amber-700/10 border-r-4 border-amber-700' : ''}`}
               >
-                <div className={`w-10 h-10 shrink-0 font-bold font-mono rounded-xl flex items-center justify-center ${idx === 0 ? 'bg-amber-500 text-amber-950 text-xl' : idx === 1 ? 'bg-slate-300 text-slate-900 text-lg' : idx === 2 ? 'bg-amber-700 text-amber-100 text-lg' : 'bg-slate-800 text-slate-400'}`}>
-                  {idx + 1}
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className={`w-10 h-10 shrink-0 font-bold font-mono rounded-xl flex items-center justify-center ${idx === 0 ? 'bg-amber-500 text-amber-950 text-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]' : idx === 1 ? 'bg-slate-300 text-slate-900 text-lg shadow-[0_0_15px_rgba(203,213,225,0.3)]' : idx === 2 ? 'bg-amber-700 text-amber-100 text-lg shadow-[0_0_15px_rgba(180,83,9,0.5)]' : 'bg-slate-800 text-slate-400'}`}>
+                    {idx === 0 ? <Trophy className="w-5 h-5" /> : idx === 1 ? <Medal className="w-5 h-5" /> : idx === 2 ? <Medal className="w-5 h-5" /> : idx + 1}
+                  </div>
+                  <div className="font-bold text-white truncate text-lg flex-1 sm:w-48 sm:flex-none">{player.playerName}</div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-white truncate text-lg">{player.playerName}</div>
-                  <div className="flex gap-4 text-sm text-slate-400 mt-1">
-                    <span>نقاط: <span className="font-mono text-indigo-400 font-bold">{player.totalPoints.toLocaleString()}</span></span>
-                    <span>انتصارات: <span className="font-mono text-emerald-400 font-bold">{player.wins}</span></span>
-                    <span>نجاح: <span className="font-mono text-sky-400 font-bold">{player.successRate}%</span></span>
+                
+                <div className="flex flex-wrap gap-2 sm:gap-6 text-xs sm:text-sm text-slate-400 w-full sm:w-auto flex-1 justify-between sm:justify-start">
+                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">النقاط</span>
+                    <span className="sm:inline-block sm:mr-1 font-mono text-indigo-400 font-bold text-base sm:text-sm">{player.totalPoints?.toLocaleString() || 0}</span>
+                  </div>
+                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">الانتصارات</span>
+                    <span className="sm:inline-block sm:mr-1 font-mono text-emerald-400 font-bold text-base sm:text-sm">{player.wins || 0}</span>
+                  </div>
+                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">مباريات</span>
+                    <span className="sm:inline-block sm:mr-1 font-mono text-slate-300 font-bold text-base sm:text-sm">{player.gamesPlayed || 0}</span>
+                  </div>
+                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">نسبة الفوز</span>
+                    <span className="sm:inline-block sm:mr-1 font-mono text-amber-400 font-bold text-base sm:text-sm">{winRate}%</span>
+                  </div>
+                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block min-w-[70px]">
+                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">الإجابات</span>
+                    <span className="sm:inline-block sm:mr-1 font-mono text-sky-400 font-bold text-base sm:text-sm">{player.successRate || 0}%</span>
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
       </div>
