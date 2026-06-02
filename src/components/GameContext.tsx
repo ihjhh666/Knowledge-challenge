@@ -1310,7 +1310,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         round: 0,
         totalRounds: 10,
         players: {
-          [myId]: { id: myId, userId: storage.getPlayerId(), username, isReady: true, isHost: true, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false }
+          [myId]: { id: myId, userId: storage.getPlayerId(), username, avatarUrl: storage.getPlayerAvatar(), isReady: true, isHost: true, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false }
         },
         messages: [],
         askedQuestions: [],
@@ -1402,7 +1402,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       conn.on('open', () => {
         conn.send({
           type: 'JOIN',
-          player: { id: myId, userId: storage.getPlayerId(), username, isReady: false, isHost: false, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false },
+          player: { id: myId, userId: storage.getPlayerId(), username, avatarUrl: storage.getPlayerAvatar(), isReady: false, isHost: false, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false },
           password
         });
         audio.joinLobby();

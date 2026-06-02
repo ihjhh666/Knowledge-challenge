@@ -2,12 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Trophy, Medal, Star, Target } from 'lucide-react';
 import { getLeaderboard, PlayerStats } from '../lib/firebase';
+import { storage } from '../lib/storage';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
   const [leaders, setLeaders] = useState<PlayerStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortMethod, setSortMethod] = useState<'wins' | 'totalPoints' | 'successRate'>('totalPoints');
+
+  const myPlayerId = storage.getPlayerId();
+  const myAvatar = storage.getPlayerAvatar();
 
   useEffect(() => {
     setLoading(true);
@@ -52,6 +56,7 @@ export default function Leaderboard() {
           <div className="divide-y divide-slate-800">
             {leaders.map((player, idx) => {
               const winRate = player.gamesPlayed > 0 ? Math.round((player.wins / player.gamesPlayed) * 100) : 0;
+              const playerAvatar = player.playerId === myPlayerId ? (myAvatar || player.avatarUrl) : player.avatarUrl;
               return (
               <div 
                 key={player.playerId || `rank-${idx}`} 
@@ -61,7 +66,8 @@ export default function Leaderboard() {
                   <div className={`w-10 h-10 shrink-0 font-bold font-mono rounded-xl flex items-center justify-center ${idx === 0 ? 'bg-amber-500 text-amber-950 text-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]' : idx === 1 ? 'bg-slate-300 text-slate-900 text-lg shadow-[0_0_15px_rgba(203,213,225,0.3)]' : idx === 2 ? 'bg-amber-700 text-amber-100 text-lg shadow-[0_0_15px_rgba(180,83,9,0.5)]' : 'bg-slate-800 text-slate-400'}`}>
                     {idx === 0 ? <Trophy className="w-5 h-5" /> : idx === 1 ? <Medal className="w-5 h-5" /> : idx === 2 ? <Medal className="w-5 h-5" /> : idx + 1}
                   </div>
-                  <div className="font-bold text-white truncate text-lg flex-1 sm:w-48 sm:flex-none">{player.playerName}</div>
+                  <img src={playerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.playerId}`} className="w-10 h-10 rounded-xl bg-slate-950 object-cover shrink-0" alt="avatar" />
+                  <div className="font-bold text-white truncate text-lg flex-1 sm:w-36 sm:flex-none" title={player.playerName}>{player.playerName}</div>
                 </div>
                 
                 <div className="flex flex-wrap gap-2 sm:gap-6 text-xs sm:text-sm text-slate-400 w-full sm:w-auto flex-1 justify-between sm:justify-start">

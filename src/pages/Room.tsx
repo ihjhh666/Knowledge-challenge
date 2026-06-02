@@ -9,8 +9,9 @@ import DominoRoom from './DominoRoom';
 import HockeyRoom from './HockeyRoom';
 import Hockey2v2Room from './Hockey2v2Room';
 import Chat from './Chat';
-import { LogOut, Users, Lock } from 'lucide-react';
+import { LogOut, Users, Lock, UserPlus } from 'lucide-react';
 import { storage } from '../lib/storage';
+import { FriendsSidebar } from '../components/FriendsSidebar';
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -22,6 +23,7 @@ export default function Room() {
   const [errorStr, setErrorStr] = useState<string | null>(null);
   const [joinPassword, setJoinPassword] = useState('');
   const [needsPassword, setNeedsPassword] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
   const joiningRef = React.useRef(false);
   const leavingRef = React.useRef(false);
 
@@ -163,6 +165,8 @@ export default function Room() {
 
   return (
     <div className="min-h-screen max-w-7xl mx-auto p-4 md:p-8 space-y-8 flex flex-col">
+      <FriendsSidebar isOpen={showFriends} onClose={() => setShowFriends(false)} />
+      
       <header className="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-3xl shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="text-xl md:text-2xl font-bold font-heading text-white">تحدي المعرفة</h1>
@@ -170,13 +174,22 @@ export default function Room() {
             {state.status === 'waiting' ? 'في الانتظار' : 'جاري اللعب'}
           </span>
         </div>
-        <button
-          onClick={handleLeave}
-          className="flex items-center gap-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 px-4 py-2 rounded-xl transition-colors font-bold"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">خروج من الغرفة</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowFriends(true)}
+            className="flex items-center gap-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-4 py-2 rounded-xl transition-colors font-bold"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span className="hidden sm:inline">دعوة صديق</span>
+          </button>
+          <button
+            onClick={handleLeave}
+            className="flex items-center gap-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 px-4 py-2 rounded-xl transition-colors font-bold"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">خروج من الغرفة</span>
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 grid lg:grid-cols-3 gap-8 pb-8 items-start">

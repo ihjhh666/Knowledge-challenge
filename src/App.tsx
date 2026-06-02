@@ -19,18 +19,45 @@ import { Footer } from './components/Footer';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 
+import Settings from './pages/Settings';
+import { GameInvitesListener } from './components/GameInvitesListener';
+
 export default function App() {
   return (
     <HashRouter>
       <GameProvider>
+        <GameInvitesListener />
         <AppContent />
       </GameProvider>
     </HashRouter>
   );
 }
 
+import { migrateUserData } from './lib/firebase';
+import { storage } from './lib/storage';
+
 function AppContent() {
   useOnlinePresence();
+
+  React.useEffect(() => {
+    const checkMigration = async () => {
+      let id = localStorage.getItem('know_player_id');
+      if (id && id.startsWith('user_')) {
+        const newId = Math.floor(10000000 + Math.random() * 90000000).toString();
+        // save new ID locally immediately
+        localStorage.setItem('know_player_id', newId);
+        
+        let avatar = localStorage.getItem('know_player_avatar');
+        if (avatar && avatar.includes(id)) {
+            localStorage.setItem('know_player_avatar', `https://api.dicebear.com/7.x/bottts/svg?seed=${newId}`);
+        }
+
+        // migrate in Firebase asynchronously
+        await migrateUserData(id, newId);
+      }
+    };
+    checkMigration();
+  }, []);
   
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 font-sans flex flex-col" dir="rtl">
@@ -45,6 +72,7 @@ function AppContent() {
           <Route path="/hockey-solo" element={<HockeySolo />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />

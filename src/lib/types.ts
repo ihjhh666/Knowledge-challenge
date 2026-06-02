@@ -10,6 +10,7 @@ export interface RoomPlayer {
   id: string; // The peer JS ID or a random ID if host
   userId?: string;
   username: string;
+  avatarUrl?: string;
   isReady: boolean;
   isHost: boolean;
   score: number;

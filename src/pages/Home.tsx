@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
-import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid } from 'lucide-react';
-import { subscribeToPublicRooms, PublicRoom, subscribeToOnlineCount } from '../lib/firebase';
+import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell } from 'lucide-react';
+import { subscribeToPublicRooms, PublicRoom, subscribeToOnlineCount, subscribeToFriends } from '../lib/firebase';
 import { RoomVisibility } from '../lib/types';
+import { FriendsSidebar } from '../components/FriendsSidebar';
 
 import { CATEGORIES as SOLO_CATEGORIES } from './SoloPlay';
 
@@ -39,6 +40,8 @@ export default function Home() {
   const [joinError, setJoinError] = useState('');
   const [passwordPromptRoomId, setPasswordPromptRoomId] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState<number>(0);
+  const [showFriends, setShowFriends] = useState(false);
+  const [pendingFriendsCount, setPendingFriendsCount] = useState(0);
 
   useEffect(() => {
     const savedName = storage.getPlayerName();
@@ -47,6 +50,15 @@ export default function Home() {
       setHasName(true);
     }
   }, []);
+
+  useEffect(() => {
+     if (hasName) {
+       const u = subscribeToFriends(storage.getPlayerId(), (f, p) => {
+          setPendingFriendsCount(p.length);
+       });
+       return u;
+     }
+  }, [hasName]);
 
   useEffect(() => {
     if (state?.roomId) {
@@ -320,6 +332,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen max-w-5xl mx-auto p-6 md:p-12 space-y-12">
+      <FriendsSidebar isOpen={showFriends} onClose={() => setShowFriends(false)} />
+      
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold font-heading bg-gradient-to-l from-indigo-400 to-purple-400 text-transparent bg-clip-text">
@@ -334,24 +348,45 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <button
+            onClick={() => setShowFriends(true)}
+            className="relative flex items-center justify-center gap-2 border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-2 rounded-xl transition-colors text-indigo-400"
+            title="الأصدقاء"
+          >
+            <Users className="w-5 h-5" />
+            {pendingFriendsCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 text-[10px] items-center justify-center text-white font-bold">{pendingFriendsCount}</span>
+              </span>
+            )}
+          </button>
+          
           <Link
             to="/leaderboard"
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl transition-colors text-amber-400"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-xl transition-colors text-amber-400"
           >
             <Medal className="w-5 h-5" />
             المتصدرين
           </Link>
           <Link
             to="/profile"
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl transition-colors text-sky-400"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-xl transition-colors text-sky-400"
           >
             <UserRound className="w-5 h-5" />
             ملفي
           </Link>
+          <Link
+            to="/settings"
+            className="flex items-center justify-center p-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors text-slate-300"
+            title="الإعدادات"
+          >
+             <Settings className="w-5 h-5" />
+          </Link>
           <button 
             onClick={() => { setHasName(false); storage.clearPlayerName(); setUsername(''); }}
-            className="border border-slate-700 bg-slate-800 hover:bg-slate-700 p-2 rounded-xl transition-colors border-dashed text-slate-400 shrink-0"
+            className="border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-xl transition-colors text-rose-400 shrink-0"
             title="تسجيل الخروج"
           >
             <KeyRound className="w-5 h-5" />

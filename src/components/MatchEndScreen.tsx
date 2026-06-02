@@ -36,15 +36,18 @@ export function MatchEndScreen({ winner, sortedPlayers, messageTitle, messageSub
       {children ? children : (
         sortedPlayers && (
           <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-            {sortedPlayers.map((p, i) => (
+            {sortedPlayers.map((p, i) => {
+              const playerAvatar = p.id === playerId ? (localStorage.getItem('know_player_avatar') || p.avatarUrl) : p.avatarUrl;
+              return (
               <div key={p.id} className="flex justify-between items-center p-4 bg-slate-900 rounded-2xl border border-slate-700">
                 <div className="flex items-center gap-4">
                   <span className={`font-bold ${i === 0 ? 'text-emerald-400' : 'text-slate-500'}`}>#{i + 1}</span>
+                  <img src={playerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.userId || p.id}`} className="w-10 h-10 rounded-xl bg-slate-950 object-cover shrink-0" alt="avatar" />
                   <span className="font-bold text-lg">{p.username}</span>
                 </div>
                 <span className="text-indigo-400 font-bold">{p.score} نقطة</span>
               </div>
-            ))}
+            )})}
           </div>
         )
       )}

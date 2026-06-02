@@ -33,6 +33,7 @@ export interface PublicRoom {
 export interface PlayerStats {
   playerId: string;
   playerName: string;
+  avatarUrl?: string;
   gamesPlayed: number;
   wins: number;
   correctAnswers: number;
@@ -117,7 +118,7 @@ export const updatePenaltyStats = async (
         penaltySaves: saves,
         penaltyWinStreak: isWin ? 1 : 0
       };
-      await setDoc(playerRef, { ...newStats, currentPenaltyWinStreak: isWin ? 1 : 0 });
+      await setDoc(playerRef, { ...newStats, currentPenaltyWinStreak: isWin ? 1 : 0 }, { merge: true });
     }
   } catch (error) {
     console.error('Error updating penalty stats:', error);
@@ -264,7 +265,7 @@ export const updatePlayerStats = async (
         mostPlayedCategory: category,
         lastUpdated: Date.now()
       };
-      await setDoc(playerRef, newStats);
+      await setDoc(playerRef, newStats, { merge: true });
     }
   } catch(err) {
     console.error('Error updating player stats:', err);
@@ -312,7 +313,7 @@ export const updateFishingStats = async (
         fishingTotalPoints: score,
         lastUpdated: Date.now()
       };
-      await setDoc(playerRef, newStats);
+      await setDoc(playerRef, newStats, { merge: true });
     }
   } catch(err) {
     console.error('Error updating fishing stats:', err);
@@ -390,7 +391,7 @@ export const updateHockeyStats = async (
         
         lastUpdated: Date.now()
       };
-      await setDoc(playerRef, newStats);
+      await setDoc(playerRef, newStats, { merge: true });
     }
   } catch(err) {
     console.error('Error updating hockey stats:', err);
@@ -403,53 +404,20 @@ export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRa
     const q = query(
       collection(db, 'users'),
       orderBy(sortBy, 'desc'),
-      limit(200)
+      limit(50)
     );
-    const { getDocs, deleteDoc } = await import('firebase/firestore');
+    const { getDocs } = await import('firebase/firestore');
     const snapshot = await getDocs(q);
     
-    const nameMap = new Map<string, PlayerStats>();
-    const docsToDelete: string[] = [];
+    const results: PlayerStats[] = [];
     
     snapshot.forEach(docSnap => {
       const data = docSnap.data() as PlayerStats;
-      const normalizedName = (data.playerName || 'مجهول').trim().toLowerCase();
-      
-      if (nameMap.has(normalizedName)) {
-        const existing = nameMap.get(normalizedName)!;
-        existing.gamesPlayed = (existing.gamesPlayed || 0) + (data.gamesPlayed || 0);
-        existing.wins = (existing.wins || 0) + (data.wins || 0);
-        existing.totalPoints = (existing.totalPoints || 0) + (data.totalPoints || 0);
-        existing.correctAnswers = (existing.correctAnswers || 0) + (data.correctAnswers || 0);
-        existing.wrongAnswers = (existing.wrongAnswers || 0) + (data.wrongAnswers || 0);
-        
-        const totalQ = existing.correctAnswers + existing.wrongAnswers;
-        existing.successRate = totalQ > 0 ? Math.round((existing.correctAnswers / totalQ) * 100) : 0;
-        
-        docsToDelete.push(docSnap.id);
-      } else {
-        nameMap.set(normalizedName, data);
-      }
+      data.playerId = docSnap.id; // Force ID to match document
+      results.push(data);
     });
-
-    // Cleanup duplicates asynchronously
-    docsToDelete.forEach(async (id) => {
-      try {
-        await deleteDoc(doc(db, 'users', id));
-      } catch (e) {}
-    });
-
-    const results = Array.from(nameMap.values());
     
-    // Apply final sort
-    results.sort((a, b) => {
-      if (sortBy === 'totalPoints') return (b.totalPoints || 0) - (a.totalPoints || 0);
-      if (sortBy === 'wins') return (b.wins || 0) - (a.wins || 0);
-      if (sortBy === 'successRate') return (b.successRate || 0) - (a.successRate || 0);
-      return 0;
-    });
-
-    return results.slice(0, 50);
+    return results;
   } catch (err) {
     console.error('Error getting leaderboard:', err);
     return [];
@@ -469,14 +437,11 @@ export const updateOnlinePresence = async (playerId: string) => {
 export const subscribeToOnlineCount = (callback: (count: number) => void) => {
   if (!db) return () => {};
   const activeRef = collection(db, 'online_players');
-  // Simple listener that fetches all docs in online_players
-  // and filters locally. It's OK for our scale. For large scale, we should use a backend job.
   const unsubscribe = onSnapshot(activeRef, (snapshot) => {
     const now = Date.now();
     let count = 0;
     snapshot.forEach(doc => {
       const data = doc.data();
-      // Considered online if active in the last 15 seconds
       if (data.lastActive && (now - data.lastActive) < 15000) {
         count++;
       }
@@ -484,5 +449,209 @@ export const subscribeToOnlineCount = (callback: (count: number) => void) => {
     callback(count);
   });
   return unsubscribe;
+};
+
+// ------------------------------------------------------------------
+// Settings & Profile System
+// ------------------------------------------------------------------
+export const migrateUserData = async (oldId: string, newId: string) => {
+  if (!db) return;
+  try {
+    const { getDoc, setDoc, deleteDoc } = await import('firebase/firestore');
+    // migrate users collection
+    const userRef = doc(db, 'users', oldId);
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+       const data = snap.data();
+       data.playerId = newId;
+       await setDoc(doc(db, 'users', newId), data);
+       await deleteDoc(userRef);
+    }
+    
+    // migrate online_players collection
+    const onlineRef = doc(db, 'online_players', oldId);
+    const onlineSnap = await getDoc(onlineRef);
+    if (onlineSnap.exists()) {
+       await setDoc(doc(db, 'online_players', newId), onlineSnap.data());
+       await deleteDoc(onlineRef);
+    }
+    
+    console.log('Migration completed from', oldId, 'to', newId);
+  } catch(e) {
+    console.error('Migration failed:', e);
+  }
+};
+
+export const updateUserProfile = async (playerId: string, profileData: { username?: string; avatarUrl?: string; playerId?: string }) => {
+
+  if (!db) return;
+  try {
+    const userRef = doc(db, 'users', playerId);
+    await setDoc(userRef, { ...profileData, lastActive: Date.now() }, { merge: true });
+  } catch (err) {
+    console.error('Error updating profile:', err);
+  }
+};
+
+export const searchUserById = async (playerId: string) => {
+  if (!db) return null;
+  try {
+    const docRef = doc(db, 'users', playerId);
+    const snap = await (await import('firebase/firestore')).getDoc(docRef);
+    if (snap.exists()) {
+       return { id: snap.id, ...snap.data() };
+    }
+    return null;
+  } catch (err) {
+    console.error('Error searching user by ID:', err);
+    return null;
+  }
+};
+
+// ------------------------------------------------------------------
+// Friends System
+// ------------------------------------------------------------------
+
+export const sendFriendRequest = async (fromId: string, fromName: string, toId: string) => {
+  if (!db) return;
+  try {
+    // Prevent self-request
+    if (fromId === toId) return;
+
+    // Check if already friends or if request already exists
+    const q = query(collection(db, 'friend_requests'), where('fromId', '==', fromId), where('toId', '==', toId));
+    const docs = await (await import('firebase/firestore')).getDocs(q);
+    if (!docs.empty) return; // already sent
+
+    const reqId = `${fromId}_${toId}`;
+    const reqRef = doc(db, 'friend_requests', reqId);
+    await setDoc(reqRef, {
+      fromId,
+      fromName,
+      toId,
+      status: 'pending',
+      createdAt: Date.now()
+    });
+  } catch (err) {
+    console.error('Error sending friend request:', err);
+  }
+};
+
+export const respondToFriendRequest = async (reqId: string, accept: boolean) => {
+  if (!db) return;
+  try {
+    if (accept) {
+      await updateDoc(doc(db, 'friend_requests', reqId), { status: 'accepted' });
+    } else {
+      await deleteDoc(doc(db, 'friend_requests', reqId));
+    }
+  } catch (err) {
+    console.error('Error responding to friend request:', err);
+  }
+};
+
+export const deleteFriend = async (friendshipReqId: string) => {
+  if (!db) return;
+  try {
+    await deleteDoc(doc(db, 'friend_requests', friendshipReqId));
+  } catch (err) {
+    console.error('Error deleting friend:', err);
+  }
+};
+
+export const subscribeToFriends = (playerId: string, callback: (friends: any[], pendingRequests: any[]) => void) => {
+  if (!db) return () => {};
+  
+  // Listen to requests where this user is sender or receiver
+  // Note: For complex queries we might need index, but OR queries or multiple listeners are easier without manual indexing.
+  const fromQ = query(collection(db, 'friend_requests'), where('fromId', '==', playerId));
+  const toQ = query(collection(db, 'friend_requests'), where('toId', '==', playerId));
+  
+  let docsMap = new Map<string, any>();
+  const updateLists = () => {
+    const list = Array.from(docsMap.values());
+    const pending = list.filter(r => r.toId === playerId && r.status === 'pending');
+    const friends = list.filter(r => r.status === 'accepted').map(r => {
+      // transform to friend object
+      const friendId = r.fromId === playerId ? r.toId : r.fromId;
+      return { ...r, friendId };
+    });
+    callback(friends, pending);
+  };
+
+  const unsubFrom = onSnapshot(fromQ, (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'removed') docsMap.delete(change.doc.id);
+      else docsMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
+    });
+    updateLists();
+  });
+
+  const unsubTo = onSnapshot(toQ, (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'removed') docsMap.delete(change.doc.id);
+      else docsMap.set(change.doc.id, { id: change.doc.id, ...change.doc.data() });
+    });
+    updateLists();
+  });
+
+  return () => { unsubFrom(); unsubTo(); };
+};
+
+// ------------------------------------------------------------------
+// Invites System
+// ------------------------------------------------------------------
+
+export const sendGameInvite = async (fromId: string, fromName: string, toId: string, roomData: any) => {
+  if (!db) return;
+  try {
+    const inviteId = `${fromId}_${Date.now()}`;
+    await setDoc(doc(db, 'game_invites', inviteId), {
+      fromId,
+      fromName,
+      toId,
+      roomData,
+      createdAt: Date.now()
+    });
+    // Auto delete invite after 60 seconds
+    setTimeout(async () => {
+      try { await deleteDoc(doc(db, 'game_invites', inviteId)); } catch (e) {}
+    }, 60000);
+  } catch (err) {
+    console.error('Error sending game invite:', err);
+  }
+};
+
+export const subscribeToGameInvites = (playerId: string, callback: (invites: any[]) => void) => {
+  if (!db) return () => {};
+  
+  const q = query(
+    collection(db, 'game_invites'),
+    where('toId', '==', playerId)
+  );
+
+  return onSnapshot(q, (snap) => {
+    const now = Date.now();
+    const invites: any[] = [];
+    snap.forEach(doc => {
+      const data = doc.data();
+      if ((now - data.createdAt) < 60000) {
+        invites.push({ id: doc.id, ...data });
+      } else {
+        // Cleanup old invites on read just in case setTimeout missed it
+        deleteDoc(doc.ref).catch(()=>{});
+      }
+    });
+    callback(invites);
+  });
+};
+
+export const deleteGameInvite = async (inviteId: string) => {
+    if (!db) return;
+    try {
+        await deleteDoc(doc(db, 'game_invites', inviteId));
+    } catch(err) {
+        console.error('Error deleting game invite', err);
+    }
 };
 

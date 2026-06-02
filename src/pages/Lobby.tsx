@@ -224,11 +224,16 @@ export default function Lobby() {
       <div className="grid sm:grid-cols-2 gap-4">
         {players.map((p) => {
           const isMe = p.id === playerId;
+          const playerAvatar = isMe ? storage.getPlayerAvatar() : p.avatarUrl;
           return (
             <div key={p.id} className={`p-4 rounded-2xl border ${isMe ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-slate-800 border-slate-700'} flex items-center justify-between group`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center relative">
-                  <Users className="w-5 h-5 text-slate-400" />
+                <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center relative shrink-0">
+                  {playerAvatar || p.userId ? (
+                     <img src={playerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.userId || p.id}`} className="w-10 h-10 rounded-xl object-cover" />
+                  ) : (
+                     <Users className="w-5 h-5 text-slate-400" />
+                  )}
                   {p.isMuted && (
                     <div className="absolute -top-1 -right-1 bg-red-500 text-white border-2 border-slate-800 rounded-full p-0.5">
                       <MicOff className="w-3 h-3" />
