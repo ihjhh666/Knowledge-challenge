@@ -1,5 +1,6 @@
 import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './components/AuthContext';
 import { GameProvider } from './components/GameContext';
 import Home from './pages/Home';
 import Room from './pages/Room';
@@ -25,10 +26,12 @@ import { GameInvitesListener } from './components/GameInvitesListener';
 export default function App() {
   return (
     <HashRouter>
-      <GameProvider>
-        <GameInvitesListener />
-        <AppContent />
-      </GameProvider>
+      <AuthProvider>
+        <GameProvider>
+          <GameInvitesListener />
+          <AppContent />
+        </GameProvider>
+      </AuthProvider>
     </HashRouter>
   );
 }

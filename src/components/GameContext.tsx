@@ -178,19 +178,81 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        disconnectDelays.current[pId] = setTimeout(() => {
           if (stateRef.current && stateRef.current.players[pId]?.disconnectedAt) {
              const st = stateRef.current;
+             
+             // Hande Hockey 2v2 bot substitution
+             if (st.gameMode === 'hockey' && st.hockeyState?.is2v2) {
+                 const updatedPlayers = { ...st.players };
+                 const pData = updatedPlayers[pId];
+                 delete updatedPlayers[pId];
+                 
+                 let newHockeyState = { ...st.hockeyState };
+                 let botTeam: 1|2 = 1;
+                 
+                 if (newHockeyState.team1?.includes(pId)) {
+                     newHockeyState.team1 = newHockeyState.team1.filter(id => id !== pId);
+                     const botId = `bot-${Math.random().toString(36).substr(2, 5)}`;
+                     newHockeyState.team1.push(botId);
+                     botTeam = 1;
+                     updatedPlayers[botId] = {
+                         id: botId,
+                         username: `بوت (${pData.username})`, // Add old player's name as indicator
+                         isHost: false,
+                         isReady: true,
+                         score: pData.score,
+                         hasAnsweredCurrentRound: true,
+                         lastAnswerSucceeded: false
+                     };
+                 } else if (newHockeyState.team2?.includes(pId)) {
+                     newHockeyState.team2 = newHockeyState.team2.filter(id => id !== pId);
+                     const botId = `bot-${Math.random().toString(36).substr(2, 5)}`;
+                     newHockeyState.team2.push(botId);
+                     botTeam = 2;
+                     updatedPlayers[botId] = {
+                         id: botId,
+                         username: `بوت (${pData.username})`, // Add old player's name as indicator
+                         isHost: false,
+                         isReady: true,
+                         score: pData.score,
+                         hasAnsweredCurrentRound: true,
+                         lastAnswerSucceeded: false
+                     };
+                 }
+                 
+                 const newSt = { ...st, players: updatedPlayers, hockeyState: newHockeyState };
+                 setState(newSt);
+                 broadcast({ type: 'STATE_UPDATE', state: newSt });
+                 updatePublicRoom(newSt.roomId, {
+                    playerCount: Object.keys(updatedPlayers).length
+                 });
+                 // System message
+                 handleMessage({
+                     type: 'CHAT',
+                     message: {
+                         id: Math.random().toString(),
+                         senderId: 'SYSTEM',
+                         senderName: 'النظام',
+                         text: `لم يعد اللاعب ${pData?.username}، تم استبداله ببوت.`,
+                         timestamp: Date.now()
+                     }
+                 });
+                 return;
+             }
+             
+             // Standard forfeit logic
              const playingPlayers = Object.keys(st.players).filter(key => key !== pId && !st.players[key].disconnectedAt);
              const remainingId = playingPlayers[0];
              
              const updatedPlayers = { ...st.players };
              if (remainingId && updatedPlayers[remainingId]) {
                 if (st.gameMode === 'penalty' || st.gameMode === 'domino' || st.gameMode === 'hockey') {
+                   // Add a forfeit identifier or score
                    updatedPlayers[remainingId].score += 10;
                 }
              }
-             
+             const pData = updatedPlayers[pId];
              delete updatedPlayers[pId];
              
-             // Check if less than 2 players remain in 2-player modes
+             // Check if less than 2 players remain in 2-player/1v1 modes
              const needsTwo = st.gameMode === 'penalty' || st.gameMode === 'domino' || st.gameMode === 'hockey';
              if (needsTwo && Object.keys(updatedPlayers).length < 2) {
                  const finSt = { ...st, players: updatedPlayers, status: 'finished' as const };
@@ -200,6 +262,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     status: 'finished',
                     playerCount: Object.keys(updatedPlayers).length
                  });
+                 // System message for forfeit
+                 handleMessage({
+                     type: 'CHAT',
+                     message: {
+                         id: Math.random().toString(),
+                         senderId: 'SYSTEM',
+                         senderName: 'النظام',
+                         text: `لم يعد اللاعب ${pData?.username}، تم احتساب الفوز للطرف الآخر.`,
+                         timestamp: Date.now()
+                     }
+                 });
              } else {
                  const newSt = { ...st, players: updatedPlayers };
                  setState(newSt);
@@ -208,6 +281,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     playerCount: Object.keys(updatedPlayers).length
                  });
                  checkAllAnswered(newSt);
+                 // System message for forfeit
+                 handleMessage({
+                     type: 'CHAT',
+                     message: {
+                         id: Math.random().toString(),
+                         senderId: 'SYSTEM',
+                         senderName: 'النظام',
+                         text: `لم يعُد اللاعب ${pData?.username}، تم استبعاده.`,
+                         timestamp: Date.now()
+                     }
+                 });
              }
           }
        }, 10000); // 10 seconds grace period
@@ -312,6 +396,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              if (newState.hockeyState) {
                 if (newState.hockeyState.player1Id === oldId) newState.hockeyState.player1Id = newId;
                 if (newState.hockeyState.player2Id === oldId) newState.hockeyState.player2Id = newId;
+                if (newState.hockeyState.team1) {
+                   newState.hockeyState.team1 = newState.hockeyState.team1.map((id: string) => id === oldId ? newId : id);
+                }
+                if (newState.hockeyState.team2) {
+                   newState.hockeyState.team2 = newState.hockeyState.team2.map((id: string) => id === oldId ? newId : id);
+                }
                 if (newState.hockeyState.pointsMatch && newState.hockeyState.pointsMatch[oldId] !== undefined) {
                    newState.hockeyState.pointsMatch[newId] = newState.hockeyState.pointsMatch[oldId];
                    delete newState.hockeyState.pointsMatch[oldId];
@@ -320,6 +410,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              
              setState(newState);
              broadcast({ type: 'STATE_UPDATE', state: newState });
+             
+             // System message
+             handleMessage({
+                 type: 'CHAT',
+                 message: {
+                     id: Math.random().toString(),
+                     senderId: 'SYSTEM',
+                     senderName: 'النظام',
+                     text: `تمت إعادة اتصال اللاعب ${pData.username} بنجاح.`,
+                     timestamp: Date.now()
+                 }
+             });
              break;
           }
 
@@ -1731,9 +1833,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-6">
               <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-500 mx-auto"></div>
               <div>
-                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">فقدان اتصال</h2>
-                 <p className="text-gray-600 dark:text-gray-300">
-                    اللاعب <span className="font-bold text-indigo-500">{disconnectedPlayer.username}</span> يحاول إعادة الاتصال...
+                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">انقطاع الاتصال</h2>
+                 <p className="text-gray-600 dark:text-gray-300 font-medium">
+                    تم فقدان اتصال اللاعب <span className="font-bold text-indigo-500">{disconnectedPlayer.username}</span>، جاري انتظار إعادة الاتصال...
                  </p>
               </div>
               <div className="text-5xl font-black text-indigo-500">

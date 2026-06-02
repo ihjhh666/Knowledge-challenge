@@ -883,6 +883,20 @@ export default function Hockey2v2Room() {
       
       const puck = puckRef.current;
       
+      const predictPuck = (framesAhead: number) => {
+         let px = puck.pos.x, py = puck.pos.y, vx = puck.vel.x, vy = puck.vel.y;
+         for (let i = 0; i < framesAhead; i++) {
+            px += vx * dt; py += vy * dt;
+            if (px <= puck.radius) { px = puck.radius; vx *= -0.8; }
+            else if (px >= CANVAS_WIDTH - puck.radius) { px = CANVAS_WIDTH - puck.radius; vx *= -0.8; }
+            vx *= 0.995; vy *= 0.995;
+            if (Math.abs(vx) < 0.2 && Math.abs(vy) < 0.2) break;
+         }
+         return { x: px, y: py };
+      };
+      
+      const predicted = predictPuck(15);
+      
       const decideBotMove = (idx: number, isTeam1Bot: boolean) => {
           const pad = paddlesRef.current[idx];
           const teammateIdx = isTeam1Bot ? (idx === 0 ? 1 : 0) : (idx === 2 ? 3 : 2);
@@ -890,7 +904,7 @@ export default function Hockey2v2Room() {
           
           const role = (idx % 2 === 0) ? 'attacker' : 'defender';
           
-          const isMyHalf = isTeam1Bot ? puck.pos.y >= CANVAS_HEIGHT / 2 - 20 : puck.pos.y <= CANVAS_HEIGHT / 2 + 20;
+          const isMyHalf = isTeam1Bot ? predicted.y >= CANVAS_HEIGHT / 2 - 20 : predicted.y <= CANVAS_HEIGHT / 2 + 20;
           
           let tx = pad.pos.x;
           let ty = pad.pos.y;
@@ -907,31 +921,49 @@ export default function Hockey2v2Room() {
           if (role === 'defender') {
               if (isMyHalf && amClosest && distToPuck < 250) {
                   // Intercept puck if close
-                  tx = puck.pos.x;
-                  ty = puck.pos.y;
+                  tx = predicted.x;
+                  ty = predicted.y;
               } else {
-                  // Guard goal
-                  tx = Math.max(goalX - 60, Math.min(goalX + 60, puck.pos.x));
+                  // Guard goal dynamically
+                  tx = Math.max(goalX - 70, Math.min(goalX + 70, predicted.x));
                   ty = defendY;
                   
-                  // If puck heading to goal, move to block
+                  // If puck heading to goal, move forward slightly to block
                   const puckMovingToGoal = isTeam1Bot ? puck.vel.y > 2 : puck.vel.y < -2;
                   if (puckMovingToGoal && isMyHalf) {
                       ty -= isTeam1Bot ? 40 : -40;
                   }
               }
           } else {
+              // Attacker role
               if (isMyHalf) {
                   if (amClosest || distToPuck < teammateDistToPuck + 60) {
-                      tx = puck.pos.x + puck.vel.x * 6; // Lead the puck
-                      ty = puck.pos.y + puck.vel.y * 6;
+                      tx = predicted.x; 
+                      ty = predicted.y;
+                      
+                      // Shoot intelligently
+                      if (distToPuck < 80) {
+                         const goalY = isTeam1Bot ? 0 : CANVAS_HEIGHT;
+                         const angleToGoal = Math.atan2(goalY - pad.pos.y, goalX - pad.pos.x);
+                         tx = puck.pos.x - Math.cos(angleToGoal) * 20;
+                         ty = puck.pos.y + (isTeam1Bot ? 25 : -25);
+                      }
                   } else {
                       tx = (idx % 2 === 0) ? CANVAS_WIDTH/4 : CANVAS_WIDTH*3/4;
                       ty = attackHomeY;
                   }
               } else {
-                  tx = puck.pos.x;
+                  // Push forward when puck is in enemy half
+                  tx = predicted.x;
                   ty = attackHomeY;
+                  
+                  if (distToPuck < 100 && Math.random() < 0.8) {
+                      // Attempt to smash when close
+                      const goalY = isTeam1Bot ? 0 : CANVAS_HEIGHT;
+                      const angleToGoal = Math.atan2(goalY - pad.pos.y, goalX - pad.pos.x);
+                      tx = predicted.x - Math.cos(angleToGoal) * 15;
+                      ty = predicted.y + (isTeam1Bot ? 25 : -25);
+                  }
               }
           }
           
@@ -946,27 +978,29 @@ export default function Hockey2v2Room() {
           const dxT = tx - teammate.pos.x;
           const dyT = ty - teammate.pos.y;
           let distT = Math.hypot(dxT, dyT);
-          if (distT < PADDLE_RADIUS * 2.5) {
-              if (distT === 0) {
-                  distT = 0.001;
-                  tx += 0.001;
-              }
-              tx += (dxT / distT) * 20;
-              ty += (dyT / distT) * 20;
+          if (distT < PADDLE_RADIUS * 3.0) {
+              if (distT === 0) { distT = 0.001; tx += 0.001; }
+              tx += (dxT / distT) * 25;
+              ty += (dyT / distT) * 25;
           }
 
           const dx = tx - pad.pos.x;
           const dy = ty - pad.pos.y;
           const dist = Math.hypot(dx, dy);
           
-          if (dist > 5) {
-              const speed = Math.min(dist, botSpeedRef.current);
-              pad.vel.x = (dx / dist) * speed;
-              pad.vel.y = (dy / dist) * speed;
-          } else {
-              pad.vel.x *= 0.5;
-              pad.vel.y *= 0.5;
+          let targetVelX = 0;
+          let targetVelY = 0;
+          if (dist > 0) {
+              // Increase dynamic speed
+              const speed = Math.min(dist * 0.4, 13.0);
+              targetVelX = (dx / dist) * speed;
+              targetVelY = (dy / dist) * speed;
           }
+          
+          // Smoother movement integration with dt
+          pad.vel.x += (targetVelX - pad.vel.x) * (0.2 * dt);
+          pad.vel.y += (targetVelY - pad.vel.y) * (0.2 * dt);
+          
           pad.pos.x += pad.vel.x * dt;
           pad.pos.y += pad.vel.y * dt;
       };

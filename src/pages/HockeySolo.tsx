@@ -453,46 +453,68 @@ export default function HockeySolo() {
     }
     botLastPosRef.current = { x: bot.pos.x, y: bot.pos.y };
 
-    // Bot attacks if puck is in its half, else returns to base
-    if (puck.pos.y < CANVAS_HEIGHT / 2) {
-      targetX = puck.pos.x;
-      // In hard mode, try to hit strongly when near
-      if (difficulty === 'hard' && puck.pos.y < CANVAS_HEIGHT / 3 && Math.abs(puck.pos.x - bot.pos.x) < 55) {
-        targetY = puck.pos.y + 20;
-        speed = 11.0; 
-      } else {
-        targetY = Math.max(bot.radius + 10, puck.pos.y - 30);
-      }
-    } else {
-      if (difficulty === 'easy') {
-          targetX = Math.max(CANVAS_WIDTH/4, Math.min(CANVAS_WIDTH*3/4, puck.pos.x)); // weakly follow
-      } else if (difficulty === 'medium') {
-          targetX = Math.max(CANVAS_WIDTH/4, Math.min(CANVAS_WIDTH*3/4, puck.pos.x)); 
-      } else {
-          targetX = puck.pos.x; // track tightly
-      }
-      targetY = 60; // fall back to defense line
-    }
+    const predictPuck = (framesAhead: number) => {
+       let px = puck.pos.x, py = puck.pos.y, vx = puck.vel.x, vy = puck.vel.y;
+       for (let i = 0; i < framesAhead; i++) {
+          px += vx; py += vy;
+          if (px <= puck.radius) { px = puck.radius; vx *= -0.8; }
+          else if (px >= CANVAS_WIDTH - puck.radius) { px = CANVAS_WIDTH - puck.radius; vx *= -0.8; }
+          vx *= 0.995; vy *= 0.995;
+          if (Math.abs(vx) < 0.2 && Math.abs(vy) < 0.2) break;
+       }
+       return { x: px, y: py };
+    };
+
+    let maxSpeed = 5.0;
+    let predictionFrames = 0;
+    let smoothing = 0.15;
+    let aggression = 0;
     
+    if (difficulty === 'easy') {
+        maxSpeed = 3.5;
+        predictionFrames = 5;
+        smoothing = 0.1;
+        aggression = 0.3;
+    } else if (difficulty === 'medium') {
+        maxSpeed = 6.5;
+        predictionFrames = 15;
+        smoothing = 0.15;
+        aggression = 0.6;
+    } else {
+        maxSpeed = 10.0;
+        predictionFrames = 30;
+        smoothing = 0.2;
+        aggression = 0.9;
+    }
+    const predicted = predictPuck(predictionFrames);
+
     // Bounds check for bot target
     targetX = Math.max(bot.radius, Math.min(CANVAS_WIDTH - bot.radius, targetX));
     targetY = Math.max(bot.radius, Math.min(CANVAS_HEIGHT/2 - bot.radius, targetY));
 
-    // Move bot towards target
+    // Move bot towards target with smoothing
     const applyBotVelocity = (b: PhysicsEntity, tx: number, ty: number, s: number) => {
        const bdx = tx - b.pos.x;
        const bdy = ty - b.pos.y;
        const bdist = Math.hypot(bdx, bdy);
+       let targetVelX = 0;
+       let targetVelY = 0;
        if (bdist > 0) {
           const step = Math.min(bdist, s);
-          const vx = (bdx / bdist) * step;
-          const vy = (bdy / bdist) * step;
-          b.pos.x += vx;
-          b.pos.y += vy;
-          b.vel = { x: vx, y: vy };
-       } else {
-          b.vel = { x: 0, y: 0 };
+          targetVelX = (bdx / bdist) * step;
+          targetVelY = (bdy / bdist) * step;
        }
+       
+       // Smoothing factor based on difficulty
+       let smoothing = 0.15;
+       if (difficulty === 'easy') smoothing = 0.1;
+       else if (difficulty === 'hard') smoothing = 0.2;
+       
+       b.vel.x += (targetVelX - b.vel.x) * smoothing;
+       b.vel.y += (targetVelY - b.vel.y) * smoothing;
+       
+       b.pos.x += b.vel.x;
+       b.pos.y += b.vel.y;
     };
     
     if (is2v2) {
@@ -501,16 +523,27 @@ export default function HockeySolo() {
        let frTx = CANVAS_WIDTH / 2;
        let frTy = CANVAS_HEIGHT - 80;
        
-       if (puck.pos.y > CANVAS_HEIGHT / 2) {
+       if (predicted.y > CANVAS_HEIGHT / 2) {
            // Puck is in our half. Friend bot defends the goal.
-           frTx = puck.pos.x;
+           frTx = Math.max(CANVAS_WIDTH/2 - 70, Math.min(CANVAS_WIDTH/2 + 70, predicted.x));
            frTy = Math.max(CANVAS_HEIGHT - 120, Math.min(CANVAS_HEIGHT - 40, puck.pos.y + 40));
        } else {
            // Puck is in enemy half. Friend bot stays ready at defense line.
-           frTx = Math.max(PADDLE_RADIUS, Math.min(CANVAS_WIDTH - PADDLE_RADIUS, puck.pos.x));
+           frTx = Math.max(CANVAS_WIDTH/4, Math.min(CANVAS_WIDTH*3/4, predicted.x));
            frTy = CANVAS_HEIGHT - 150;
        }
        frTx = Math.max(fr.radius, Math.min(CANVAS_WIDTH - fr.radius, frTx));
+       
+       // Anti-collision with player
+       const dxFr = frTx - playerPaddleRef.current.pos.x;
+       const dyFr = frTy - playerPaddleRef.current.pos.y;
+       let distFr = Math.hypot(dxFr, dyFr);
+       if (distFr < PADDLE_RADIUS * 3.0) {
+           if (distFr === 0) { distFr = 0.001; frTx += 0.001; }
+           frTx += (dxFr / distFr) * 25;
+           frTy += (dyFr / distFr) * 25;
+       }
+       
        applyBotVelocity(fr, frTx, frTy, speed * 0.9);
        
        // For enemy side, in 2v2 we split roles:
@@ -518,9 +551,9 @@ export default function HockeySolo() {
        // enemyFrontBotRef -> Attacker
        
        // Override Defender (botPaddleRef)
-       if (puck.pos.y < CANVAS_HEIGHT / 2 + 100) {
+       if (predicted.y < CANVAS_HEIGHT / 2 + 50) {
            // Puck in enemy half. Defender guards net.
-           targetX = puck.pos.x;
+           targetX = Math.max(CANVAS_WIDTH/2 - 70, Math.min(CANVAS_WIDTH/2 + 70, predicted.x));
            targetY = Math.min(120, Math.max(40, puck.pos.y - 40));
        } else {
            // Puck in our half. Defender stays at net.
@@ -529,27 +562,79 @@ export default function HockeySolo() {
        }
        targetX = Math.max(bot.radius, Math.min(CANVAS_WIDTH - bot.radius, targetX));
        targetY = Math.max(bot.radius, Math.min(CANVAS_HEIGHT/2 - bot.radius, targetY));
-       applyBotVelocity(bot, targetX, targetY, speed);
        
        // Enemy Attacker
        const ef = enemyFrontBotRef.current;
        let efTx = CANVAS_WIDTH / 2;
        let efTy = CANVAS_HEIGHT / 2 - 100;
+       let efSpeed = speed * ((difficulty === 'hard') ? 1.0 : 0.85);
        
-       if (puck.pos.y < CANVAS_HEIGHT / 2 + 100) {
+       if (predicted.y < CANVAS_HEIGHT / 2 + 100) {
            // Chase the puck actively
-           efTx = puck.pos.x;
-           efTy = puck.pos.y;
+           efTx = predicted.x;
+           
+           if (difficulty === 'hard' && Math.abs(puck.pos.x - ef.pos.x) < 60 && puck.pos.y > ef.pos.y) {
+              const angleToGoal = Math.atan2(CANVAS_HEIGHT - ef.pos.y, (CANVAS_WIDTH/2) - ef.pos.x);
+              efTy = puck.pos.y - 30;
+              efTx = puck.pos.x - Math.cos(angleToGoal) * 20; 
+              efSpeed = speed * 1.3;
+           } else {
+              efTy = predicted.y;
+           }
        } else {
            // Wait near middle
-           efTx = Math.max(ef.radius, Math.min(CANVAS_WIDTH - ef.radius, puck.pos.x));
+           efTx = Math.max(ef.radius, Math.min(CANVAS_WIDTH - ef.radius, predicted.x));
            efTy = CANVAS_HEIGHT / 2 - 80;
        }
+       
+       // Anti-collision between Enemy Attacker and Enemy Defender
+       const dxEn = efTx - targetX;
+       const dyEn = efTy - targetY;
+       let distEn = Math.hypot(dxEn, dyEn);
+       if (distEn < PADDLE_RADIUS * 3.0) {
+           if (distEn === 0) { distEn = 0.001; efTx += 0.001; }
+           efTx += (dxEn / distEn) * 25;
+           efTy += (dyEn / distEn) * 25;
+       }
+       
        efTx = Math.max(ef.radius, Math.min(CANVAS_WIDTH - ef.radius, efTx));
        efTy = Math.max(ef.radius, Math.min(CANVAS_HEIGHT / 2 - ef.radius, efTy));
-       applyBotVelocity(ef, efTx, efTy, speed * 0.9);
-    } else {
+       
        applyBotVelocity(bot, targetX, targetY, speed);
+       applyBotVelocity(ef, efTx, efTy, efSpeed);
+    } else {
+       let tx = CANVAS_WIDTH / 2;
+       let ty = 60;
+
+       if (predicted.y < CANVAS_HEIGHT / 2 + 30) {
+           // Bot's half
+           if (puck.pos.y > bot.pos.y - 10 && Math.abs(puck.pos.x - bot.pos.x) < 80) {
+               // Good angle to strike
+               const angleToGoal = Math.atan2(CANVAS_HEIGHT - bot.pos.y, (CANVAS_WIDTH/2) - bot.pos.x);
+               tx = predicted.x - Math.cos(angleToGoal) * 20;
+               ty = predicted.y - 30; // hit it down
+               if (difficulty === 'hard') speed = 12.0;
+           } else {
+               // Just block it
+               tx = predicted.x;
+               ty = Math.max(bot.radius, predicted.y - 30);
+           }
+       } else {
+           // Player's half
+           if (difficulty === 'hard') {
+                // Push forward slightly but cover goal
+                tx = Math.max(CANVAS_WIDTH/2 - 60, Math.min(CANVAS_WIDTH/2 + 60, predicted.x));
+                ty = 100;
+           } else {
+                // Fall back to net
+                tx = Math.max(CANVAS_WIDTH/4, Math.min(CANVAS_WIDTH*3/4, predicted.x));
+                ty = 60;
+           }
+       }
+       tx = Math.max(bot.radius, Math.min(CANVAS_WIDTH - bot.radius, tx));
+       ty = Math.max(bot.radius, Math.min(CANVAS_HEIGHT/2 - bot.radius, ty));
+       
+       applyBotVelocity(bot, tx, ty, speed);
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGame } from '../components/GameContext';
 import { RoomPlayer } from '../lib/types';
+import * as storage from '../lib/storage';
 import { Check, Clock, Users, Play, Copy, Hand, MicOff, Mic, UserMinus, Settings, Crown } from 'lucide-react';
 
 const CATEGORIES = [
