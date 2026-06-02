@@ -88,7 +88,6 @@ export default function PenaltySolo() {
       cancelAnimationFrame(rafRef.current);
       cancelAnimationFrame(idleRafRef.current);
       clearInterval(timerRef.current);
-      clearTimeout(resetTimeoutRef.current);
     };
   }, []);
 

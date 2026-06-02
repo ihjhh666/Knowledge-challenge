@@ -283,12 +283,6 @@ export default function Hockey2v2Room() {
   const puckTrailRef = useRef<{x: number, y: number, alpha: number}[]>([]);
   
   useEffect(() => {
-    console.log("[Hockey2v2Room] Component mounted! Match started. isHost:", isHost);
-    resetPositions(true); // force host to decide initial direction
-    console.log("[Hockey2v2Room] Initial positions reset. Puck vel:", puckRef.current.vel);
-  }, [resetPositions]);
-
-  useEffect(() => {
      // Don't auto-win if 2v2 empty, since bots fill them. But if humans leave maybe end?
 
      // Actually in 2v2 we just let it play or wait if everyone leaves. We'll simplify.
@@ -334,7 +328,7 @@ export default function Hockey2v2Room() {
   const syncTimerRef = useRef<number>(0);
   const lastLoopTimeRef = useRef<number>(0);
   
-  const resetPositions = useCallback((serverIsTeam1: boolean) => {
+  const resetPositions = useCallback((serverIsTeam1: boolean = true) => {
     puckRef.current.pos = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 };
     puckRef.current.vel = { x: 0, y: serverIsTeam1 ? -3 : 3 };
     
@@ -348,6 +342,12 @@ export default function Hockey2v2Room() {
     targetPaddlesPosRef.current = [null, null, null, null];
     puckTrailRef.current = [];
   }, []);
+
+  useEffect(() => {
+    console.log("[Hockey2v2Room] Component mounted! Match started. isHost:", isHost);
+    resetPositions(true); // force host to decide initial direction
+    console.log("[Hockey2v2Room] Initial positions reset. Puck vel:", puckRef.current.vel);
+  }, [resetPositions, isHost]);
 
   const updateStats = (isWin: boolean, pScore: number, oScore: number) => {
     const pId = storage.getPlayerId();

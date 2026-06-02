@@ -117,5 +117,10 @@ export type PeerMessage =
   | { type: 'PENALTY_ACTION', playerId: string, action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right' }
   | { type: 'DOMINO_ACTION', playerId: string, actionDetails: any }
   | { type: 'HOCKEY_ACTION', playerId: string, paddle: { x: number, y: number, vx: number, vy: number } }
-  | { type: 'HOCKEY_SYNC', state: { puck: { x: number, y: number, vx: number, vy: number }, paddle1?: { x: number, y: number }, paddle2?: { x: number, y: number }, paddles?: {x: number, y: number}[], goalScorer?: 'player1'|'player2'|null, gameState: 'playing'|'goal'|'results', score1: number, score2: number, winner?: 'player1' | 'player2' | null } };
+  | { type: 'HOCKEY_SYNC', state: { puck: { x: number, y: number, vx: number, vy: number }, paddle1?: { x: number, y: number }, paddle2?: { x: number, y: number }, paddles?: {x: number, y: number}[], goalScorer?: 'player1'|'player2'|null, gameState: 'playing'|'goal'|'results', score1: number, score2: number, winner?: 'player1' | 'player2' | null } }
+  | { type: 'HOCKEY_RESTART' }
+  | { type: 'CHANGE_HOCKEY_MODE', is2v2: boolean }
+  | { type: 'ASSIGN_TEAM', pId: string, team: 1 | 2 }
+  | { type: 'ADD_BOT', team: 1 | 2 }
+  | { type: 'REMOVE_BOT', botId: string };
 

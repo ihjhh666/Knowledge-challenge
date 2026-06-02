@@ -233,7 +233,7 @@ const getBgCanvas = (is2v2: boolean) => {
       drawGoalArea(0, 'rgba(239, 68, 68, 0.1)', 1); // Guest goal
       drawGoalArea(CANVAS_HEIGHT, 'rgba(16, 185, 129, 0.1)', -1); // Host goal
    }
-   bgCanvasCache = c;
+   bgCanvasCaches[key] = c;
    return c;
 };
 
@@ -272,12 +272,6 @@ export default function HockeyRoom() {
   const reqRef = useRef<number>();
   const puckTrailRef = useRef<{x: number, y: number, alpha: number}[]>([]);
   
-  useEffect(() => {
-     console.log("[HockeyRoom] Component mounted! Match started. isHost:", isHost);
-     resetPositions(true); // force host to decide initial direction
-     console.log("[HockeyRoom] Initial positions reset. Puck vel:", puckRef.current.vel);
-  }, [resetPositions]);
-
   useEffect(() => {
      if (state?.status === 'finished' && Object.keys(state.players).length < 2 && localGameState !== 'results') {
          setLocalGameState('results');
@@ -335,6 +329,12 @@ export default function HockeyRoom() {
     targetOppPosRef.current = null;
     puckTrailRef.current = [];
   }, []);
+
+  useEffect(() => {
+     console.log("[HockeyRoom] Component mounted! Match started. isHost:", isHost);
+     resetPositions(true);
+     console.log("[HockeyRoom] Initial positions reset. Puck vel:", puckRef.current.vel);
+  }, [resetPositions, isHost]);
 
   const updateStats = (isWin: boolean, pScore: number, oScore: number) => {
     const pId = storage.getPlayerId();

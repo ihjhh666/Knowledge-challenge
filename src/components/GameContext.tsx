@@ -568,8 +568,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            t1 = t1.filter(id => id !== pId);
            t2 = t2.filter(id => id !== pId);
            
-           if (team === 'team1' && t1.length < 2) t1.push(pId);
-           if (team === 'team2' && t2.length < 2) t2.push(pId);
+           if ((team as any) === 'team1' || team === 1) {
+              if (t1.length < 2) t1.push(pId);
+           }
+           if ((team as any) === 'team2' || team === 2) {
+              if (t2.length < 2) t2.push(pId);
+           }
            
            const newState = {
                ...stateRef.current,
@@ -603,8 +607,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                lastAnswerSucceeded: false
            };
            
-           if (team === 'team1' && t1.length < 2) t1.push(botId);
-           else if (team === 'team2' && t2.length < 2) t2.push(botId);
+           if ((team as any) === 'team1' || team === 1) {
+              if (t1.length < 2) t1.push(botId);
+           } else if ((team as any) === 'team2' || team === 2) {
+              if (t2.length < 2) t2.push(botId);
+           }
            
            const newState = {
                ...stateRef.current,
@@ -1303,7 +1310,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hockeyState: gameMode === 'hockey' ? {
            is2v2: subMode === '2v2',
            team1: subMode === '2v2' ? [myId] : [],
-           team2: []
+           team2: [],
+           player1Id: myId,
+           player2Id: ''
         } : undefined
       };
       setState(initialState);
@@ -1671,7 +1680,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [playerId]);
 
   const disconnectedPlayer = state && state.status === 'playing' 
-    ? Object.values(state.players).find(p => p.disconnectedAt) 
+    ? (Object.values(state.players) as RoomPlayer[]).find(p => p.disconnectedAt) 
     : undefined;
     
   const [disconnectCountdown, setDisconnectCountdown] = useState(10);
