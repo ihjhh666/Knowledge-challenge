@@ -273,6 +273,12 @@ export default function HockeyRoom() {
   const puckTrailRef = useRef<{x: number, y: number, alpha: number}[]>([]);
   
   useEffect(() => {
+     console.log("[HockeyRoom] Component mounted! Match started. isHost:", isHost);
+     resetPositions(true); // force host to decide initial direction
+     console.log("[HockeyRoom] Initial positions reset. Puck vel:", puckRef.current.vel);
+  }, [resetPositions]);
+
+  useEffect(() => {
      if (state?.status === 'finished' && Object.keys(state.players).length < 2 && localGameState !== 'results') {
          setLocalGameState('results');
          setWinner(isHost ? 'player1' : 'player2');
@@ -821,19 +827,29 @@ export default function HockeyRoom() {
   useEffect(() => {
     let checkTimer: NodeJS.Timeout;
     if (localGameState === 'playing') {
-       checkTimer = setTimeout(() => {
+       checkTimer = setInterval(() => {
            const p = puckRef.current.pos;
            const p1 = hostPaddleRef.current.pos;
            const p2 = guestPaddleRef.current.pos;
-           const isM = (v: number) => isNaN(v) || v === null || v === undefined;
+           const isM = (v: number) => isNaN(v) || v === null || v === undefined || !isFinite(v);
            
-           if (isM(p.x) || isM(p.y) || isM(p1.x) || isM(p1.y) || isM(p2.x) || isM(p2.y)) {
-               console.error("[HockeyRoom] Missing entities detected. Recovering match...");
+           const outOfBounds = p.x < -100 || p.x > CANVAS_WIDTH + 100 || p.y < -100 || p.y > CANVAS_HEIGHT + 100;
+           const stagnant = Math.abs(puckRef.current.vel.x) < 0.2 && Math.abs(puckRef.current.vel.y) < 0.2;
+
+           if (isM(p.x) || isM(p.y) || isM(p1.x) || isM(p1.y) || isM(p2.x) || isM(p2.y) || outOfBounds || stagnant) {
+               console.error("[HockeyRoom] Watchdog triggered! Puck state:", p, "Velocity:", puckRef.current.vel, "Stagnant:", stagnant, "OOB:", outOfBounds);
                resetPositions(isHost);
+               
+               if (stagnant || puckRef.current.vel.y === 0) {
+                   puckRef.current.vel.y = isHost ? -5 : 5;
+               }
+           } else {
+               // Normal console log is too spammy, maybe skip unless debugging specific drops
+               // console.log("[HockeyRoom] Watchdog check OK. Puck at y:", p.y);
            }
-       }, 2000);
+       }, 2500);
     }
-    return () => clearTimeout(checkTimer);
+    return () => clearInterval(checkTimer);
   }, [localGameState, isHost, resetPositions]);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {

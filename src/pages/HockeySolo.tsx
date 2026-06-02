@@ -982,19 +982,25 @@ export default function HockeySolo() {
   useEffect(() => {
     let checkTimer: NodeJS.Timeout;
     if (gameState === 'playing') {
-       checkTimer = setTimeout(() => {
+       checkTimer = setInterval(() => {
            const p = puckRef.current.pos;
            const p1 = playerPaddleRef.current.pos;
            const p2 = botPaddleRef.current.pos;
-           const isM = (v: number) => isNaN(v) || v === null || v === undefined;
+           const isM = (v: number) => isNaN(v) || v === null || v === undefined || !isFinite(v);
            
-           if (isM(p.x) || isM(p.y) || isM(p1.x) || isM(p1.y) || (!is2v2 && (isM(p2.x) || isM(p2.y)))) {
-               console.error("[HockeySolo] Missing entities detected. Recovering match...");
+           const outOfBounds = p.x < -100 || p.x > CANVAS_WIDTH + 100 || p.y < -100 || p.y > CANVAS_HEIGHT + 100;
+           const stagnant = Math.abs(puckRef.current.vel.x) < 0.2 && Math.abs(puckRef.current.vel.y) < 0.2;
+
+           if (isM(p.x) || isM(p.y) || isM(p1.x) || isM(p1.y) || (!is2v2 && (isM(p2.x) || isM(p2.y))) || outOfBounds || stagnant) {
+               console.error("[HockeySolo] Watchdog triggered! Puck:", p, "Vel:", puckRef.current.vel, "Stagnant:", stagnant, "OOB:", outOfBounds);
                resetPositions('player');
+               if (stagnant || puckRef.current.vel.y === 0) {
+                   puckRef.current.vel.y = -5;
+               }
            }
-       }, 2000);
+       }, 2500);
     }
-    return () => clearTimeout(checkTimer);
+    return () => clearInterval(checkTimer);
   }, [gameState, is2v2, resetPositions]);
 
   // Touch/Mouse handling

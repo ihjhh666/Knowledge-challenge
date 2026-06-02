@@ -283,7 +283,14 @@ export default function Hockey2v2Room() {
   const puckTrailRef = useRef<{x: number, y: number, alpha: number}[]>([]);
   
   useEffect(() => {
+    console.log("[Hockey2v2Room] Component mounted! Match started. isHost:", isHost);
+    resetPositions(true); // force host to decide initial direction
+    console.log("[Hockey2v2Room] Initial positions reset. Puck vel:", puckRef.current.vel);
+  }, [resetPositions]);
+
+  useEffect(() => {
      // Don't auto-win if 2v2 empty, since bots fill them. But if humans leave maybe end?
+
      // Actually in 2v2 we just let it play or wait if everyone leaves. We'll simplify.
   }, [state?.status, Object.keys(state?.players || {}).length, localGameState]);
   
@@ -995,22 +1002,29 @@ export default function Hockey2v2Room() {
   useEffect(() => {
     let checkTimer: NodeJS.Timeout;
     if (localGameState === 'playing') {
-       checkTimer = setTimeout(() => {
+       checkTimer = setInterval(() => {
            const p = puckRef.current.pos;
-           const isM = (v: number) => isNaN(v) || v === null || v === undefined;
+           const isM = (v: number) => isNaN(v) || v === null || v === undefined || !isFinite(v);
            let missing = false;
+           
            if (isM(p.x) || isM(p.y)) missing = true;
            paddlesRef.current.forEach(pad => {
               if (isM(pad.pos.x) || isM(pad.pos.y)) missing = true;
            });
            
-           if (missing) {
-               console.error("[Hockey2v2Room] Missing entities detected. Recovering match...");
+           const outOfBounds = p.x < -100 || p.x > CANVAS_WIDTH + 100 || p.y < -100 || p.y > CANVAS_HEIGHT + 100;
+           const stagnant = Math.abs(puckRef.current.vel.x) < 0.2 && Math.abs(puckRef.current.vel.y) < 0.2;
+
+           if (missing || outOfBounds || stagnant) {
+               console.error("[Hockey2v2Room] Watchdog triggered! Puck:", p, "Vel:", puckRef.current.vel, "Stagnant:", stagnant, "OOB:", outOfBounds);
                resetPositions(isTeam1);
+               if (stagnant || puckRef.current.vel.y === 0) {
+                   puckRef.current.vel.y = isTeam1 ? -5 : 5;
+               }
            }
-       }, 2000);
+       }, 2500);
     }
-    return () => clearTimeout(checkTimer);
+    return () => clearInterval(checkTimer);
   }, [localGameState, isTeam1, resetPositions]);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {

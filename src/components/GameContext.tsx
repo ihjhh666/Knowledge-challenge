@@ -459,7 +459,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'HOCKEY_ACTION':
       case 'HOCKEY_SYNC':
+      case 'HOCKEY_RESTART':
         if (stateRef.current && stateRef.current.gameMode === 'hockey') {
+          if (isHostRef.current) {
+             broadcast(message);
+          }
           window.dispatchEvent(new CustomEvent('hockey_event', { detail: message }));
         }
         break;
@@ -1399,7 +1403,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           conn.close();
         } else if (msg.type === 'FISH_CATCH' || msg.type === 'FISH_SPAWN') {
           window.dispatchEvent(new CustomEvent('fishing_event', { detail: msg }));
-        } else if (msg.type === 'HOCKEY_ACTION' || msg.type === 'HOCKEY_SYNC') {
+        } else if (msg.type === 'HOCKEY_ACTION' || msg.type === 'HOCKEY_SYNC' || msg.type === 'HOCKEY_RESTART') {
           window.dispatchEvent(new CustomEvent('hockey_event', { detail: msg }));
         }
       });
