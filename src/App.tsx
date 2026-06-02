@@ -21,6 +21,7 @@ import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 
 import Settings from './pages/Settings';
+import FirebaseSetup from './pages/FirebaseSetup';
 import { GameInvitesListener } from './components/GameInvitesListener';
 
 export default function App() {
@@ -76,6 +77,7 @@ function AppContent() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/firebase-setup" element={<FirebaseSetup />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />

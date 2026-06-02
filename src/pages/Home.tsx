@@ -217,6 +217,12 @@ export default function Home() {
               </svg>
               {isLoggingIn ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول عبر Google'}
             </button>
+            <div className="pt-4 text-center">
+              <Link to="/firebase-setup" className="text-sm text-slate-500 hover:text-indigo-400 font-medium underline flex items-center justify-center gap-1">
+                 <Settings className="w-4 h-4" /> 
+                 إعدادات Firebase (صاحب الموقع)
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -441,9 +447,16 @@ export default function Home() {
             ملفي
           </Link>
           <Link
+            to="/firebase-setup"
+            className="flex items-center justify-center p-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors text-purple-400"
+            title="إعدادات Firebase"
+          >
+             <Settings className="w-5 h-5" />
+          </Link>
+          <Link
             to="/settings"
             className="flex items-center justify-center p-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors text-slate-300"
-            title="الإعدادات"
+            title="الإعدادات العامة"
           >
              <Settings className="w-5 h-5" />
           </Link>

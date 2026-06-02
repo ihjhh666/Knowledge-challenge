@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useGame } from '../components/GameContext';
 import { useAuth } from '../components/AuthContext';
 import Lobby from './Lobby';
@@ -10,7 +10,7 @@ import DominoRoom from './DominoRoom';
 import HockeyRoom from './HockeyRoom';
 import Hockey2v2Room from './Hockey2v2Room';
 import Chat from './Chat';
-import { LogOut, Users, Lock, UserPlus } from 'lucide-react';
+import { LogOut, Users, Lock, UserPlus, Settings } from 'lucide-react';
 import { FriendsSidebar } from '../components/FriendsSidebar';
 
 export default function Room() {
@@ -155,6 +155,12 @@ export default function Room() {
               </svg>
               {isLoggingIn ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول عبر Google'}
             </button>
+            <div className="pt-4 text-center">
+              <Link to="/firebase-setup" className="text-sm text-slate-500 hover:text-indigo-400 font-medium underline flex items-center justify-center gap-1">
+                 <Settings className="w-4 h-4" /> 
+                 إعدادات Firebase (صاحب الموقع)
+              </Link>
+            </div>
           </div>
         </div>
       </div>
