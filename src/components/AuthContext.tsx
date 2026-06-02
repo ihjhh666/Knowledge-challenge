@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, signInWithPopup, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged, User } from '../lib/firebase';
+import { auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from '../lib/firebase';
 import { storage } from '../lib/storage';
 
 export type AppUser = User | { uid: string; displayName: string | null; photoURL: string | null; isGuest: boolean };
