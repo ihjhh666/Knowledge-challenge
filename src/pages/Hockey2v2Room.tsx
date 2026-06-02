@@ -425,18 +425,21 @@ export default function Hockey2v2Room() {
       } else if (msg.type === 'HOCKEY_SYNC' && !isHost) {
          const s = msg.state;
          
+         // Smooth puck sync
          const errX = s.puck.x - puckRef.current.pos.x;
          const errY = s.puck.y - puckRef.current.pos.y;
-         const dist = Math.hypot(errX, errY);
+         const distSq = errX * errX + errY * errY;
          
-         if (dist > 30 || localGameState !== 'playing') {
+         if (distSq > 10000 || localGameState !== 'playing') { // ~100px away, snap
             puckRef.current.pos = { x: s.puck.x, y: s.puck.y };
             puckRef.current.vel = { x: s.puck.vx, y: s.puck.vy };
-         } else {
-            puckRef.current.pos.x += errX * 0.5;
-            puckRef.current.pos.y += errY * 0.5;
-            puckRef.current.vel.x = s.puck.vx;
-            puckRef.current.vel.y = s.puck.vy;
+         } else if (distSq > 10) {
+            // Smooth correction
+            puckRef.current.pos.x += errX * 0.15;
+            puckRef.current.pos.y += errY * 0.15;
+            // Blend velocities gently
+            puckRef.current.vel.x = puckRef.current.vel.x * 0.5 + s.puck.vx * 0.5;
+            puckRef.current.vel.y = puckRef.current.vel.y * 0.5 + s.puck.vy * 0.5;
          }
          
          if (s.paddles) {
@@ -736,14 +739,6 @@ export default function Hockey2v2Room() {
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.fill();
 
-      if (label) {
-        ctx.fillStyle = 'white';
-        ctx.font = '12px Inter';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, x, y - r - 15);
-      }
-      
       if (isLocal) {
         ctx.beginPath();
         ctx.arc(x, y, r + 8, 0, Math.PI * 2);
@@ -753,6 +748,31 @@ export default function Hockey2v2Room() {
         ctx.stroke();
         ctx.setLineDash([]);
       }
+      
+      if (label) {
+        ctx.save();
+        ctx.translate(x, y);
+        if (!isTeam1) ctx.rotate(Math.PI);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = '600 13px "JetBrains Mono", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(label, 0, -r - 15);
+        ctx.restore();
+      }
+    };
+
+    const getName = (index: number) => {
+       let id = '';
+       if (index === 0) id = team1[0];
+       if (index === 1) id = team1[1];
+       if (index === 2) id = team2[0];
+       if (index === 3) id = team2[1];
+       
+       if (!id) return '';
+       if (state?.players?.[id]) return state.players[id].username;
+       return `BOT-${index + 1}`;
     };
 
     paddlesRef.current.forEach((pad, i) => {
@@ -760,9 +780,7 @@ export default function Hockey2v2Room() {
         const color1 = isTeam1Pad ? '#3b82f6' : '#fb7185';
         const color2 = isTeam1Pad ? '#1e3a8a' : '#881337';
         const glow = isTeam1Pad ? '#2563eb' : '#f43f5e';
-        let label = '';
-        if (i === myIndex) label = 'أنت (لاعب)';
-        else if ((isTeam1Pad && isTeam1) || (!isTeam1Pad && !isTeam1)) label = 'زميلك';
+        let label = getName(i);
         drawPaddle(pad.pos.x, pad.pos.y, pad.radius, color1, color2, glow, i === myIndex, label);
     });
     
@@ -833,88 +851,98 @@ export default function Hockey2v2Room() {
       
       const puck = puckRef.current;
       
+      const decideBotMove = (idx: number, isTeam1Bot: boolean) => {
+          const pad = paddlesRef.current[idx];
+          const teammateIdx = isTeam1Bot ? (idx === 0 ? 1 : 0) : (idx === 2 ? 3 : 2);
+          const teammate = paddlesRef.current[teammateIdx];
+          
+          const role = (idx % 2 === 0) ? 'attacker' : 'defender';
+          
+          const isMyHalf = isTeam1Bot ? puck.pos.y >= CANVAS_HEIGHT / 2 - 20 : puck.pos.y <= CANVAS_HEIGHT / 2 + 20;
+          
+          let tx = pad.pos.x;
+          let ty = pad.pos.y;
+          
+          const defendY = isTeam1Bot ? CANVAS_HEIGHT - 60 : 60;
+          const attackHomeY = isTeam1Bot ? CANVAS_HEIGHT / 2 + 80 : CANVAS_HEIGHT / 2 - 80;
+          const goalX = CANVAS_WIDTH / 2;
+          
+          const distToPuck = Math.hypot(pad.pos.x - puck.pos.x, pad.pos.y - puck.pos.y);
+          const teammateDistToPuck = Math.hypot(teammate.pos.x - puck.pos.x, teammate.pos.y - puck.pos.y);
+
+          const amClosest = distToPuck <= teammateDistToPuck;
+
+          if (role === 'defender') {
+              if (isMyHalf && amClosest && distToPuck < 250) {
+                  // Intercept puck if close
+                  tx = puck.pos.x;
+                  ty = puck.pos.y;
+              } else {
+                  // Guard goal
+                  tx = Math.max(goalX - 60, Math.min(goalX + 60, puck.pos.x));
+                  ty = defendY;
+                  
+                  // If puck heading to goal, move to block
+                  const puckMovingToGoal = isTeam1Bot ? puck.vel.y > 2 : puck.vel.y < -2;
+                  if (puckMovingToGoal && isMyHalf) {
+                      ty -= isTeam1Bot ? 40 : -40;
+                  }
+              }
+          } else {
+              if (isMyHalf) {
+                  if (amClosest || distToPuck < teammateDistToPuck + 60) {
+                      tx = puck.pos.x + puck.vel.x * 6; // Lead the puck
+                      ty = puck.pos.y + puck.vel.y * 6;
+                  } else {
+                      tx = (idx % 2 === 0) ? CANVAS_WIDTH/4 : CANVAS_WIDTH*3/4;
+                      ty = attackHomeY;
+                  }
+              } else {
+                  tx = puck.pos.x;
+                  ty = attackHomeY;
+              }
+          }
+          
+          tx = Math.max(PADDLE_RADIUS, Math.min(CANVAS_WIDTH - PADDLE_RADIUS, tx));
+          if (isTeam1Bot) {
+              ty = Math.max(CANVAS_HEIGHT / 2 + PADDLE_RADIUS, Math.min(CANVAS_HEIGHT - PADDLE_RADIUS, ty));
+          } else {
+              ty = Math.max(PADDLE_RADIUS, Math.min(CANVAS_HEIGHT / 2 - PADDLE_RADIUS, ty));
+          }
+
+          // Anti-collision with teammate
+          const dxT = tx - teammate.pos.x;
+          const dyT = ty - teammate.pos.y;
+          const distT = Math.hypot(dxT, dyT);
+          if (distT < PADDLE_RADIUS * 2.5) {
+              tx += (dxT / distT) * 20;
+              ty += (dyT / distT) * 20;
+          }
+
+          const dx = tx - pad.pos.x;
+          const dy = ty - pad.pos.y;
+          const dist = Math.hypot(dx, dy);
+          
+          if (dist > 5) {
+              const speed = Math.min(dist, botSpeedRef.current);
+              pad.vel.x = (dx / dist) * speed;
+              pad.vel.y = (dy / dist) * speed;
+          } else {
+              pad.vel.x *= 0.5;
+              pad.vel.y *= 0.5;
+          }
+          pad.pos.x += pad.vel.x * dt;
+          pad.pos.y += pad.vel.y * dt;
+      };
+
       paddlesRef.current.forEach((pad, i) => {
           let botId = '';
           if (i === 0) botId = team1[0];
           if (i === 1) botId = team1[1];
           if (i === 2) botId = team2[0];
           if (i === 3) botId = team2[1];
-          
           if (!botId?.startsWith('bot-')) return;
-          
-          const isTeam1Bot = i === 0 || i === 1;
-          const defendY = isTeam1Bot ? CANVAS_HEIGHT - 60 : 60;
-          const defendMinY = isTeam1Bot ? CANVAS_HEIGHT / 2 + 50 : PADDLE_RADIUS;
-          const defendMaxY = isTeam1Bot ? CANVAS_HEIGHT - PADDLE_RADIUS : CANVAS_HEIGHT / 2 - 50;
-
-          let targetX = pad.pos.x;
-          let targetY = pad.pos.y;
-          
-          const puckDist = Math.hypot(puck.pos.x - pad.pos.x, puck.pos.y - pad.pos.y);
-          
-          // Role splitting in 2v2:
-          // Bot index 0/2 tends to stay back (defender)
-          // Bot index 1/3 tends to move forward (attacker)
-          const isDefender = i === 0 || i === 2;
-          
-          if (isTeam1Bot) {
-              if (puck.pos.y > CANVAS_HEIGHT / 2 - 100) {
-                  // Puck is in our half
-                  if (isDefender) {
-                      // Defender guards the net, tracks puck horizontally but stays back
-                      targetX = puck.pos.x;
-                      targetY = Math.max(puck.pos.y + 40, CANVAS_HEIGHT - 120);
-                  } else {
-                      // Attacker chases the puck
-                      targetX = puck.pos.x;
-                      targetY = puck.pos.y;
-                  }
-              } else {
-                  // Puck is in opponent's half
-                  if (isDefender) {
-                      targetX = CANVAS_WIDTH / 2;
-                      targetY = CANVAS_HEIGHT - 80;
-                  } else {
-                      // Attacker stays ready near middle
-                      targetX = Math.max(PADDLE_RADIUS, Math.min(CANVAS_WIDTH - PADDLE_RADIUS, puck.pos.x));
-                      targetY = CANVAS_HEIGHT / 2 + 60;
-                  }
-              }
-          } else {
-              if (puck.pos.y < CANVAS_HEIGHT / 2 + 100) {
-                  // Puck is in Team 2's half (top)
-                  if (isDefender) {
-                      targetX = puck.pos.x;
-                      targetY = Math.min(puck.pos.y - 40, 120);
-                  } else {
-                      targetX = puck.pos.x;
-                      targetY = puck.pos.y;
-                  }
-              } else {
-                  // Puck is in opponent's half
-                  if (isDefender) {
-                      targetX = CANVAS_WIDTH / 2;
-                      targetY = 80;
-                  } else {
-                      targetX = Math.max(PADDLE_RADIUS, Math.min(CANVAS_WIDTH - PADDLE_RADIUS, puck.pos.x));
-                      targetY = CANVAS_HEIGHT / 2 - 60;
-                  }
-              }
-          }
-          
-          targetY = Math.max(defendMinY, Math.min(defendMaxY, targetY));
-          targetX = Math.max(PADDLE_RADIUS, Math.min(CANVAS_WIDTH - PADDLE_RADIUS, targetX));
-          
-          // Add some noise and error so bots aren't impossibly precise
-          const errorX = (Math.random() - 0.5) * 40;
-          const errorY = (Math.random() - 0.5) * 40;
-          
-          const speed = isDefender ? 0.08 : 0.12;
-          pad.vel.x = (targetX + errorX - pad.pos.x) * speed;
-          pad.vel.y = (targetY + errorY - pad.pos.y) * speed;
-          
-          pad.pos.x += pad.vel.x;
-          pad.pos.y += pad.vel.y;
+          decideBotMove(i, i < 2);
       });
   };
 

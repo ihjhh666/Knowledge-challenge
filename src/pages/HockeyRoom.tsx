@@ -268,6 +268,10 @@ export default function HockeyRoom() {
   const [winner, setWinner] = useState<'player1' | 'player2' | null>(null);
   const [goalScorer, setGoalScorer] = useState<'player1' | 'player2' | null>(null);
   const [countdown, setCountdown] = useState<number>(3);
+  
+  const player1Name = state?.players?.[state.hockeyState?.player1Id || '']?.username || 'Player 1';
+  const player2Name = state?.players?.[state.hockeyState?.player2Id || '']?.username || 'Player 2';
+
 
   const reqRef = useRef<number>();
   const puckTrailRef = useRef<{x: number, y: number, alpha: number}[]>([]);
@@ -405,19 +409,21 @@ export default function HockeyRoom() {
       } else if (msg.type === 'HOCKEY_SYNC' && !isHost) {
          const s = msg.state;
          
-         // Error correction for puck (client prediction)
+         // Smooth puck sync
          const errX = s.puck.x - puckRef.current.pos.x;
          const errY = s.puck.y - puckRef.current.pos.y;
-         const dist = Math.hypot(errX, errY);
+         const distSq = errX * errX + errY * errY;
          
-         if (dist > 30 || localGameState !== 'playing') {
+         if (distSq > 10000 || localGameState !== 'playing') { // ~100px away, snap
             puckRef.current.pos = { x: s.puck.x, y: s.puck.y };
             puckRef.current.vel = { x: s.puck.vx, y: s.puck.vy };
-         } else {
-            puckRef.current.pos.x += errX * 0.5;
-            puckRef.current.pos.y += errY * 0.5;
-            puckRef.current.vel.x = s.puck.vx;
-            puckRef.current.vel.y = s.puck.vy;
+         } else if (distSq > 10) {
+            // Smooth correction
+            puckRef.current.pos.x += errX * 0.15;
+            puckRef.current.pos.y += errY * 0.15;
+            // Blend velocities gently
+            puckRef.current.vel.x = puckRef.current.vel.x * 0.5 + s.puck.vx * 0.5;
+            puckRef.current.vel.y = puckRef.current.vel.y * 0.5 + s.puck.vy * 0.5;
          }
          
          // Host paddle update
@@ -683,8 +689,24 @@ export default function HockeyRoom() {
       ctx.fill();
     };
 
+    const drawName = (text: string, x: number, y: number, color: string) => {
+      ctx.save();
+      ctx.translate(x, y);
+      if (!isHost) ctx.rotate(Math.PI);
+      ctx.fillStyle = color;
+      ctx.font = '600 13px "JetBrains Mono", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(text, 0, -35); // above paddle
+      ctx.restore();
+    };
+
     drawPaddle(hostPaddleRef.current.pos.x, hostPaddleRef.current.pos.y, hostPaddleRef.current.radius, '#34d399', '#064e3b', '#10b981', isHost);
+    drawName(player1Name, hostPaddleRef.current.pos.x, hostPaddleRef.current.pos.y, '#34d399');
+    
     drawPaddle(guestPaddleRef.current.pos.x, guestPaddleRef.current.pos.y, guestPaddleRef.current.radius, '#fb7185', '#881337', '#f43f5e', !isHost);
+    drawName(player2Name, guestPaddleRef.current.pos.x, guestPaddleRef.current.pos.y, '#fb7185');
     
     puckTrailRef.current.forEach(t => {
       if (!t) return;
