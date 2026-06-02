@@ -161,6 +161,15 @@ export default function PenaltyRoom() {
   const lastAnimatedRoundRef = useRef(0);
 
   useEffect(() => {
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(idleRafRef.current);
+      clearInterval(timerRef.current);
+      clearTimeout(resetTimeoutRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (gameState === 'playing' && history.length === 0) {
       console.log("System: Starting fresh penalty match, resetting visual states.");
       lastAnimatedRoundRef.current = 0;

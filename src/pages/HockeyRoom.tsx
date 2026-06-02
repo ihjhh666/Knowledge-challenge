@@ -818,12 +818,31 @@ export default function HockeyRoom() {
     };
   }, [gameLoop]);
 
+  useEffect(() => {
+    let checkTimer: NodeJS.Timeout;
+    if (localGameState === 'playing') {
+       checkTimer = setTimeout(() => {
+           const p = puckRef.current.pos;
+           const p1 = hostPaddleRef.current.pos;
+           const p2 = guestPaddleRef.current.pos;
+           const isM = (v: number) => isNaN(v) || v === null || v === undefined;
+           
+           if (isM(p.x) || isM(p.y) || isM(p1.x) || isM(p1.y) || isM(p2.x) || isM(p2.y)) {
+               console.error("[HockeyRoom] Missing entities detected. Recovering match...");
+               resetPositions(isHost);
+           }
+       }, 2000);
+    }
+    return () => clearTimeout(checkTimer);
+  }, [localGameState, isHost, resetPositions]);
+
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (localGameState !== 'playing') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
     const scaleX = CANVAS_WIDTH / rect.width;
     const scaleY = CANVAS_HEIGHT / rect.height;
 

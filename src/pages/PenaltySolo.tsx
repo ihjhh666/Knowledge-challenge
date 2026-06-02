@@ -83,6 +83,15 @@ export default function PenaltySolo() {
     }
   }, [soundEnabled, gameState]);
 
+  useEffect(() => {
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(idleRafRef.current);
+      clearInterval(timerRef.current);
+      clearTimeout(resetTimeoutRef.current);
+    };
+  }, []);
+
   // Main 10-second action timer
   useEffect(() => {
     if (gameState === 'playing' && kickState === 'idle') {

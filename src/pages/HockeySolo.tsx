@@ -979,6 +979,24 @@ export default function HockeySolo() {
     };
   }, [gameState, gameLoop]);
 
+  useEffect(() => {
+    let checkTimer: NodeJS.Timeout;
+    if (gameState === 'playing') {
+       checkTimer = setTimeout(() => {
+           const p = puckRef.current.pos;
+           const p1 = playerPaddleRef.current.pos;
+           const p2 = botPaddleRef.current.pos;
+           const isM = (v: number) => isNaN(v) || v === null || v === undefined;
+           
+           if (isM(p.x) || isM(p.y) || isM(p1.x) || isM(p1.y) || (!is2v2 && (isM(p2.x) || isM(p2.y)))) {
+               console.error("[HockeySolo] Missing entities detected. Recovering match...");
+               resetPositions('player');
+           }
+       }, 2000);
+    }
+    return () => clearTimeout(checkTimer);
+  }, [gameState, is2v2, resetPositions]);
+
   // Touch/Mouse handling
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (gameState !== 'playing') return;
@@ -986,6 +1004,7 @@ export default function HockeySolo() {
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
     const scaleX = CANVAS_WIDTH / rect.width;
     const scaleY = CANVAS_HEIGHT / rect.height;
 

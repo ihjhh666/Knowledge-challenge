@@ -373,6 +373,7 @@ export default function FishingRoom() {
       if (!canvas) return;
 
       const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       

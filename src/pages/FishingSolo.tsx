@@ -406,6 +406,7 @@ export default function FishingSolo() {
       if (!canvas || gameState !== 'playing') return;
       
       const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       const dpr = window.devicePixelRatio || 1;
       
       const scaleX = canvas.width / rect.width;

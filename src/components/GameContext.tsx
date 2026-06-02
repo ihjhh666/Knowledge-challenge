@@ -922,22 +922,25 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let hockeyState: any = {};
     
     if (currentState.subMode === '2v2') {
-       // Asssign to teams
-       const all = [...pIds].sort(() => Math.random() - 0.5);
-       const team1 = [];
-       const team2 = [];
+       let team1 = [...(currentState.hockeyState?.team1 || [])];
+       let team2 = [...(currentState.hockeyState?.team2 || [])];
+       
+       // Fill missing slots with bots if they aren't fully 4 players
+       const all = [...pIds].filter(id => !team1.includes(id) && !team2.includes(id)).sort(() => Math.random() - 0.5);
        
        for (let i = 0; i < 4; i++) {
-           const pid = all[i] || `bot-${i}`; // Use bot if not enough players
-           if (i % 2 === 0) team1.push(pid);
-           else team2.push(pid);
+           if (team1.length < 2) {
+               team1.push(all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`);
+           } else if (team2.length < 2) {
+               team2.push(all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`);
+           }
        }
        
        hockeyState = {
          is2v2: true,
          team1,
          team2,
-         player1Id: team1[0], // For legacy or reference
+         player1Id: team1[0], 
          player2Id: team2[0]
        };
     } else {

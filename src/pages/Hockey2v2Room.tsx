@@ -992,12 +992,34 @@ export default function Hockey2v2Room() {
     };
   }, [gameLoop]);
 
+  useEffect(() => {
+    let checkTimer: NodeJS.Timeout;
+    if (localGameState === 'playing') {
+       checkTimer = setTimeout(() => {
+           const p = puckRef.current.pos;
+           const isM = (v: number) => isNaN(v) || v === null || v === undefined;
+           let missing = false;
+           if (isM(p.x) || isM(p.y)) missing = true;
+           paddlesRef.current.forEach(pad => {
+              if (isM(pad.pos.x) || isM(pad.pos.y)) missing = true;
+           });
+           
+           if (missing) {
+               console.error("[Hockey2v2Room] Missing entities detected. Recovering match...");
+               resetPositions(isTeam1);
+           }
+       }, 2000);
+    }
+    return () => clearTimeout(checkTimer);
+  }, [localGameState, isTeam1, resetPositions]);
+
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (localGameState !== 'playing' || myIndex === -1) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
     const scaleX = CANVAS_WIDTH / rect.width;
     const scaleY = CANVAS_HEIGHT / rect.height;
 
