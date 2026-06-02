@@ -9,17 +9,20 @@ import { MatchEndScreen } from '../components/MatchEndScreen';
 
 interface Fish {
   id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
   fType: 'normal' | 'medium' | 'rare' | 'legendary';
   points: number;
   color: string;
-  flipped: boolean;
-  baseY: number; 
+  yRatio: number;
+  dir: number; // 1 for right, -1 for left
+  speedRatio: number;
   timeOffset: number;
+  localSpawnTime?: number; // client-side only
+  pendingCatch?: boolean;
+  
+  // These are computed continuously during render, keep them for click detection
+  x?: number;
+  y?: number;
+  size?: number;
 }
 
 interface FloatingText {
@@ -110,7 +113,8 @@ export default function FishingRoom() {
         const ce = e as CustomEvent;
         const msg = ce.detail;
         if (msg.type === 'FISH_SPAWN') {
-            fishesRef.current.push(msg.fish);
+            const newFish: Fish = { ...msg.fish, localSpawnTime: window.performance.now() };
+            fishesRef.current.push(newFish);
         } else if (msg.type === 'FISH_CATCH') {
             const index = fishesRef.current.findIndex(f => f.id === msg.fishId);
             if (index !== -1) {
@@ -126,8 +130,8 @@ export default function FishingRoom() {
                     const speed = Math.random() * 3 + 1;
                     particlesRef.current.push({
                         id: Math.random(),
-                        x: f.x,
-                        y: f.y,
+                        x: f.x || 0,
+                        y: f.y || 0,
                         vx: Math.cos(angle) * speed * dpr,
                         vy: Math.sin(angle) * speed * dpr,
                         life: 1,
@@ -138,8 +142,8 @@ export default function FishingRoom() {
                 // Add points text at correct spot
                 textsRef.current.push({
                   id: Math.random(),
-                  x: f.x,
-                  y: f.y,
+                  x: f.x || 0,
+                  y: f.y || 0,
                   text: `+${msg.points}`,
                   color: msg.playerId === playerId ? '#10b981' : '#f59e0b',
                   life: 1
@@ -159,35 +163,25 @@ export default function FishingRoom() {
               let fType: 'normal'|'medium'|'rare'|'legendary' = 'normal';
               let pts = 10;
               let color = '#a78bfa'; // normal
-              let size = 20;
 
-              if (r < 0.05) { fType = 'legendary'; pts = 100; color = '#fbbf24'; size = 30; }
-              else if (r < 0.15) { fType = 'rare'; pts = 50; color = '#f472b6'; size = 25; }
-              else if (r < 0.40) { fType = 'medium'; pts = 25; color = '#38bdf8'; size = 22; }
+              if (r < 0.05) { fType = 'legendary'; pts = 100; color = '#fbbf24'; }
+              else if (r < 0.15) { fType = 'rare'; pts = 50; color = '#f472b6'; }
+              else if (r < 0.40) { fType = 'medium'; pts = 25; color = '#38bdf8'; }
 
-              const canvas = canvasRef.current;
-              if (!canvas) return;
-              
-              const dpr = window.devicePixelRatio || 1;
-              const y = 80 * dpr + Math.random() * (canvas.height - 120 * dpr); 
+              const yRatio = 0.15 + Math.random() * 0.7; 
               const dir = Math.random() > 0.5 ? 1 : -1;
-              const x = dir === 1 ? -50 * dpr : canvas.width + 50 * dpr;
               
-              const baseSpeed = 1.5;
-              const speedMap = { 'normal': 1, 'medium': 1.5, 'rare': 2, 'legendary': 3 };
+              const speedMap = { 'normal': 0.00015, 'medium': 0.0002, 'rare': 0.0003, 'legendary': 0.00045 };
+              const speedRatio = speedMap[fType];
               
               const newFish = {
                   id: Math.random(),
-                  x,
-                  y,
-                  vx: dir * baseSpeed * speedMap[fType] * dpr,
-                  vy: 0,
-                  size: size * dpr,
+                  yRatio,
+                  dir,
+                  speedRatio,
                   fType,
                   points: pts,
                   color,
-                  flipped: dir === -1,
-                  baseY: y,
                   timeOffset: Math.random() * 10000
               };
               spawnFish(newFish);
@@ -236,9 +230,10 @@ export default function FishingRoom() {
       }));
 
       const drawFish = (f: Fish) => {
+          if (f.x === undefined || f.y === undefined || f.size === undefined) return;
           ctx.save();
           ctx.translate(f.x, f.y);
-          if (f.flipped) ctx.scale(-1, 1);
+          if (f.dir === -1) ctx.scale(-1, 1);
 
           ctx.fillStyle = f.color;
           ctx.beginPath();
@@ -292,14 +287,21 @@ export default function FishingRoom() {
               ctx.fill();
           }
 
+          const now = window.performance.now();
           for(let i = fishesRef.current.length - 1; i >= 0; i--) {
               const f = fishesRef.current[i];
-              f.x += f.vx * scale;
-              f.y = f.baseY + Math.sin((timestamp + f.timeOffset) / 300) * 15 * dpr + Math.cos((timestamp + f.timeOffset) / 600) * 10 * dpr;
+              const elapsed = now - (f.localSpawnTime || now);
+              
+              const logicalX = f.dir === 1 ? -0.1 + f.speedRatio * elapsed : 1.1 - f.speedRatio * elapsed;
+              f.x = logicalX * canvas.width;
+              f.y = (f.yRatio * canvas.height) + Math.sin((now + f.timeOffset) / 300) * 15 * dpr + Math.cos((now + f.timeOffset) / 600) * 10 * dpr;
+              
+              const sizeMap: any = { 'normal': 20, 'medium': 22, 'rare': 25, 'legendary': 30 };
+              f.size = sizeMap[f.fType] * dpr;
               
               drawFish(f);
               
-              if (f.x > canvas.width + 100 * dpr || f.x < -100 * dpr) {
+              if (logicalX > 1.2 || logicalX < -0.2) {
                   fishesRef.current.splice(i, 1);
               }
           }
@@ -386,10 +388,12 @@ export default function FishingRoom() {
 
       for(let i = fishesRef.current.length - 1; i >= 0; i--) {
           const f = fishesRef.current[i];
+          if (f.x === undefined || f.y === undefined || f.size === undefined) continue;
+          
           const dist = Math.hypot(f.x - x, f.y - y);
-          if (dist < f.size * 2.0) {
+          if (dist < f.size * 2.0 && !f.pendingCatch) {
+              f.pendingCatch = true;
               catchFish(f.id, f.points, f.fType);
-              fishesRef.current.splice(i, 1);
               break;
           }
       }

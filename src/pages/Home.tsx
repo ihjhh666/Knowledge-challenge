@@ -32,7 +32,8 @@ export default function Home() {
     type: 'public' as RoomVisibility,
     password: '',
     maxPlayers: 10,
-    gameMode: 'quiz' as 'quiz' | 'fishing' | 'penalty'
+    gameMode: 'quiz' as 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey',
+    hockeySubMode: '1v1' as '1v1' | '2v2'
   });
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [joinError, setJoinError] = useState('');
@@ -76,7 +77,7 @@ export default function Home() {
 
   const handleCreateRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    createRoom(createConfig.gameMode === 'fishing' ? '🎣 صيد السمك' : createConfig.category, createConfig.type, createConfig.password, createConfig.maxPlayers, createConfig.gameMode);
+    createRoom(createConfig.gameMode === 'fishing' ? '🎣 صيد السمك' : createConfig.category, createConfig.type, createConfig.password, createConfig.maxPlayers, createConfig.gameMode, createConfig.hockeySubMode);
   };
 
   const handleJoinRoom = (e: React.FormEvent) => {
@@ -225,6 +226,30 @@ export default function Home() {
                       <span className="text-sm font-bold text-slate-200">{cat.name}</span>
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {createConfig.gameMode === 'hockey' && (
+              <div>
+                <label className="block text-slate-400 mb-3 font-bold">نوع الطور</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCreateConfig({...createConfig, hockeySubMode: '1v1', maxPlayers: 2})}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.hockeySubMode === '1v1' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                  >
+                    <div className="text-2xl">👤</div>
+                    <span className="text-sm font-bold text-slate-200">1 ضد 1</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateConfig({...createConfig, hockeySubMode: '2v2', maxPlayers: 4})}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.hockeySubMode === '2v2' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                  >
+                    <div className="text-2xl">👥</div>
+                    <span className="text-sm font-bold text-slate-200">2 ضد 2</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -406,15 +431,27 @@ export default function Home() {
           </div>
 
           <div 
-            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-blue-500/50 hover:bg-slate-800/80 transition-all duration-300 cursor-pointer group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-blue-500/20" 
-            onClick={() => navigate('/hockey-solo')}
+            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-blue-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-blue-500/20" 
           >
              <div className="bg-blue-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-300">
                 <div className="text-5xl drop-shadow-md">🏒</div>
              </div>
              <h3 className="text-2xl font-bold font-heading text-white mb-3">الهوكي</h3>
-             <p className="text-slate-400 text-sm mb-8 leading-relaxed">لعبة الهوكي الفردية ضد الذكاء الاصطناعي، سجل 10 أهداف لتفوز.</p>
-             <span className="mt-auto bg-blue-500/10 text-blue-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-blue-500/20 group-hover:bg-blue-500 group-hover:text-white transition-colors">إلعب الآن</span>
+             <p className="text-slate-400 text-sm mb-6 leading-relaxed">لعبة الهوكي الفردية ضد الذكاء الاصطناعي، سجل 10 أهداف لتفوز.</p>
+             <div className="w-full grid grid-cols-2 gap-3 mt-auto">
+                <button 
+                  onClick={() => navigate('/hockey-solo?mode=1v1')}
+                  className="bg-blue-500/10 text-blue-400 font-bold px-4 py-2.5 rounded-xl text-sm border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-colors"
+                >
+                  1 ضد 1
+                </button>
+                <button 
+                  onClick={() => navigate('/hockey-solo?mode=2v2')}
+                  className="bg-sky-500/10 text-sky-400 font-bold px-4 py-2.5 rounded-xl text-sm border border-sky-500/20 hover:bg-sky-500 hover:text-white transition-colors"
+                >
+                  2 ضد 2
+                </button>
+             </div>
           </div>
         </div>
       </section>

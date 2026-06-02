@@ -34,6 +34,7 @@ export interface GameState {
   roomId: string;
   category?: string;
   gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey';
+  subMode?: string;
   roomVisibility?: RoomVisibility;
   maxPlayers?: number;
   password?: string;
@@ -76,8 +77,11 @@ export interface GameState {
     };
   };
   hockeyState?: {
-    player1Id: string;
+    player1Id: string; // Used for 1v1
     player2Id: string;
+    team1?: string[]; // Used for 2v2
+    team2?: string[];
+    is2v2?: boolean;
     pointsMatch?: {
       [id: string]: number;
     };
@@ -113,5 +117,5 @@ export type PeerMessage =
   | { type: 'PENALTY_ACTION', playerId: string, action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right' }
   | { type: 'DOMINO_ACTION', playerId: string, actionDetails: any }
   | { type: 'HOCKEY_ACTION', playerId: string, paddle: { x: number, y: number, vx: number, vy: number } }
-  | { type: 'HOCKEY_SYNC', state: { puck: { x: number, y: number, vx: number, vy: number }, paddle1: { x: number, y: number }, paddle2: { x: number, y: number }, goalScorer?: 'player1'|'player2'|null, gameState: 'playing'|'goal'|'results', score1: number, score2: number } };
+  | { type: 'HOCKEY_SYNC', state: { puck: { x: number, y: number, vx: number, vy: number }, paddle1?: { x: number, y: number }, paddle2?: { x: number, y: number }, paddles?: {x: number, y: number}[], goalScorer?: 'player1'|'player2'|null, gameState: 'playing'|'goal'|'results', score1: number, score2: number, winner?: 'player1' | 'player2' | null } };
 

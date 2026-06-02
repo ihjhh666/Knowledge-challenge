@@ -7,6 +7,7 @@ import FishingRoom from './FishingRoom';
 import PenaltyRoom from './PenaltyRoom';
 import DominoRoom from './DominoRoom';
 import HockeyRoom from './HockeyRoom';
+import Hockey2v2Room from './Hockey2v2Room';
 import Chat from './Chat';
 import { LogOut, Users, Lock } from 'lucide-react';
 import { storage } from '../lib/storage';
@@ -185,7 +186,8 @@ export default function Room() {
           {state.status !== 'waiting' && state.gameMode === 'fishing' && <FishingRoom />}
           {state.status !== 'waiting' && state.gameMode === 'penalty' && <PenaltyRoom />}
           {state.status !== 'waiting' && state.gameMode === 'domino' && <DominoRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'hockey' && <HockeyRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'hockey' && !state.hockeyState?.is2v2 && <HockeyRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'hockey' && state.hockeyState?.is2v2 && <Hockey2v2Room />}
         </div>
         
         <div className="h-[500px] lg:h-[calc(100vh-160px)] lg:sticky lg:top-8 flex flex-col">

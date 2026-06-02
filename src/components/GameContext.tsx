@@ -335,8 +335,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              delete disconnectDelays.current[senderId];
           }
 
+          let newHockeyState = stateRef.current.hockeyState;
+          if (stateRef.current.gameMode === 'hockey' && stateRef.current.hockeyState?.is2v2) {
+              const t1 = [...(stateRef.current.hockeyState.team1 || [])];
+              const t2 = [...(stateRef.current.hockeyState.team2 || [])];
+              if (t1.length < 2) t1.push(message.player.id);
+              else if (t2.length < 2) t2.push(message.player.id);
+              newHockeyState = { ...stateRef.current.hockeyState, team1: t1, team2: t2 };
+          }
+
           const newState = {
             ...stateRef.current,
+            hockeyState: newHockeyState,
             players: {
               ...stateRef.current.players,
               [message.player.id]: {
@@ -500,6 +510,117 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            updatePublicRoom(newState.roomId, { category: message.category });
         }
         break;
+      case 'CHANGE_HOCKEY_MODE':
+        if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting' && stateRef.current.gameMode === 'hockey') {
+           const is2v2 = message.is2v2;
+           const newCat = is2v2 ? '🏒 هوكي (2 ضد 2)' : '🏒 هوكي (1 ضد 1)';
+           let t1 = is2v2 ? [] : undefined;
+           let t2 = is2v2 ? [] : undefined;
+           if (is2v2) {
+               Object.keys(stateRef.current.players).forEach(pId => {
+                   if (t1.length < 2) t1.push(pId);
+                   else if (t2.length < 2) t2.push(pId);
+               });
+           }
+           const newState = { 
+               ...stateRef.current, 
+               category: newCat,
+               hockeyState: {
+                   ...stateRef.current.hockeyState,
+                   is2v2,
+                   team1: t1,
+                   team2: t2,
+               }
+           };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+           updatePublicRoom(newState.roomId, { category: newCat });
+        }
+        break;
+      case 'ASSIGN_TEAM':
+        if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
+           const team = message.team;
+           const pId = message.pId;
+           
+           let t1 = [...(stateRef.current.hockeyState?.team1 || [])];
+           let t2 = [...(stateRef.current.hockeyState?.team2 || [])];
+           
+           t1 = t1.filter(id => id !== pId);
+           t2 = t2.filter(id => id !== pId);
+           
+           if (team === 'team1' && t1.length < 2) t1.push(pId);
+           if (team === 'team2' && t2.length < 2) t2.push(pId);
+           
+           const newState = {
+               ...stateRef.current,
+               hockeyState: {
+                   ...stateRef.current.hockeyState,
+                   team1: t1,
+                   team2: t2
+               }
+           };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+        }
+        break;
+      case 'ADD_BOT':
+        if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
+           const team = message.team;
+           let t1 = [...(stateRef.current.hockeyState?.team1 || [])];
+           let t2 = [...(stateRef.current.hockeyState?.team2 || [])];
+           
+           const botId = `bot-${Math.random().toString(36).substring(2, 9)}`;
+           
+           // Also add bot to the global players so lobby displays it
+           const newPlayers = { ...stateRef.current.players };
+           newPlayers[botId] = {
+               id: botId,
+               username: 'بوت',
+               score: 0,
+               isHost: false,
+               isReady: true,
+               hasAnsweredCurrentRound: false,
+               lastAnswerSucceeded: false
+           };
+           
+           if (team === 'team1' && t1.length < 2) t1.push(botId);
+           else if (team === 'team2' && t2.length < 2) t2.push(botId);
+           
+           const newState = {
+               ...stateRef.current,
+               players: newPlayers,
+               hockeyState: {
+                   ...stateRef.current.hockeyState,
+                   team1: t1,
+                   team2: t2
+               }
+           };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+        }
+        break;
+      case 'REMOVE_BOT':
+        if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
+           const botId = message.botId;
+           let t1 = [...(stateRef.current.hockeyState?.team1 || [])].filter(id => id !== botId);
+           let t2 = [...(stateRef.current.hockeyState?.team2 || [])].filter(id => id !== botId);
+           
+           const newPlayers = { ...stateRef.current.players };
+           delete newPlayers[botId];
+           
+           const newState = {
+               ...stateRef.current,
+               players: newPlayers,
+               hockeyState: {
+                   ...stateRef.current.hockeyState,
+                   team1: t1,
+                   team2: t2
+               }
+           };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+        }
+        break;
       case 'CHANGE_MODE':
         if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
            const newCat = message.gameMode === 'fishing' ? '🎣 صيد السمك' : message.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : message.gameMode === 'domino' ? '🎲 الدومينو' : message.gameMode === 'hockey' ? '🏒 هوكي' : '🧠 معلومات عامة';
@@ -583,6 +704,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           const newState = { ...stateRef.current, players: newPlayers, caughtFishIds: newCaughtList };
           setState(newState);
+          broadcast({ type: 'STATE_UPDATE', state: newState });
           broadcast(message);
           window.dispatchEvent(new CustomEvent('fishing_event', { detail: message }));
         }
@@ -773,14 +895,44 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const startHockeyMode = (currentState: GameState) => {
     const pIds = Object.keys(currentState.players);
-    if (pIds.length < 2) return;
-    const p1 = pIds[0];
-    const p2 = pIds[1];
+    if (pIds.length < (currentState.subMode === '2v2' ? 1 : 2)) return;
     
     // reset scores
     const updatedPlayers = { ...currentState.players };
-    updatedPlayers[p1] = { ...updatedPlayers[p1], score: 0 };
-    updatedPlayers[p2] = { ...updatedPlayers[p2], score: 0 };
+    pIds.forEach(id => {
+       updatedPlayers[id] = { ...updatedPlayers[id], score: 0 };
+    });
+
+    let hockeyState: any = {};
+    
+    if (currentState.subMode === '2v2') {
+       // Asssign to teams
+       const all = [...pIds].sort(() => Math.random() - 0.5);
+       const team1 = [];
+       const team2 = [];
+       
+       for (let i = 0; i < 4; i++) {
+           const pid = all[i] || `bot-${i}`; // Use bot if not enough players
+           if (i % 2 === 0) team1.push(pid);
+           else team2.push(pid);
+       }
+       
+       hockeyState = {
+         is2v2: true,
+         team1,
+         team2,
+         player1Id: team1[0], // For legacy or reference
+         player2Id: team2[0]
+       };
+    } else {
+       const p1 = pIds[0];
+       const p2 = pIds[1];
+       hockeyState = {
+         is2v2: false,
+         player1Id: p1,
+         player2Id: p2,
+       };
+    }
 
     const initialState: GameState = {
       ...currentState,
@@ -788,10 +940,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       round: 1,
       totalRounds: 1,
       players: updatedPlayers,
-      hockeyState: {
-        player1Id: p1,
-        player2Id: p2,
-      }
+      hockeyState
     };
     
     setState(initialState);
@@ -1098,12 +1247,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAllAnswered(newState);
   };
 
-  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' = 'quiz') => {
+  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' = 'quiz', subMode?: string) => {
     intentionalLeaveRef.current = false;
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
-    const roomCategory = gameMode === 'fishing' ? '🎣 صيد السمك' : gameMode === 'penalty' ? '⚽ ركلات الجزاء' : gameMode === 'domino' ? '🎲 الدومينو' : gameMode === 'hockey' ? '🏒 هوكي' : category || '🧠 معلومات عامة';
+    const roomCategory = gameMode === 'fishing' ? '🎣 صيد السمك' : gameMode === 'penalty' ? '⚽ ركلات الجزاء' : gameMode === 'domino' ? '🎲 الدومينو' : gameMode === 'hockey' ? (subMode === '2v2' ? '🏒 هوكي 2 ضد 2' : '🏒 هوكي 1 ضد 1') : category || '🧠 معلومات عامة';
     
     setPlayerId(myId);
     setIsHost(true);
@@ -1115,6 +1264,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const initialState: GameState = {
         roomId,
         gameMode,
+        subMode,
         category: roomCategory,
         roomVisibility,
         maxPlayers,
@@ -1126,7 +1276,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           [myId]: { id: myId, userId: storage.getPlayerId(), username, isReady: true, isHost: true, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false }
         },
         messages: [],
-        askedQuestions: []
+        askedQuestions: [],
+        hockeyState: gameMode === 'hockey' ? {
+           is2v2: subMode === '2v2',
+           team1: subMode === '2v2' ? [myId] : [],
+           team2: []
+        } : undefined
       };
       setState(initialState);
       audio.joinLobby();
@@ -1486,7 +1641,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendHockeyEvent = React.useCallback((event: any) => {
     if (isHostRef.current) {
-      broadcast(event);
+      handleMessage({ ...event, playerId });
     } else if (hostConnectionRef.current?.open) {
       hostConnectionRef.current.send({ ...event, playerId });
     }
