@@ -23,8 +23,9 @@ const ROOM_CATEGORIES = [
 export default function Home() {
   const navigate = useNavigate();
   const { createRoom, state, joinRoom } = useGame();
-  const { user, loading: authLoading, loginWithGoogle, logout } = useAuth();
+  const { user, loading: authLoading, loginWithGoogle, loginAsGuest, logout } = useAuth();
   const [username, setUsername] = useState('');
+  const [guestName, setGuestName] = useState('');
   const [joinId, setJoinId] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -93,13 +94,20 @@ export default function Home() {
           setLoginError('نطاق اللعبة غير مصرح به. يجب إضافة هذا الرابط إلى إعدادات Firebase Authentication.');
        } else if (error.code === 'auth/operation-not-supported-in-this-environment') {
            setLoginError('المتصفح يمنع النافذة المنبثقة. يرجى فتح اللعبة في تبويبة جديدة (New Tab) والمحاولة مجدداً.');
-       } else if (error.code === 'auth/internal-error' && error.message.includes('API key not valid')) {
+       } else if (error.code === 'auth/internal-error' && error.message?.includes('API key not valid')) {
            setLoginError('مفتاح API غير صالح. تأكد من إعدادات Firebase.');
        } else {
-          setLoginError(`خطأ: تأكد من تفعيل (Google Sign-In) في Firebase ووضع بريد الدعم (Support Email). (${error.code})`);
+          setLoginError(`خطأ: ${error.code || 'غير محدد'} - ${error.message || 'يرجى التأكد من إضافة نطاق الموقع (enge-mu.vercel.app) في Firebase (Authorized domains).'}`);
        }
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+
+  const handleGuestLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (guestName.trim().length >= 2) {
+      await loginAsGuest(guestName.trim());
     }
   };
 
@@ -168,10 +176,38 @@ export default function Home() {
                </div>
             )}
             
+            <form onSubmit={handleGuestLogin} className="space-y-3">
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="أدخل اسمك للدخول كزائر"
+                className="w-full bg-slate-950 border border-slate-700/50 rounded-xl p-4 text-center focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-slate-500 text-white"
+                minLength={2}
+                maxLength={20}
+              />
+              <button
+                type="submit"
+                disabled={!guestName.trim() || isLoggingIn}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+              >
+                الدخول كزائر
+              </button>
+            </form>
+
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-slate-900 text-slate-400">أو</span>
+              </div>
+            </div>
+
             <button
               onClick={handleLogin}
               disabled={isLoggingIn}
-              className="w-full bg-white hover:bg-slate-50 text-slate-800 font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 border border-slate-200 disabled:opacity-70"
+              className="w-full bg-white hover:bg-slate-50 text-slate-800 font-bold py-3 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 border border-slate-200 disabled:opacity-70"
             >
               <svg className="w-6 h-6" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

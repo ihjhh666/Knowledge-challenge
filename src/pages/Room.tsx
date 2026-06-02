@@ -17,7 +17,7 @@ export default function Room() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { state, joinRoom, leaveRoom, isHost } = useGame();
-  const { user, loginWithGoogle } = useAuth();
+  const { user, loginWithGoogle, loginAsGuest } = useAuth();
   
   const [errorStr, setErrorStr] = useState<string | null>(null);
   const [joinPassword, setJoinPassword] = useState('');
@@ -25,6 +25,7 @@ export default function Room() {
   const [showFriends, setShowFriends] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [guestName, setGuestName] = useState('');
   
   const joiningRef = useRef(false);
   const leavingRef = useRef(false);
@@ -77,13 +78,20 @@ export default function Room() {
           setLoginError('نطاق اللعبة غير مصرح به. يجب إضافة هذا الرابط إلى إعدادات Firebase Authentication.');
        } else if (error.code === 'auth/operation-not-supported-in-this-environment') {
            setLoginError('المتصفح يمنع النافذة المنبثقة. يرجى فتح اللعبة في تبويبة جديدة (New Tab) والمحاولة مجدداً.');
-       } else if (error.code === 'auth/internal-error' && error.message.includes('API key not valid')) {
+       } else if (error.code === 'auth/internal-error' && error.message?.includes('API key not valid')) {
            setLoginError('مفتاح API غير صالح. تأكد من إعدادات Firebase.');
        } else {
-          setLoginError(`خطأ: تأكد من تفعيل (Google Sign-In) في Firebase ووضع بريد الدعم (Support Email). (${error.code})`);
+          setLoginError(`خطأ: ${error.code || 'غير محدد'} - ${error.message || 'يرجى التأكد من إضافة نطاق الموقع (enge-mu.vercel.app) في Firebase (Authorized domains).'}`);
        }
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+
+  const handleGuestLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (guestName.trim().length >= 2) {
+      await loginAsGuest(guestName.trim());
     }
   };
 
@@ -105,6 +113,35 @@ export default function Room() {
                  {loginError}
                </div>
             )}
+
+            <form onSubmit={handleGuestLogin} className="space-y-3">
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="أدخل اسمك للدخول كزائر"
+                className="w-full bg-slate-950 border border-slate-700/50 rounded-xl p-4 text-center focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-slate-500 text-white"
+                minLength={2}
+                maxLength={20}
+              />
+              <button
+                type="submit"
+                disabled={!guestName.trim() || isLoggingIn}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+              >
+                الدخول كزائر
+              </button>
+            </form>
+
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-slate-900 text-slate-400">أو</span>
+              </div>
+            </div>
+
             <button
               onClick={handleLogin}
               disabled={isLoggingIn}
