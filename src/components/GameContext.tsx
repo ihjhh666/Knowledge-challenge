@@ -258,6 +258,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'JOIN':
         if (isHostRef.current && stateRef.current) {
+          console.log(`[DEBUG] PLAYER JOINED: ${message.player.username} (${message.player.id})`);
           const conn = senderId ? connectionsRef.current.get(senderId) : null;
           
           if (stateRef.current.roomVisibility === 'password' && message.password !== stateRef.current.password) {
@@ -576,6 +577,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               if (t2.length < 2) t2.push(pId);
            }
            
+           console.log(`[DEBUG] TEAM ASSIGNED: Player ${pId} joined Team ${team}`);
+           
            const newState = {
                ...stateRef.current,
                hockeyState: {
@@ -613,6 +616,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            } else if ((team as any) === 'team2' || team === 2) {
               if (t2.length < 2) t2.push(botId);
            }
+           
+           console.log(`[DEBUG] BOT CREATED: ${botId} in Team ${team}`);
            
            const newState = {
                ...stateRef.current,
@@ -941,18 +946,32 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        const all = [...pIds].filter(id => !team1.includes(id) && !team2.includes(id)).sort(() => Math.random() - 0.5);
        
        for (let i = 0; i < 4; i++) {
+           let newId: string | undefined;
+           let tName = '';
            if (team1.length < 2) {
-               const newId = all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`;
+               newId = all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`;
                team1.push(newId);
-               if (newId.startsWith('bot-')) console.log('[DEBUG] BOTS CREATED:', newId, 'assigned to Team 1');
+               tName = 'Team 1';
            } else if (team2.length < 2) {
-               const newId = all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`;
+               newId = all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`;
                team2.push(newId);
-               if (newId.startsWith('bot-')) console.log('[DEBUG] BOTS CREATED:', newId, 'assigned to Team 2');
+               tName = 'Team 2';
+           }
+           if (newId && newId.startsWith('bot-') && !updatedPlayers[newId]) {
+               console.log(`[DEBUG] BOT CREATED: ${newId} in ${tName} (Auto-fill)`);
+               updatedPlayers[newId] = {
+                   id: newId,
+                   username: 'بوت (حاسوب)',
+                   score: 0,
+                   isHost: false,
+                   isReady: true,
+                   hasAnsweredCurrentRound: false,
+                   lastAnswerSucceeded: false
+               };
            }
        }
        
-       console.log('[DEBUG] TEAMS CREATED:', 'Team 1:', team1, 'Team 2:', team2);
+       console.log('[DEBUG] TEAMS ASSIGNED:', 'Team 1:', team1, 'Team 2:', team2);
        
        hockeyState = {
          is2v2: true,

@@ -324,6 +324,7 @@ export default function Hockey2v2Room() {
   // We need to keep track of targets for all other paddles (for bots or incoming packets)
   const targetPaddlesPosRef = useRef<(Vec2 | null)[]>([null, null, null, null]);
   const lastLocalTargetTimeRef = useRef<number>(0);
+  const botSpeedRef = useRef<number>(18);
   
   const syncTimerRef = useRef<number>(0);
   const lastLoopTimeRef = useRef<number>(0);
@@ -344,11 +345,28 @@ export default function Hockey2v2Room() {
   }, []);
 
   useEffect(() => {
+    if (team1.length !== 2 || team2.length !== 2) {
+      console.error("[DEBUG] ERROR: Cannot start match! Missing players/bots in teams.", "Team 1:", team1, "Team 2:", team2);
+      return;
+    }
+    
+    if (!puckRef.current) {
+        console.error("[DEBUG] ERROR: Cannot start match! PUCK MISSING.");
+        return;
+    }
+    
+    if (!paddlesRef.current || paddlesRef.current.length !== 4) {
+        console.error("[DEBUG] ERROR: Cannot start match! PADDLES MISSING.");
+        return;
+    }
+
     console.log("[DEBUG] MATCH STARTED. isHost:", isHost);
-    console.log("[DEBUG] BALL CREATED");
+    console.log("[DEBUG] PUCK CREATED");
+    console.log("[DEBUG] PADDLES CREATED");
+    
     resetPositions(true); // force host to decide initial direction
     console.log("[Hockey2v2Room] Initial positions reset. Puck vel:", puckRef.current.vel);
-  }, [resetPositions, isHost]);
+  }, [resetPositions, isHost, team1.length, team2.length]);
 
   const updateStats = (isWin: boolean, pScore: number, oScore: number) => {
     const pId = storage.getPlayerId();
@@ -639,7 +657,14 @@ export default function Hockey2v2Room() {
     }
   };
 
+  const renderStartedRef = useRef(false);
+
   const draw = (ctx: CanvasRenderingContext2D) => {
+    if (!renderStartedRef.current) {
+        console.log("[DEBUG] RENDER STARTED");
+        renderStartedRef.current = true;
+    }
+    
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     ctx.save();
     
@@ -1046,8 +1071,9 @@ export default function Hockey2v2Room() {
   useEffect(() => {
     let checkTimer: NodeJS.Timeout;
     if (localGameState === 'playing') {
-       checkTimer = setInterval(() => {
-           const p = puckRef.current.pos;
+       const verifyElements = () => {
+           const p = puckRef.current?.pos;
+           if (!p) return;
            const isM = (v: number) => isNaN(v) || v === null || v === undefined || !isFinite(v);
            let missing = false;
            
@@ -1060,15 +1086,18 @@ export default function Hockey2v2Room() {
            const stagnant = Math.abs(puckRef.current.vel.x) < 0.2 && Math.abs(puckRef.current.vel.y) < 0.2;
 
            if (missing || outOfBounds || stagnant) {
-               console.error("[Hockey2v2Room] Watchdog triggered! Puck:", p, "Vel:", puckRef.current.vel, "Stagnant:", stagnant, "OOB:", outOfBounds);
+               console.error("[Hockey2v2Room] Watchdog triggered! Recreating items automatically. Puck:", p, "Missing:", missing, "Stagnant:", stagnant, "OOB:", outOfBounds);
                resetPositions(isTeam1);
                if (stagnant || puckRef.current.vel.y === 0) {
                    puckRef.current.vel.y = isTeam1 ? -5 : 5;
                }
            }
-       }, 2500);
+       };
+       // Initial fail-safe at 2 seconds
+       const initialCheck = setTimeout(verifyElements, 2000);
+       checkTimer = setInterval(verifyElements, 3000);
+       return () => { clearTimeout(initialCheck); clearInterval(checkTimer); }
     }
-    return () => clearInterval(checkTimer);
   }, [localGameState, isTeam1, resetPositions]);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
