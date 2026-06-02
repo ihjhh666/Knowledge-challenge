@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment } from 'firebase/firestore';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import * as config from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -18,7 +18,7 @@ const isFirebaseConfigured = !!firebaseConfig.projectId;
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 export const db = app ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : null;
 export const auth = app ? getAuth(app) : null;
-export { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, type User };
+export { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged, type User };
 
 export interface PublicRoom {
   roomId: string;

@@ -86,10 +86,17 @@ export default function Home() {
     try {
       await loginWithGoogle();
     } catch (error: any) {
+       console.error("Login detail error:", error);
        if (error.code === 'auth/popup-closed-by-user') {
           setLoginError('تم إلغاء تسجيل الدخول.');
+       } else if (error.code === 'auth/unauthorized-domain') {
+          setLoginError('نطاق اللعبة غير مصرح به. يجب إضافة هذا الرابط إلى إعدادات Firebase Authentication.');
+       } else if (error.code === 'auth/operation-not-supported-in-this-environment') {
+           setLoginError('المتصفح يمنع النافذة المنبثقة. يرجى فتح اللعبة في تبويبة جديدة (New Tab) والمحاولة مجدداً.');
+       } else if (error.code === 'auth/internal-error' && error.message.includes('API key not valid')) {
+           setLoginError('مفتاح API غير صالح. تأكد من إعدادات Firebase.');
        } else {
-          setLoginError('حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+          setLoginError(`خطأ: تأكد من تفعيل (Google Sign-In) في Firebase ووضع بريد الدعم (Support Email). (${error.code})`);
        }
     } finally {
       setIsLoggingIn(false);

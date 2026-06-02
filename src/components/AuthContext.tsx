@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from '../lib/firebase';
+import { auth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged, User } from '../lib/firebase';
 import { storage } from '../lib/storage';
 
 interface AuthContextType {
@@ -28,18 +28,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    // Process redirect result if any
+    getRedirectResult(auth).catch((error) => {
+      console.error("Redirect login error:", error);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Sync the firebase user name/avatar with local storage so remainder of app functions without huge rewrites
         storage.setPlayerName(currentUser.displayName || 'لاعب جوجل');
         if (currentUser.photoURL) {
           storage.setPlayerAvatar(currentUser.photoURL);
         }
-        // Save the UID as the player ID to persist stats correctly using the same ID across devices
         localStorage.setItem('know_player_id', currentUser.uid);
-      } else {
-        // We do not clear storage here so the app doesn't crash on components expecting a player ID
       }
       setLoading(false);
     });
@@ -52,8 +53,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error('Google login failed:', error);
+    } catch (error: any) {
+      console.error('Google login failed API error:', error);
       throw error;
     }
   };
