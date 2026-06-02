@@ -141,7 +141,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (currentState.status === 'waiting') {
        // Remove them immediately
        const { [pId]: _, ...remainingPlayers } = currentState.players;
-       const newState = { ...currentState, players: remainingPlayers };
+       let newHockeyState = currentState.hockeyState;
+       if (newHockeyState) {
+           newHockeyState = {
+               ...newHockeyState,
+               team1: (newHockeyState.team1 || []).filter(id => id !== pId),
+               team2: (newHockeyState.team2 || []).filter(id => id !== pId)
+           };
+       }
+       const newState = { ...currentState, players: remainingPlayers, hockeyState: newHockeyState };
        setState(newState);
        broadcast({ type: 'STATE_UPDATE', state: newState });
        updatePublicRoom(newState.roomId, {
@@ -472,7 +480,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              clearTimeout(disconnectDelays.current[message.playerId]);
            }
            const { [message.playerId]: _, ...remainingPlayers } = stateRef.current.players;
-           const newState = { ...stateRef.current, players: remainingPlayers };
+           let newHockeyState = stateRef.current.hockeyState;
+           if (newHockeyState) {
+              newHockeyState = {
+                  ...newHockeyState,
+                  team1: (newHockeyState.team1 || []).filter(id => id !== message.playerId),
+                  team2: (newHockeyState.team2 || []).filter(id => id !== message.playerId)
+              };
+           }
+           const newState = { ...stateRef.current, players: remainingPlayers, hockeyState: newHockeyState };
            setState(newState);
            broadcast({ type: 'STATE_UPDATE', state: newState });
            updatePublicRoom(newState.roomId, {

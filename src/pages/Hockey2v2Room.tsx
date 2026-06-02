@@ -540,10 +540,17 @@ export default function Hockey2v2Room() {
       const minRadius = puck.radius + paddle.radius;
       
       if (distSq <= minRadius*minRadius) {
-        const dist = Math.sqrt(distSq);
+        let dist = Math.sqrt(distSq);
+        let actDx = dx;
+        let actDy = dy;
+        if (dist === 0) {
+            dist = 0.001;
+            actDx = 0.001;
+            actDy = 0;
+        }
         const overlap = minRadius - dist;
-        const nx = dx / dist;
-        const ny = dy / dist;
+        const nx = actDx / dist;
+        const ny = actDy / dist;
         
         puck.pos.x += nx * overlap;
         puck.pos.y += ny * overlap;
@@ -593,11 +600,18 @@ export default function Hockey2v2Room() {
             const distSq = dx*dx + dy*dy;
             const minDist = p1.radius + p2.radius;
             
-            if (distSq < minDist * minDist && distSq > 0) {
-                const dist = Math.sqrt(distSq);
+            if (distSq < minDist * minDist) {
+                let dist = Math.sqrt(distSq);
+                let actDx = dx;
+                let actDy = dy;
+                if (dist === 0) {
+                    dist = 0.001;
+                    actDx = 0.001;
+                    actDy = 0;
+                }
                 const overlap = (minDist - dist) / 2;
-                const nx = dx / dist;
-                const ny = dy / dist;
+                const nx = actDx / dist;
+                const ny = actDy / dist;
                 
                 p1.pos.x -= nx * overlap;
                 p1.pos.y -= ny * overlap;
