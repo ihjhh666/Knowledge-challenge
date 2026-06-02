@@ -181,7 +181,14 @@ export default function DominoRoom() {
 
   if (!state || !state.dominoState) return null;
 
+  const hasDisconnectedOpponent = state.status === 'finished' && Object.keys(state.players).length < 2;
+
   const ds = state.dominoState;
+  
+  if (hasDisconnectedOpponent && !ds.winnerId) {
+     ds.winnerId = playerId;
+  }
+
   const isMyTurn = ds.turnId === playerId;
   
   const opponentId = Object.keys(state.players).find(id => id !== playerId) || ds.player2Id;
@@ -533,10 +540,11 @@ export default function DominoRoom() {
                  </div>
                  
                  <h2 className="text-2xl md:text-3xl font-bold mb-1 text-white">
-                    {ds.winnerId === playerId ? 'لقد فزت!' : ds.winnerId === 'draw' ? 'تعادل (انسداد)' : 'هاردلك!'}
+                    {hasDisconnectedOpponent ? 'انسحاب الخصم!' : ds.winnerId === playerId ? 'لقد فزت!' : ds.winnerId === 'draw' ? 'تعادل (انسداد)' : 'هاردلك!'}
                  </h2>
                  {ds.isBlocked && <p className="text-amber-400 mb-3 text-xs md:text-sm font-bold">تم الإغلاق - الأقل نقاطاً يفوز</p>}
-                 {!ds.isBlocked && <div className="mb-3"></div>}
+                 {hasDisconnectedOpponent && <p className="text-emerald-400 mb-3 text-xs md:text-sm font-bold">فزت بسبب انسحاب الخصم</p>}
+                 {!ds.isBlocked && !hasDisconnectedOpponent && <div className="mb-3"></div>}
                  
                  <div className="bg-slate-950/50 border border-slate-800/80 p-3 rounded-2xl mt-4 mb-6 text-white grid grid-cols-2 gap-3">
                     <div className="bg-slate-800/80 rounded-xl p-2 md:p-3 text-center border-b-2 border-emerald-500/50 flex flex-col items-center justify-center">

@@ -106,7 +106,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (isHostRef.current && stateRef.current) {
          const now = Date.now();
-         let changed = false;
          const players = { ...stateRef.current.players };
          
          Object.keys(players).forEach(pId => {
@@ -114,32 +113,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const lastPing = lastPingTimes.current[pId] || now; // if not set yet, assume now
               if (now - lastPing > 7000) {
                  // Missed pings for 7 seconds!
-                 delete players[pId];
-                 changed = true;
-                 
                  const conn = connectionsRef.current.get(pId);
                  if (conn) {
                    conn.close();
                    connectionsRef.current.delete(pId);
                  }
-                 delete lastPingTimes.current[pId];
-                 if (disconnectDelays.current[pId]) {
-                   clearTimeout(disconnectDelays.current[pId]);
-                   delete disconnectDelays.current[pId];
-                 }
+                 handlePlayerDisconnect(pId);
               }
            }
          });
-         
-         if (changed) {
-            const newState = { ...stateRef.current, players };
-            setState(newState);
-            broadcast({ type: 'STATE_UPDATE', state: newState });
-            updatePublicRoom(newState.roomId, {
-              playerCount: Object.keys(newState.players).length
-            });
-            checkAllAnswered(newState);
-         }
       }
     }, 2500);
     return () => clearInterval(pingInterval);
@@ -147,6 +129,82 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Added disconnect delays tracking
   const disconnectDelays = useRef<Record<string, NodeJS.Timeout>>({});
+
+  const handlePlayerDisconnect = (pId: string) => {
+    if (!stateRef.current) return;
+    
+    // Clear ping time
+    delete lastPingTimes.current[pId];
+    
+    const currentState = stateRef.current;
+    
+    if (currentState.status === 'waiting') {
+       // Remove them immediately
+       const { [pId]: _, ...remainingPlayers } = currentState.players;
+       const newState = { ...currentState, players: remainingPlayers };
+       setState(newState);
+       broadcast({ type: 'STATE_UPDATE', state: newState });
+       updatePublicRoom(newState.roomId, {
+         playerCount: Object.keys(newState.players).length
+       });
+       return;
+    }
+    
+    // In-game disconnect
+    const player = currentState.players[pId];
+    if (player && !player.disconnectedAt) {
+       const newState = {
+         ...currentState,
+         players: {
+           ...currentState.players,
+           [pId]: { ...player, disconnectedAt: Date.now() }
+         }
+       };
+       setState(newState);
+       broadcast({ type: 'STATE_UPDATE', state: newState });
+       
+       if (disconnectDelays.current[pId]) {
+         clearTimeout(disconnectDelays.current[pId]);
+       }
+       
+       disconnectDelays.current[pId] = setTimeout(() => {
+          if (stateRef.current && stateRef.current.players[pId]?.disconnectedAt) {
+             const st = stateRef.current;
+             const playingPlayers = Object.keys(st.players).filter(key => key !== pId && !st.players[key].disconnectedAt);
+             const remainingId = playingPlayers[0];
+             
+             const updatedPlayers = { ...st.players };
+             if (remainingId && updatedPlayers[remainingId]) {
+                if (st.gameMode === 'penalty' || st.gameMode === 'domino' || st.gameMode === 'hockey') {
+                   updatedPlayers[remainingId].score += 10;
+                }
+             }
+             
+             delete updatedPlayers[pId];
+             
+             // Check if less than 2 players remain in 2-player modes
+             const needsTwo = st.gameMode === 'penalty' || st.gameMode === 'domino' || st.gameMode === 'hockey';
+             if (needsTwo && Object.keys(updatedPlayers).length < 2) {
+                 const finSt = { ...st, players: updatedPlayers, status: 'finished' as const };
+                 setState(finSt);
+                 broadcast({ type: 'STATE_UPDATE', state: finSt });
+                 updatePublicRoom(finSt.roomId, {
+                    status: 'finished',
+                    playerCount: Object.keys(updatedPlayers).length
+                 });
+             } else {
+                 const newSt = { ...st, players: updatedPlayers };
+                 setState(newSt);
+                 broadcast({ type: 'STATE_UPDATE', state: newSt });
+                 updatePublicRoom(newSt.roomId, {
+                    playerCount: Object.keys(updatedPlayers).length
+                 });
+                 checkAllAnswered(newSt);
+             }
+          }
+       }, 10000); // 10 seconds grace period
+    }
+  };
 
   const checkAllAnswered = (currentState: GameState) => {
     if (currentState.status !== 'playing') return;
@@ -193,6 +251,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'JOIN':
         if (isHostRef.current && stateRef.current) {
           const conn = senderId ? connectionsRef.current.get(senderId) : null;
+          
           if (stateRef.current.roomVisibility === 'password' && message.password !== stateRef.current.password) {
             if (conn) {
               conn.send({ type: 'JOIN_REJECTED', reason: 'كلمة المرور غير صحيحة' });
@@ -200,6 +259,69 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             break;
           }
+
+          // Check if reconnecting
+          const reconnectingOldId = Object.keys(stateRef.current.players).find(
+            k => stateRef.current.players[k].userId === message.player.userId && stateRef.current.players[k].disconnectedAt
+          );
+
+          if (reconnectingOldId) {
+             const oldId = reconnectingOldId;
+             const newId = message.player.id;
+             
+             if (disconnectDelays.current[oldId]) {
+                clearTimeout(disconnectDelays.current[oldId]);
+                delete disconnectDelays.current[oldId];
+             }
+             
+             const newState = JSON.parse(JSON.stringify(stateRef.current)) as GameState;
+             
+             const pData = newState.players[oldId];
+             delete newState.players[oldId];
+             pData.id = newId;
+             delete pData.disconnectedAt;
+             newState.players[newId] = pData;
+             
+             if (newState.penaltyState) {
+                if (newState.penaltyState.kickerId === oldId) newState.penaltyState.kickerId = newId;
+                if (newState.penaltyState.goalieId === oldId) newState.penaltyState.goalieId = newId;
+                newState.penaltyState.history.forEach(h => {
+                   if (h.kickerId === oldId) h.kickerId = newId;
+                   if (h.goalieId === oldId) h.goalieId = newId;
+                });
+             }
+             if (newState.dominoState) {
+                if (newState.dominoState.turnId === oldId) newState.dominoState.turnId = newId;
+                if (newState.dominoState.player1Id === oldId) newState.dominoState.player1Id = newId;
+                if (newState.dominoState.player2Id === oldId) newState.dominoState.player2Id = newId;
+                if (newState.dominoState.winnerId === oldId) newState.dominoState.winnerId = newId;
+                if (newState.dominoState.pointsMatch && newState.dominoState.pointsMatch[oldId] !== undefined) {
+                   newState.dominoState.pointsMatch[newId] = newState.dominoState.pointsMatch[oldId];
+                   delete newState.dominoState.pointsMatch[oldId];
+                }
+             }
+             if (newState.hockeyState) {
+                if (newState.hockeyState.player1Id === oldId) newState.hockeyState.player1Id = newId;
+                if (newState.hockeyState.player2Id === oldId) newState.hockeyState.player2Id = newId;
+                if (newState.hockeyState.pointsMatch && newState.hockeyState.pointsMatch[oldId] !== undefined) {
+                   newState.hockeyState.pointsMatch[newId] = newState.hockeyState.pointsMatch[oldId];
+                   delete newState.hockeyState.pointsMatch[oldId];
+                }
+             }
+             
+             setState(newState);
+             broadcast({ type: 'STATE_UPDATE', state: newState });
+             break;
+          }
+
+          if (stateRef.current.status !== 'waiting') {
+             if (conn) {
+                conn.send({ type: 'JOIN_REJECTED', reason: 'المباراة جارية بالفعل ولا يمكنك الانضمام الآن.' });
+                setTimeout(() => conn.close(), 500);
+             }
+             break;
+          }
+
           if (stateRef.current.maxPlayers && Object.keys(stateRef.current.players).length >= stateRef.current.maxPlayers) {
             if (conn) {
                conn.send({ type: 'JOIN_REJECTED', reason: 'الغرفة ممتلئة' });
@@ -213,7 +335,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              delete disconnectDelays.current[senderId];
           }
 
-          const playerName = message.player.username;
           const newState = {
             ...stateRef.current,
             players: {
@@ -479,18 +600,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'LEAVE':
         if (isHostRef.current && stateRef.current) {
-           const conn = connectionsRef.current.get(message.playerId);
-           if (conn) {
-             clearTimeout(disconnectDelays.current[message.playerId]);
-           }
-           const { [message.playerId]: _, ...remainingPlayers } = stateRef.current.players;
-           const newState = { ...stateRef.current, players: remainingPlayers };
-           setState(newState);
-           broadcast({ type: 'STATE_UPDATE', state: newState });
-           updatePublicRoom(newState.roomId, {
-             playerCount: Object.keys(newState.players).length
-           });
-           checkAllAnswered(newState);
+           handlePlayerDisconnect(message.playerId);
         }
         break;
       case 'TRANSFER_HOST':
@@ -1013,7 +1123,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         round: 0,
         totalRounds: 10,
         players: {
-           [myId]: { id: myId, username, isReady: true, isHost: true, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false }
+          [myId]: { id: myId, userId: storage.getPlayerId(), username, isReady: true, isHost: true, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false }
         },
         messages: [],
         askedQuestions: []
@@ -1098,7 +1208,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       conn.on('open', () => {
         conn.send({
           type: 'JOIN',
-          player: { id: myId, username, isReady: false, isHost: false, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false },
+          player: { id: myId, userId: storage.getPlayerId(), username, isReady: false, isHost: false, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false },
           password
         });
         audio.joinLobby();
@@ -1382,9 +1492,46 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [playerId]);
 
+  const disconnectedPlayer = state && state.status === 'playing' 
+    ? Object.values(state.players).find(p => p.disconnectedAt) 
+    : undefined;
+    
+  const [disconnectCountdown, setDisconnectCountdown] = useState(10);
+  
+  useEffect(() => {
+     let interval: any;
+     if (disconnectedPlayer && disconnectedPlayer.disconnectedAt) {
+         interval = setInterval(() => {
+             const elapsed = Date.now() - disconnectedPlayer.disconnectedAt!;
+             const rem = Math.max(0, 10 - Math.floor(elapsed / 1000));
+             setDisconnectCountdown(rem);
+         }, 500);
+     }
+     return () => clearInterval(interval);
+  }, [disconnectedPlayer]);
+
   return (
     <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent }}>
       {children}
+      {disconnectedPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+           <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-6">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-500 mx-auto"></div>
+              <div>
+                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">فقدان اتصال</h2>
+                 <p className="text-gray-600 dark:text-gray-300">
+                    اللاعب <span className="font-bold text-indigo-500">{disconnectedPlayer.username}</span> يحاول إعادة الاتصال...
+                 </p>
+              </div>
+              <div className="text-5xl font-black text-indigo-500">
+                 {disconnectCountdown}
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                 ستنتهي المباراة تلقائياً إذا لم يعد.
+              </p>
+           </div>
+        </div>
+      )}
     </GameContext.Provider>
   );
 };

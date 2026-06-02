@@ -264,6 +264,16 @@ export default function HockeyRoom() {
 
   const reqRef = useRef<number>();
   const puckTrailRef = useRef<{x: number, y: number, alpha: number}[]>([]);
+  
+  useEffect(() => {
+     if (state?.status === 'finished' && Object.keys(state.players).length < 2 && localGameState !== 'results') {
+         setLocalGameState('results');
+         setWinner(isHost ? 'player1' : 'player2');
+         playWinSound();
+         updateStats(true, isHost ? player1Score : player2Score, isHost ? player2Score : player1Score);
+     }
+  }, [state?.status, Object.keys(state?.players || {}).length, localGameState]);
+  
   const screenShakeRef = useRef<number>(0);
   const wallGlowRef = useRef({ left: 0, right: 0, top: 0, bottom: 0 });
   const puckAngleRef = useRef<number>(0);
@@ -933,8 +943,9 @@ export default function HockeyRoom() {
                 </div>
                 
                 <h2 className="text-3xl font-bold mb-1 text-white relative z-10">
-                   {localWon ? 'أنت الفائز!' : 'هاردلك!'}
+                   {state?.status === 'finished' && Object.keys(state.players).length < 2 ? 'انسحاب الخصم!' : localWon ? 'أنت الفائز!' : 'هاردلك!'}
                 </h2>
+                {state?.status === 'finished' && Object.keys(state.players).length < 2 && <p className="text-emerald-400 mb-3 text-sm font-bold relative z-10">فزت بسبب انسحاب الخصم</p>}
                 
                 <div className="bg-slate-950/50 border border-slate-800/80 p-4 rounded-2xl mt-4 mb-6 text-white grid grid-cols-2 gap-4 relative z-10">
                    <div className="bg-slate-800/80 rounded-xl p-3 text-center border-b-2 border-emerald-500/50 flex flex-col justify-center items-center">

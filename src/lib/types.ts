@@ -8,6 +8,7 @@ export interface Question {
 
 export interface RoomPlayer {
   id: string; // The peer JS ID or a random ID if host
+  userId?: string;
   username: string;
   isReady: boolean;
   isHost: boolean;
@@ -16,6 +17,7 @@ export interface RoomPlayer {
   lastAnswerSucceeded: boolean;
   lastAnswerTime?: number;
   isMuted?: boolean;
+  disconnectedAt?: number;
 }
 
 export interface ChatMessage {
