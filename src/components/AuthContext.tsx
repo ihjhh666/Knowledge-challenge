@@ -68,7 +68,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = async () => {
-    if (!auth) return;
+    if (!auth) {
+      throw new Error("لم يتم تهيئة Firebase بنجاح. يرجى مراجعة إعدادات Firebase Setup وتعبئة جميع الحقول.");
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);

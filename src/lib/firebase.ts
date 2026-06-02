@@ -7,9 +7,16 @@ const getFirebaseConfig = () => {
     const saved = localStorage.getItem('custom_firebase_config');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.projectId && parsed.apiKey) return parsed;
+      if (parsed.projectId && parsed.apiKey) {
+        console.log("Firebase config loaded from custom_firebase_config");
+        return parsed;
+      }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("Error parsing custom firebase config", e);
+  }
+  
+  console.log("Firebase config loaded from env variables");
   return {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -23,6 +30,10 @@ const getFirebaseConfig = () => {
 const firebaseConfig = getFirebaseConfig();
 
 const isFirebaseConfigured = !!firebaseConfig.projectId && !!firebaseConfig.apiKey;
+
+if (!isFirebaseConfigured) {
+   console.warn("Firebase is NOT configured! Missing projectId or apiKey.", firebaseConfig);
+}
 
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 export const db = app ? getFirestore(app) : null;

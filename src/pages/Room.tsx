@@ -80,8 +80,10 @@ export default function Room() {
            setLoginError('المتصفح يمنع النافذة المنبثقة. يرجى فتح اللعبة في تبويبة جديدة (New Tab) والمحاولة مجدداً.');
        } else if (error.code === 'auth/internal-error' && error.message?.includes('API key not valid')) {
            setLoginError('مفتاح API غير صالح. تأكد من إعدادات Firebase.');
+       } else if (error.message === "لم يتم تهيئة Firebase بنجاح. يرجى مراجعة إعدادات Firebase Setup وتعبئة جميع الحقول.") {
+           setLoginError(error.message);
        } else {
-          setLoginError(`خطأ: ${error.code || 'غير محدد'} - ${error.message || 'يرجى التأكد من إضافة نطاق الموقع (enge-mu.vercel.app) في Firebase (Authorized domains).'}`);
+          setLoginError(`خطأ: ${error.code || 'غير محدد'} - ${error.message || 'يرجى التأكد من إضافة نطاق الموقع في Firebase (Authorized domains).'}`);
        }
     } finally {
       setIsLoggingIn(false);
