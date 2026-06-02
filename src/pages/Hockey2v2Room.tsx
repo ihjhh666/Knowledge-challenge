@@ -344,7 +344,8 @@ export default function Hockey2v2Room() {
   }, []);
 
   useEffect(() => {
-    console.log("[Hockey2v2Room] Component mounted! Match started. isHost:", isHost);
+    console.log("[DEBUG] MATCH STARTED. isHost:", isHost);
+    console.log("[DEBUG] BALL CREATED");
     resetPositions(true); // force host to decide initial direction
     console.log("[Hockey2v2Room] Initial positions reset. Puck vel:", puckRef.current.vel);
   }, [resetPositions, isHost]);
@@ -423,6 +424,12 @@ export default function Hockey2v2Room() {
             }
          }
       } else if (msg.type === 'HOCKEY_SYNC' && !isHost) {
+         if ((window as any)._syncReceivedCount === undefined) (window as any)._syncReceivedCount = 0;
+         if ((window as any)._syncReceivedCount < 5) {
+             console.log('[DEBUG] STATE SYNC RECEIVED');
+             (window as any)._syncReceivedCount++;
+         }
+         
          const s = msg.state;
          
          // Smooth puck sync
@@ -913,8 +920,12 @@ export default function Hockey2v2Room() {
           // Anti-collision with teammate
           const dxT = tx - teammate.pos.x;
           const dyT = ty - teammate.pos.y;
-          const distT = Math.hypot(dxT, dyT);
+          let distT = Math.hypot(dxT, dyT);
           if (distT < PADDLE_RADIUS * 2.5) {
+              if (distT === 0) {
+                  distT = 0.001;
+                  tx += 0.001;
+              }
               tx += (dxT / distT) * 20;
               ty += (dyT / distT) * 20;
           }
@@ -992,6 +1003,11 @@ export default function Hockey2v2Room() {
       if (now - syncTimerRef.current > 50) { // ~20 updates per second
           syncTimerRef.current = now;
           if (isHost) {
+              if ((window as any)._syncSentCount === undefined) (window as any)._syncSentCount = 0;
+              if ((window as any)._syncSentCount < 5) {
+                 console.log('[DEBUG] STATE SYNC SENT');
+                 (window as any)._syncSentCount++;
+              }
               sendHockeyEvent({
                   type: 'HOCKEY_SYNC',
                   state: {

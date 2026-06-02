@@ -533,6 +533,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'CHANGE_HOCKEY_MODE':
         if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting' && stateRef.current.gameMode === 'hockey') {
            const is2v2 = message.is2v2;
+           console.log('[DEBUG] ROOM CREATED: Hockey Mode', is2v2 ? '2v2' : '1v1');
            const newCat = is2v2 ? '🏒 هوكي (2 ضد 2)' : '🏒 هوكي (1 ضد 1)';
            let t1 = is2v2 ? [] : undefined;
            let t2 = is2v2 ? [] : undefined;
@@ -941,11 +942,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        
        for (let i = 0; i < 4; i++) {
            if (team1.length < 2) {
-               team1.push(all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`);
+               const newId = all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`;
+               team1.push(newId);
+               if (newId.startsWith('bot-')) console.log('[DEBUG] BOTS CREATED:', newId, 'assigned to Team 1');
            } else if (team2.length < 2) {
-               team2.push(all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`);
+               const newId = all.pop() || `bot-${Math.random().toString(36).substring(2, 9)}`;
+               team2.push(newId);
+               if (newId.startsWith('bot-')) console.log('[DEBUG] BOTS CREATED:', newId, 'assigned to Team 2');
            }
        }
+       
+       console.log('[DEBUG] TEAMS CREATED:', 'Team 1:', team1, 'Team 2:', team2);
        
        hockeyState = {
          is2v2: true,
