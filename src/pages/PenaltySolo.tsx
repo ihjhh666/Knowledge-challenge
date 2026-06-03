@@ -68,9 +68,11 @@ export default function PenaltySolo() {
   const timerRef = useRef<any>(0);
   
   // Physics & Drawing states
-  const ball = useRef({ x: 0, y: 0, z: 0, scale: 1, vx: 0, vy: 0, vz: 0, rotation: 0, hitPost: false, finalX: 0 });
+  const ball = useRef({ x: 0, y: 0, z: 0, scale: 1, vx: 0, vy: 0, vz: 0, rotation: 0, spinSpeed: 0, curveAmount: 0, hitPost: false, finalX: 0 });
   const goalie = useRef({ x: 0, y: 0, width: 60, height: 120, state: 'idle' as 'idle' | 'dive_left' | 'dive_right' | 'center_save', diveProgress: 0 });
   const kickerActor = useRef({ x: 0, y: 0, state: 'idle' as 'idle' | 'runup' | 'kick' });
+  const netDeform = useRef({ x: 0, y: 0, strength: 0, active: false });
+  const impactEffect = useRef({ x: 0, y: 0, life: 0 });
   const animTime = useRef(0);
   
   // Setup audio based on state
@@ -204,10 +206,13 @@ export default function PenaltySolo() {
     }
     
     // Setup ball state for interpolation (using some unused vars like vx,vy,vz for post-hit physics)
+    const dx = targetX - (cw / 2);
     ball.current = {
       x: cw / 2, y: startY, z: 0, scale: 1,
       vx: 0, vy: 0, vz: 0,
       rotation: 0,
+      spinSpeed: (15 + (Math.abs(dx) / halfGW) * 15) * (dx > 0 ? 1 : -1), // deterministic spin
+      curveAmount: dx * 0.15, // curl towards target width
       hitPost,
       finalX: targetX
     };
@@ -251,35 +256,46 @@ export default function PenaltySolo() {
              const progress = bt / framesToGoal;
              const easeOut = 1 - Math.pow(1 - progress, 3); // realistic deceleration
              
-             ball.current.x = (cw / 2) + (targetX - (cw / 2)) * easeOut;
+             // Curve calculation
+             const curveOffset = Math.sin(progress * Math.PI) * ball.current.curveAmount;
+             
+             ball.current.x = (cw / 2) + (targetX - (cw / 2)) * easeOut + curveOffset;
              ball.current.y = startY + (endY - startY) * easeOut;
              
              // Sine wave for realistic z-axis jump
-             const peakHeight = forcedMiss ? 40 : 25;
+             const peakHeight = forcedMiss ? 40 : (25 + Math.abs(ball.current.curveAmount) * 0.1);
              ball.current.z = Math.sin(progress * Math.PI) * peakHeight;
              
              ball.current.scale = Math.max(0.4, 1 - (easeOut * 0.6));
-             ball.current.rotation += 25;
+             ball.current.rotation += ball.current.spinSpeed;
          } else {
              // 2. Post-reach physics (bounce, save, etc.)
              if (bt === framesToGoal + 1 && !postHitHandled) {
                 postHitHandled = true;
+                const baseVx = (targetX - (cw / 2)) / framesToGoal;
+                const baseVy = (endY - startY) / framesToGoal;
+
                 if (ball.current.hitPost) {
                    if (soundEnabled) audio.postHit();
-                   ball.current.vx = (ball.current.x > cw / 2 ? 3 : -3);
-                   ball.current.vy = 2;
+                   ball.current.vx = -baseVx * 0.5 + (ball.current.x > cw / 2 ? -2 : 2) + ball.current.curveAmount * 0.05;
+                   ball.current.vy = Math.abs(baseVy) * 0.8;
                    ball.current.vz = 5;
+                   ball.current.spinSpeed *= -0.5; // disrupt spin
+                   impactEffect.current = { x: ball.current.x, y: ball.current.y - ball.current.z, life: 1 };
                 } else if (!isGoal && !forcedMiss) { // Save
-                   ball.current.vx = (ball.current.x > cw / 2 ? 2 : -2);
-                   ball.current.vy = 2;
-                   ball.current.vz = 4;
+                   ball.current.vx = -baseVx * 0.3 + (ball.current.x > cw / 2 ? -1 : 1);
+                   ball.current.vy = Math.abs(baseVy) * 0.4;
+                   ball.current.vz = 3.5;
+                   ball.current.spinSpeed *= 0.5;
+                   impactEffect.current = { x: ball.current.x, y: ball.current.y - ball.current.z, life: 1 };
                 } else if (isGoal && !forcedMiss) { // Goal net hit
-                   ball.current.vx = (Math.random() - 0.5) * 2;
+                   ball.current.vx = baseVx * 0.1;
                    ball.current.vy = -0.5;
                    ball.current.vz = 2;
+                   netDeform.current = { x: ball.current.x, y: ball.current.y, strength: 35, active: true };
                 } else { // Miss
-                   ball.current.vx = (ball.current.x > cw / 2 ? 2 : -2);
-                   ball.current.vy = -3;
+                   ball.current.vx = baseVx * 0.8;
+                   ball.current.vy = baseVy * 0.8;
                    ball.current.vz = 3;
                 }
              }
@@ -289,6 +305,17 @@ export default function PenaltySolo() {
              ball.current.y += ball.current.vy;
              ball.current.vz -= 0.8; // gravity
              ball.current.z = Math.max(0, ball.current.z + ball.current.vz);
+             
+             // Spin decay
+             ball.current.spinSpeed *= 0.98;
+             ball.current.rotation += ball.current.spinSpeed;
+
+             // Bounce on ground
+             if (ball.current.z === 0 && ball.current.vz < -1) {
+                ball.current.vz *= -0.5;
+                ball.current.vx *= 0.8;
+                ball.current.vy *= 0.8;
+             }
              
              if (isGoal && !forcedMiss && ball.current.z === 0) {
                  ball.current.vx *= 0.8;
@@ -439,7 +466,7 @@ export default function PenaltySolo() {
      const startY = ch - 50;
      goalie.current = { x: cw / 2, y: ch * 0.35 + 30, width: 60, height: 120, state: 'idle', diveProgress: 0 };
      kickerActor.current = { x: cw / 2 + 35, y: startY + 30, state: 'idle' };
-     ball.current = { x: cw / 2, y: startY, z: 0, scale: 1, vx: 0, vy: 0, vz: 0, rotation: 0, hitPost: false, finalX: 0 };
+     ball.current = { x: cw / 2, y: startY, z: 0, scale: 1, vx: 0, vy: 0, vz: 0, rotation: 0, spinSpeed: 0, curveAmount: 0, hitPost: false, finalX: 0 };
      
      setKickState('idle');
      setAnnouncement(null);
@@ -573,24 +600,76 @@ export default function PenaltySolo() {
     ctx.lineWidth = 1;
 
     // Draw realistic 3D net inside
+    
+    if (netDeform.current.active) {
+       netDeform.current.strength *= 0.92; // Decay over frames
+       if (netDeform.current.strength < 0.5) netDeform.current.active = false;
+    }
+
+    const applyDeform = (cx: number, cy: number, isBack: boolean = false) => {
+        if (!netDeform.current.active) return { x: cx, y: cy };
+        // We only really want to deform the back and maybe roof, but mostly back.
+        // Convert screen coords to distance and apply pull
+        const dx = cx - netDeform.current.x;
+        const dy = cy - netDeform.current.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 100) {
+            const factor = Math.pow(1 - dist / 100, 2); 
+            // Pull points towards the hit point (xy) and upwards to simulate stretching
+            return {
+                x: cx + (dx * factor * 0.2), // Slight pull inward
+                y: cy - (netDeform.current.strength * factor) // Pull heavily backward/upward
+            };
+        }
+        return { x: cx, y: cy };
+    };
+
+    // Horizontal lines of net back wall
     for (let i = 0; i <= 10; i++) {
         const nyFront = goalTop + ((goalBottom - goalTop) * (i/10));
         const nyBack = goalBackTop + ((goalBackBottom - goalBackTop) * (i/10));
+        
+        ctx.beginPath();
         // Back wall
-        ctx.beginPath(); ctx.moveTo(goalCenter - halfGBW, nyBack); ctx.lineTo(goalCenter + halfGBW, nyBack); ctx.stroke();
-        // Side walls
-        ctx.beginPath(); ctx.moveTo(goalCenter - halfGW, nyFront); ctx.lineTo(goalCenter - halfGBW, nyBack); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(goalCenter + halfGW, nyFront); ctx.lineTo(goalCenter + halfGBW, nyBack); ctx.stroke();
+        for (let j = 0; j <= 20; j++) {
+            const bx = (goalCenter - halfGBW) + (goalBackW * (j/20));
+            const pt = applyDeform(bx, nyBack, true);
+            if (j === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.stroke();
+
+        // Side walls (don't deform side walls as much, or not at all to save perf)
+        ctx.beginPath(); ctx.moveTo(goalCenter - halfGW, nyFront); ctx.lineTo(goalCenter - halfGBW, applyDeform(goalCenter - halfGBW, nyBack).y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(goalCenter + halfGW, nyFront); ctx.lineTo(goalCenter + halfGBW, applyDeform(goalCenter + halfGBW, nyBack).y); ctx.stroke();
+        
         // Roof
         const roofX = goalCenter - halfGBW + ((goalBackW) * (i/10));
         const roofFrontX = goalCenter - halfGW + ((goalWidth) * (i/10));
-        ctx.beginPath(); ctx.moveTo(roofFrontX, goalTop); ctx.lineTo(roofX, goalBackTop); ctx.stroke();
+        
+        ctx.beginPath();
+        for (let j = 0; j <= 10; j++) {
+            const tempY = goalTop + ((goalBackTop - goalTop) * (j/10));
+            const tempX = roofFrontX + ((roofX - roofFrontX) * (j/10));
+            const pt = applyDeform(tempX, tempY);
+            if (j === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.stroke();
     }
     // Vertical lines of net
     for (let i = 0; i <= 20; i++) {
         const nxFront = goalCenter - halfGW + (goalWidth * (i/20));
         const nxBack = goalCenter - halfGBW + (goalBackW * (i/20));
-        ctx.beginPath(); ctx.moveTo(nxBack, goalBackTop); ctx.lineTo(nxBack, goalBackBottom); ctx.stroke();
+        
+        ctx.beginPath();
+        for (let j = 0; j <= 10; j++) {
+             const cy = goalBackTop + ((goalBackBottom - goalBackTop) * (j/10));
+             const pt = applyDeform(nxBack, cy, true);
+             if (j === 0) ctx.moveTo(pt.x, pt.y);
+             else ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.stroke();
     }
 
     // Goal Posts
@@ -713,42 +792,62 @@ export default function PenaltySolo() {
     const drawBY = bY - bZ; 
     ctx.save();
     ctx.translate(bX, drawBY);
-    ctx.rotate((bRot * Math.PI) / 180);
     
-    // Ball Body
-    ctx.fillStyle = '#ffffff';
+    // Static Lighting (Ball Body)
+    const bGrad = ctx.createRadialGradient(-bRadius*0.3, -bRadius*0.3, bRadius*0.1, 0, 0, bRadius);
+    bGrad.addColorStop(0, '#ffffff');
+    bGrad.addColorStop(1, '#cccccc');
+    ctx.fillStyle = bGrad;
     ctx.beginPath();
     ctx.arc(0, 0, bRadius, 0, Math.PI*2);
     ctx.fill();
+
+    // Clip texture to circle
+    ctx.beginPath();
+    ctx.arc(0, 0, bRadius, 0, Math.PI*2);
+    ctx.clip();
     
-    // Texture (pentagons)
+    // Rotate Texture only
+    ctx.save();
+    ctx.translate(0, 0); // Already at center
+    ctx.rotate((bRot * Math.PI) / 180);
+    
+    // Texture (Soccer ball pattern)
     ctx.fillStyle = '#1e293b';
     ctx.beginPath();
+    // Center pentagon
     for (let i = 0; i < 5; i++) {
         const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
-        const tx = Math.cos(angle) * bRadius * 0.4;
-        const ty = Math.sin(angle) * bRadius * 0.4;
+        const tx = Math.cos(angle) * bRadius * 0.35;
+        const ty = Math.sin(angle) * bRadius * 0.35;
         if (i === 0) ctx.moveTo(tx, ty);
         else ctx.lineTo(tx, ty);
     }
-    ctx.closePath();
     ctx.fill();
-    
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 1.5 * bScale;
-    ctx.beginPath();
-    for (let i = 0; i < 5; i++) {
-        const angle1 = (i * 2 * Math.PI / 5) - Math.PI / 2;
-        const x1 = Math.cos(angle1) * bRadius * 0.4;
-        const y1 = Math.sin(angle1) * bRadius * 0.4;
-        const x2 = Math.cos(angle1) * bRadius;
-        const y2 = Math.sin(angle1) * bRadius;
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-    }
-    ctx.stroke();
 
-    ctx.restore();
+    // Connecting lines and outer partial pentagons
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = Math.max(1, bRadius * 0.15);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+        const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+        const tx1 = Math.cos(angle) * bRadius * 0.35;
+        const ty1 = Math.sin(angle) * bRadius * 0.35;
+        const tx2 = Math.cos(angle) * bRadius * 0.8;
+        const ty2 = Math.sin(angle) * bRadius * 0.8;
+        ctx.beginPath();
+        ctx.moveTo(tx1, ty1);
+        ctx.lineTo(tx2, ty2);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(tx2, ty2, bRadius*0.2, 0, Math.PI*2);
+        ctx.fill();
+    }
+    
+    ctx.restore(); // Restore texture rotation/clip
+    ctx.restore(); // Restore main translation
+
 
     // Draw Kicker Actor Layer
     let kX = w / 2 + 35;
@@ -815,6 +914,18 @@ export default function PenaltySolo() {
           roundRect(ctx, 12, -55, 10, 35, 5);
        }
        ctx.restore();
+    }
+    
+    // Impact effect
+    if (impactEffect.current.life > 0) {
+       ctx.save();
+       ctx.translate(impactEffect.current.x, impactEffect.current.y);
+       ctx.beginPath();
+       ctx.arc(0, 0, (1 - impactEffect.current.life) * 40 + 10, 0, Math.PI*2);
+       ctx.fillStyle = `rgba(255, 255, 255, ${impactEffect.current.life})`;
+       ctx.fill();
+       ctx.restore();
+       impactEffect.current.life -= 0.05;
     }
   };
 
