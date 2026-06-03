@@ -62,12 +62,15 @@ export default function Leaderboard() {
                 key={player.playerId || `rank-${idx}`} 
                 className={`flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center p-4 hover:bg-slate-800/50 transition-colors ${idx === 0 ? 'bg-amber-500/10 border-r-4 border-amber-500' : idx === 1 ? 'bg-slate-300/10 border-r-4 border-slate-300' : idx === 2 ? 'bg-amber-700/10 border-r-4 border-amber-700' : ''}`}
               >
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div 
+                  className="flex items-center gap-3 w-full sm:w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: player.playerId }))}
+                >
                   <div className={`w-10 h-10 shrink-0 font-bold font-mono rounded-xl flex items-center justify-center ${idx === 0 ? 'bg-amber-500 text-amber-950 text-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]' : idx === 1 ? 'bg-slate-300 text-slate-900 text-lg shadow-[0_0_15px_rgba(203,213,225,0.3)]' : idx === 2 ? 'bg-amber-700 text-amber-100 text-lg shadow-[0_0_15px_rgba(180,83,9,0.5)]' : 'bg-slate-800 text-slate-400'}`}>
                     {idx === 0 ? <Trophy className="w-5 h-5" /> : idx === 1 ? <Medal className="w-5 h-5" /> : idx === 2 ? <Medal className="w-5 h-5" /> : idx + 1}
                   </div>
                   <img src={playerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.playerId}`} className="w-10 h-10 rounded-xl bg-slate-950 object-cover shrink-0" alt="avatar" />
-                  <div className="font-bold text-white truncate text-lg flex-1 sm:w-36 sm:flex-none" title={player.playerName}>{player.playerName}</div>
+                  <div className="font-bold text-white truncate text-lg flex-1 sm:w-36 sm:flex-none hover:text-indigo-400 transition-colors" title={player.playerName}>{player.playerName}</div>
                 </div>
                 
                 <div className="flex flex-wrap gap-2 sm:gap-6 text-xs sm:text-sm text-slate-400 w-full sm:w-auto flex-1 justify-between sm:justify-start">

@@ -134,7 +134,7 @@ export default function Lobby() {
                     if (p) {
                        return (
                          <div key={p.id} className="bg-blue-900/30 border border-blue-500/50 p-3 rounded-2xl flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80" onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: p.id }))}>
                                <div className="w-10 h-10 bg-blue-800 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                                   {p.avatarUrl || p.id ? (
                                      <img src={p.id === playerId ? storage.getPlayerAvatar() : (p.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.id}`)} className="w-full h-full object-cover" />
@@ -180,7 +180,7 @@ export default function Lobby() {
                     if (p) {
                        return (
                          <div key={p.id} className="bg-rose-900/30 border border-rose-500/50 p-3 rounded-2xl flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80" onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: p.id }))}>
                                <div className="w-10 h-10 bg-rose-800 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                                   {p.avatarUrl || p.id ? (
                                      <img src={p.id === playerId ? storage.getPlayerAvatar() : (p.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.id}`)} className="w-full h-full object-cover" />
@@ -236,7 +236,7 @@ export default function Lobby() {
           const playerAvatar = isMe ? storage.getPlayerAvatar() : p.avatarUrl;
           return (
             <div key={p.id} className={`p-4 rounded-2xl border ${isMe ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-slate-800 border-slate-700'} flex items-center justify-between group`}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 cursor-pointer hover:opacity-80" onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: p.id }))}>
                 <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center relative shrink-0">
                   {playerAvatar || p.userId ? (
                      <img src={playerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.userId || p.id}`} className="w-10 h-10 rounded-xl object-cover" />

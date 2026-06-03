@@ -4,6 +4,7 @@ import { ChevronRight, User, Trophy, Star, Target, CheckCircle, XCircle, Gamepad
 import { db, PlayerStats, subscribeToFriends, updateUserProfile } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { storage } from '../lib/storage';
+import { ACHIEVEMENTS } from '../lib/achievements';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -208,6 +209,42 @@ export default function Profile() {
             <StatCard icon={Target} label="نسبة النجاح" value={`${stats.successRate || 0}%`} color="text-sky-400" bg="bg-sky-500/20" />
             <StatCard icon={CheckCircle} label="إجابات صحيحة" value={stats.correctAnswers || 0} color="text-emerald-500" bg="bg-emerald-500/10" />
             <StatCard icon={XCircle} label="إجابات خاطئة" value={stats.wrongAnswers || 0} color="text-rose-500" bg="bg-rose-500/10" />
+          </div>
+
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+               <h3 className="text-2xl font-bold font-heading text-indigo-400 flex items-center gap-2">🏆 الإنجازات</h3>
+               <button onClick={() => navigate('/achievements')} className="text-sm text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 hover:bg-indigo-500/20 px-4 py-2 rounded-xl transition-colors">عرض الكل</button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex flex-col justify-center items-center text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center mb-3">
+                     <Trophy className="w-6 h-6 text-indigo-400" />
+                  </div>
+                  <p className="text-slate-400 text-sm mb-1">الإنجازات المفتوحة</p>
+                  <p className="font-bold text-2xl text-white">{stats.unlockedAchievements?.length || 0}</p>
+               </div>
+               
+               <div className="bg-slate-900 border border-amber-500/30 p-5 rounded-3xl shadow-[0_0_20px_rgba(245,158,11,0.05)] flex flex-col justify-center items-center text-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-500/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center mb-3">
+                     <Star className="w-6 h-6 text-amber-400" />
+                  </div>
+                  <p className="text-slate-400 text-sm mb-1">الأسطورية</p>
+                  <p className="font-bold text-2xl text-amber-400">
+                     {stats.unlockedAchievements?.filter(a => ACHIEVEMENTS.find(ach => ach.id === a.id)?.rarity === 'legendary').length || 0}
+                  </p>
+               </div>
+               
+               <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex flex-col justify-center items-center text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center mb-3">
+                     <Target className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <p className="text-slate-400 text-sm mb-1">نسبة الإكمال</p>
+                  <p className="font-bold text-2xl text-white">{Math.round(((stats.unlockedAchievements?.length || 0) / ACHIEVEMENTS.length) * 100)}%</p>
+               </div>
+            </div>
           </div>
 
           {(stats.fishingGamesPlayed || 0) > 0 && (

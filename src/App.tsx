@@ -25,6 +25,8 @@ import { AchievementSystem } from './components/AchievementSystem';
 import Settings from './pages/Settings';
 import { GameInvitesListener } from './components/GameInvitesListener';
 
+import { GlobalProfileModal } from './components/GlobalProfileModal';
+
 export default function App() {
   return (
     <HashRouter>
@@ -67,6 +69,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 font-sans flex flex-col" dir="rtl">
       <AchievementSystem />
+      <GlobalProfileModal />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />

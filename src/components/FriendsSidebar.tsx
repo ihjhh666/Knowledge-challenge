@@ -138,7 +138,7 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
                    
                    return (
                      <div key={u.id} className="bg-slate-800/50 p-3 rounded-2xl flex items-center justify-between border border-slate-700/50">
-                       <div className="flex items-center gap-3">
+                       <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: u.id }))}>
                          <img src={u.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.id}`} className="w-10 h-10 rounded-xl bg-slate-950 object-cover" alt="avatar" />
                          <div>
                            <div className="font-bold text-sm text-slate-200">{u.username}</div>
@@ -178,7 +178,10 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 const avatar = details?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${req.fromId}`;
                 return (
                 <div key={req.id} className="bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
-                  <div className="flex items-center gap-3 mb-3">
+                  <div 
+                    className="flex items-center gap-3 mb-3 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: req.fromId }))}
+                  >
                      <img src={avatar} className="w-10 h-10 rounded-xl bg-slate-950 object-cover" alt="avatar" />
                      <div className="text-sm">
                        <div className="font-bold text-indigo-400 flex items-center gap-2">
@@ -224,7 +227,7 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
                  return (
                    <div key={friend.id} className="bg-slate-800/40 p-3 rounded-2xl border border-slate-700/50 flex flex-col gap-3">
                      <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-3">
+                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: friend.friendId }))}>
                          <div className="relative">
                            <img src={avatar} className="w-12 h-12 rounded-xl bg-slate-950 object-cover" alt="avatar" />
                            <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-slate-800 ${isOnline ? 'bg-emerald-400' : 'bg-slate-500'}`}></div>

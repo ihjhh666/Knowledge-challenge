@@ -98,11 +98,13 @@ export interface PlayerStats {
   hockeyGoalsConceded?: number;
   hockeyWinStreak?: number;
   currentHockeyWinStreak?: number;
+  unlockedAchievements?: { id: string; date: number }[];
+  createdAt?: number;
 }
 
 import { updateStats as doUpdateAchStats, getPlayerStats as getAchStats } from './achievements';
 
-const notifyAchievements = (isWin: boolean, goals: number = 0) => {
+const notifyAchievements = async (playerId: string, isWin: boolean, goals: number = 0) => {
   try {
     const current = getAchStats();
     let newStreak = isWin ? current.winStreak + 1 : 0;
@@ -119,6 +121,20 @@ const notifyAchievements = (isWin: boolean, goals: number = 0) => {
 
     if (newUnlocked && newUnlocked.length > 0) {
       window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: newUnlocked }));
+      if (playerId && db) {
+        const docRef = doc(db, 'users', playerId);
+        const achievementsToAdd = newUnlocked.map(a => ({ id: a.id, date: Date.now() }));
+        try {
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            const existing = data.unlockedAchievements || [];
+            await setDoc(docRef, { unlockedAchievements: [...existing, ...achievementsToAdd] }, { merge: true });
+          }
+        } catch(e) {
+          console.error("Failed to save achievements to Firestore", e);
+        }
+      }
     }
   } catch (err) {
     console.error('Failed to notify achievements', err);
@@ -132,7 +148,7 @@ export const updatePenaltyStats = async (
   goals: number,
   saves: number
 ) => {
-  notifyAchievements(isWin, goals);
+  notifyAchievements(playerId, isWin, goals);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
@@ -275,7 +291,7 @@ export const updatePlayerStats = async (
   points: number,
   category: string
 ) => {
-  notifyAchievements(isWin, 0);
+  notifyAchievements(playerId, isWin, 0);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
@@ -341,7 +357,7 @@ export const updateFishingStats = async (
   score: number,
   fishCaught: number
 ) => {
-  notifyAchievements(isWin, 0);
+  notifyAchievements(playerId, isWin, 0);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
@@ -391,7 +407,7 @@ export const updateHockeyStats = async (
   goalsConceded: number,
   pointsAwarded: number
 ) => {
-  notifyAchievements(isWin, goalsScored);
+  notifyAchievements(playerId, isWin, goalsScored);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
