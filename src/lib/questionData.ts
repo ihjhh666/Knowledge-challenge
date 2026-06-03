@@ -17,6 +17,9 @@ import { MASSIVE_ANIME } from './massive/anime';
 import { MASSIVE_MOVIES } from './massive/movies';
 import { MASSIVE_ISLAMIC } from './massive/islamic';
 
+import { BULK_GENERAL, BULK_FOOTBALL, BULK_MATH, BULK_MOVIES, BULK_ANIME, BULK_SCIENCE, BULK_HISTORY, BULK_ISLAMIC } from './massive/bulkData1';
+import { GENERAL_BULK_2, FOOTBALL_BULK_2, MOVIES_BULK_2, HISTORY_BULK_2 } from './massive/bulkData2';
+
 import { 
   getDynamicGeneral, 
   getDynamicFootball, 
@@ -44,11 +47,11 @@ const deduplicateQs = (qs: { text: string; correctAnswer: string; wrongOptions: 
   });
 }
 
-export const GENERAL_KNOWLEDGE = deduplicateQs([...NEW_GENERAL, ...MEGA_GENERAL, ...MASSIVE_GENERAL, ...getDynamicGeneral(1800)]);
-export const FOOTBALL = deduplicateQs([...NEW_FOOTBALL, ...MEGA_FOOTBALL, ...MASSIVE_FOOTBALL, ...getDynamicFootball(1800)]);
-export const MOVIES = deduplicateQs([...NEW_MOVIES, ...MEGA_MOVIES, ...MASSIVE_MOVIES, ...getDynamicMovies(1800)]);
-export const ANIME = deduplicateQs([...NEW_ANIME, ...MEGA_ANIME, ...MASSIVE_ANIME, ...getDynamicAnime(1800)]);
-export const SCIENCE = deduplicateQs([...NEW_SCIENCE, ...MEGA_SCIENCE, ...MASSIVE_SCIENCE, ...getDynamicScience(1800)]);
-export const HISTORY = deduplicateQs([...NEW_HISTORY, ...MEGA_HISTORY, ...MASSIVE_HISTORY, ...getDynamicHistory(1800)]);
-export const ISLAMIC = deduplicateQs([...NEW_ISLAMIC, ...MEGA_ISLAMIC, ...MASSIVE_ISLAMIC, ...getDynamicIslamic(1800)]);
-export const MATH = deduplicateQs([...getDynamicMath(1800)]);
+export const GENERAL_KNOWLEDGE = deduplicateQs([...NEW_GENERAL, ...MEGA_GENERAL, ...MASSIVE_GENERAL, ...BULK_GENERAL, ...GENERAL_BULK_2, ...getDynamicGeneral(1800)]);
+export const FOOTBALL = deduplicateQs([...NEW_FOOTBALL, ...MEGA_FOOTBALL, ...MASSIVE_FOOTBALL, ...BULK_FOOTBALL, ...FOOTBALL_BULK_2, ...getDynamicFootball(1800)]);
+export const MOVIES = deduplicateQs([...NEW_MOVIES, ...MEGA_MOVIES, ...MASSIVE_MOVIES, ...BULK_MOVIES, ...MOVIES_BULK_2, ...getDynamicMovies(1800)]);
+export const ANIME = deduplicateQs([...NEW_ANIME, ...MEGA_ANIME, ...MASSIVE_ANIME, ...BULK_ANIME, ...getDynamicAnime(1800)]);
+export const SCIENCE = deduplicateQs([...NEW_SCIENCE, ...MEGA_SCIENCE, ...MASSIVE_SCIENCE, ...BULK_SCIENCE, ...getDynamicScience(1800)]);
+export const HISTORY = deduplicateQs([...NEW_HISTORY, ...MEGA_HISTORY, ...MASSIVE_HISTORY, ...BULK_HISTORY, ...HISTORY_BULK_2, ...getDynamicHistory(1800)]);
+export const ISLAMIC = deduplicateQs([...NEW_ISLAMIC, ...MEGA_ISLAMIC, ...MASSIVE_ISLAMIC, ...BULK_ISLAMIC, ...getDynamicIslamic(1800)]);
+export const MATH = deduplicateQs([...BULK_MATH, ...getDynamicMath(1800)]);
