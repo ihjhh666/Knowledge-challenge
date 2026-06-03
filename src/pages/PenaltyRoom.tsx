@@ -106,7 +106,7 @@ export default function PenaltyRoom() {
   
   // Physics & Drawing states
   const ball = useRef({ x: 0, y: 0, z: 0, scale: 1, vx: 0, vy: 0, vz: 0, rotation: 0, spinSpeed: 0, curveAmount: 0, hitPost: false, finalX: 0 });
-  const goalie = useRef({ x: 0, y: 0, width: 60, height: 120, state: 'idle' as 'idle' | 'dive_left' | 'dive_right' | 'center_save', diveProgress: 0 });
+  const goalie = useRef({ x: 0, y: 0, width: 60, height: 120, state: 'idle' as 'idle' | 'dive_left' | 'dive_right' | 'center_save', diveProgress: 0, impactX: 0, impactY: 0 });
   const kickerActor = useRef({ x: 0, y: 0, state: 'idle' as 'idle' | 'runup' | 'kick' });
   const netDeform = useRef({ x: 0, y: 0, strength: 0, active: false });
   const impactEffect = useRef({ x: 0, y: 0, life: 0 });
@@ -253,7 +253,9 @@ export default function PenaltyRoom() {
     goalie.current = {
       x: cw / 2, y: horizon + 30, width: 60, height: 120,
       state: 'idle',
-      diveProgress: 0
+      diveProgress: 0,
+      impactX: 0,
+      impactY: 0
     };
 
     let postHitHandled = false;
@@ -315,6 +317,8 @@ export default function PenaltyRoom() {
                    ball.current.vz = 3.5;
                    ball.current.spinSpeed *= 0.5;
                    impactEffect.current = { x: ball.current.x, y: ball.current.y - ball.current.z, life: 1 };
+                   goalie.current.impactX = baseVx * 0.4;
+                   goalie.current.impactY = Math.abs(baseVy) * 0.4;
                 } else if (isGoal && !forcedMiss) { // Goal net hit
                    ball.current.vx = baseVx * 0.1;
                    ball.current.vy = -0.5;
@@ -352,17 +356,35 @@ export default function PenaltyRoom() {
 
          // Goalie animation
          if (bt <= framesToGoal) {
-            goalie.current.diveProgress = Math.min(1, Math.max(0, bt / framesToGoal));
-            const maxJump = halfGW - 80; // stay strictly inside posts with rotation
+            const rawProgress = Math.min(1, Math.max(0, bt / framesToGoal));
+            // S-curve for smoother, explosive jump
+            const jumpEase = rawProgress < 0.5 ? 2 * rawProgress * rawProgress : 1 - Math.pow(-2 * rawProgress + 2, 2) / 2;
+            goalie.current.diveProgress = jumpEase;
+            
+            const maxJump = halfGW - 50; // allow slightly further stretch
             const jumpTarget = saveDir === 'left' ? -maxJump : (saveDir === 'right' ? maxJump : 0);
             goalie.current.x = (cw / 2) + (jumpTarget * goalie.current.diveProgress);
             
             const baseGY = ch * 0.35 + 30;
             if (saveDir !== 'center') {
-                const jumpArc = Math.sin(goalie.current.diveProgress * Math.PI) * 10;
+                const jumpArc = Math.sin(rawProgress * Math.PI) * 20; // slightly higher jump
                 goalie.current.y = baseGY - jumpArc;
             } else {
-                goalie.current.y = baseGY;
+                goalie.current.y = baseGY - Math.sin(rawProgress * Math.PI) * 15; // hop for center save
+            }
+         } else {
+            // Post-reach goalie physics (landing, impact bounce)
+            const baseGY = ch * 0.35 + 30;
+            if (goalie.current.impactX !== 0 || goalie.current.impactY !== 0) {
+                goalie.current.x += goalie.current.impactX;
+                goalie.current.y += goalie.current.impactY;
+                goalie.current.impactX *= 0.8; // decelerate impact
+                goalie.current.impactY *= 0.8;
+                if (Math.abs(goalie.current.impactX) < 0.1) goalie.current.impactX = 0;
+            }
+            if (goalie.current.y < baseGY) {
+                goalie.current.y += 3; // gravity pull after jump
+                if (goalie.current.y > baseGY) goalie.current.y = baseGY;
             }
          }
       }
@@ -420,7 +442,7 @@ export default function PenaltyRoom() {
      const cw = canvasRef.current?.width || 800;
      const ch = canvasRef.current?.height || 400;
      const startY = ch - 50;
-     goalie.current = { x: cw / 2, y: ch * 0.35 + 30, width: 60, height: 120, state: 'idle', diveProgress: 0 };
+     goalie.current = { x: cw / 2, y: ch * 0.35 + 30, width: 60, height: 120, state: 'idle', diveProgress: 0, impactX: 0, impactY: 0 };
      kickerActor.current = { x: cw / 2 + 35, y: startY + 30, state: 'idle' };
      ball.current = { x: cw / 2, y: startY, z: 0, scale: 1, vx: 0, vy: 0, vz: 0, rotation: 0, hitPost: false, finalX: 0 };
      
@@ -635,8 +657,19 @@ export default function PenaltyRoom() {
        gState = 'sad';
     }
 
+    // Goalie Shadow (Ground level)
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(gX, horizon + 40, gw, 8, 0, 0, Math.PI*2);
+    ctx.fill();
+
     ctx.save();
-    ctx.translate(gX, gY);
+    let idleBounceY = 0;
+    if (kickStateRef.current === 'idle') {
+        idleBounceY = Math.sin(animTime.current * 0.1) * 3;
+    }
+    ctx.translate(gX, gY + idleBounceY);
+
     if (!initial && kickStateRef.current !== 'idle') {
       if (gState === 'dive_left') ctx.rotate(-Math.PI / 2.5 * gDive);
       else if (gState === 'dive_right') ctx.rotate(Math.PI / 2.5 * gDive);
@@ -644,16 +677,18 @@ export default function PenaltyRoom() {
          ctx.translate(0, 30); 
       }
     }
-    
-    // Goalie Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(0, 10, gw, 8, 0, 0, Math.PI*2);
-    ctx.fill();
 
     const isPlayerGoalie = turnRole === 'goalie'; 
-    ctx.fillStyle = isPlayerGoalie ? '#10b981' : '#f59e0b';
+    const colorPrimary = isPlayerGoalie ? '#10b981' : '#f59e0b';
+    const colorSecondary = isPlayerGoalie ? '#047857' : '#b45309';
+
+    // Jersey base
+    ctx.fillStyle = colorPrimary;
     roundRect(ctx, -gw/2, -gh + 20, gw, gh - 35, 6);
+    
+    // Pattern (vertical stripe)
+    ctx.fillStyle = colorSecondary;
+    ctx.fillRect(-gw/4, -gh + 20, gw/2, gh - 35);
     
     // Shorts
     ctx.fillStyle = '#0f172a';
@@ -666,11 +701,14 @@ export default function PenaltyRoom() {
     ctx.fill();
     
     // Arms
-    ctx.fillStyle = isPlayerGoalie ? '#10b981' : '#f59e0b';
-    const armStretch = gDive * 20;
-    if (gState === 'idle' || gState === 'center_save') {
+    ctx.fillStyle = colorPrimary;
+    const armStretch = gDive * 25; // Increase stretch dynamically
+    if (gState === 'idle') {
         roundRect(ctx, -gw/2 - 10, -gh + 25, 10, 30, 4); 
         roundRect(ctx, gw/2, -gh + 25, 10, 30, 4); 
+    } else if (gState === 'center_save') {
+        roundRect(ctx, -gw/2 - 12 - armStretch*0.5, -gh + 25 - armStretch*1.5, 10, 30 + armStretch*1.5, 4); 
+        roundRect(ctx, gw/2 + 2 + armStretch*0.5, -gh + 25 - armStretch*1.5, 10, 30 + armStretch*1.5, 4); 
     } else if (gState === 'dive_left') {
         roundRect(ctx, -gw/2 - 15 - armStretch, -gh + 5 - armStretch*0.8, 15+armStretch, 10, 4); 
         roundRect(ctx, gw/2, -gh + 25, 10, 25, 4); 
@@ -683,14 +721,17 @@ export default function PenaltyRoom() {
     }
 
     // Gloves
-    ctx.fillStyle = '#cbd5e1';
-    if (gState === 'idle' || gState === 'center_save') {
-        ctx.beginPath(); ctx.arc(-gw/2 - 5, -gh + 55, 7, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(gw/2 + 5, -gh + 55, 7, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#f8fafc'; // White bright gloves
+    if (gState === 'idle') {
+        ctx.beginPath(); ctx.arc(-gw/2 - 5, -gh + 55, 8, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gw/2 + 5, -gh + 55, 8, 0, Math.PI*2); ctx.fill();
+    } else if (gState === 'center_save') {
+        ctx.beginPath(); ctx.arc(-gw/2 - 7 - armStretch*0.5, -gh + 25 - armStretch*1.5, 10, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gw/2 + 7 + armStretch*0.5, -gh + 25 - armStretch*1.5, 10, 0, Math.PI*2); ctx.fill();
     } else if (gState === 'dive_left') {
-        ctx.beginPath(); ctx.arc(-gw/2 - 15 - armStretch, -gh + 10 - armStretch*0.8, 8, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-gw/2 - 15 - armStretch, -gh + 10 - armStretch*0.8, 10, 0, Math.PI*2); ctx.fill();
     } else if (gState === 'dive_right') {
-        ctx.beginPath(); ctx.arc(gw/2 + 15 + armStretch, -gh + 10 - armStretch*0.8, 8, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gw/2 + 15 + armStretch, -gh + 10 - armStretch*0.8, 10, 0, Math.PI*2); ctx.fill();
     } else if (gState === 'sad') {
         ctx.beginPath(); ctx.arc(-gw/2 - 5, -gh + 10, 7, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(gw/2 + 5, -gh + 10, 7, 0, Math.PI*2); ctx.fill();
@@ -887,9 +928,8 @@ export default function PenaltyRoom() {
           if (cancel) return;
           if (gameState === 'playing' && kickState === 'idle') {
              tick++;
-             if (tick % 15 === 0) {
-                 drawCanvas();
-             }
+             animTime.current = tick;
+             drawCanvas();
              idleRafRef.current = requestAnimationFrame(idleLoop);
           }
       };
