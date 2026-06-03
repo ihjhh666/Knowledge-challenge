@@ -51,6 +51,14 @@ export default function FirebaseSetup() {
     }, 2000);
   };
 
+  const handleClear = () => {
+    localStorage.removeItem('custom_firebase_config');
+    setStatus({ type: 'success', message: 'تم مسح الإعدادات المحلية بنجاح. سيتم الاعتماد على Vercel الآن.' });
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 2000);
+  };
+
   const testConnection = async () => {
     setStatus({ type: 'testing', message: 'جاري اختبار الاتصال...' });
     
@@ -128,6 +136,14 @@ export default function FirebaseSetup() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-slate-800">
+          <button
+            onClick={handleClear}
+            disabled={status.type === 'testing'}
+            className="flex-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 font-bold py-3 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group disabled:opacity-50"
+          >
+            مسح الاعتماد المحلي
+          </button>
+          
           <button
             onClick={testConnection}
             disabled={status.type === 'testing'}
