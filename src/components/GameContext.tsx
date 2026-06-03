@@ -1495,8 +1495,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
 
-    peer.on('error', (err) => {
+    peer.on('error', (err: any) => {
       console.error('Host peer error:', err);
+      // Wait for disconnected event or try to reconnect if network error
+      if (err.type === 'network') {
+         if (!peer.destroyed) peer.reconnect();
+      }
+    });
+
+    peer.on('disconnected', () => {
+       console.log('Host disconnected from signaling server, reconnecting...');
+       if (!peer.destroyed) {
+         peer.reconnect();
+       }
     });
   }, []);
 
@@ -1612,7 +1623,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                       if (stateRef.current) c.send({ type: 'STATE_UPDATE', state: stateRef.current });
                     });
                  });
-                 newPeer.on('error', (err) => console.error('New host peer error:', err));
+                 newPeer.on('error', (err: any) => {
+                    console.error('New host peer error:', err);
+                    if (err.type === 'network') {
+                       if (!newPeer.destroyed) newPeer.reconnect();
+                    }
+                 });
+                 newPeer.on('disconnected', () => {
+                    console.log('New host disconnected from server, reconnecting...');
+                    if (!newPeer.destroyed) {
+                       newPeer.reconnect();
+                    }
+                 });
                  return; // Prevent normal close handling
               } else {
                  // Not the new host, wait 3 seconds and rejoin
@@ -1642,12 +1664,25 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
          console.error('Peer error:', err);
       }
+      
+      if (err.type === 'network') {
+         if (!peer.destroyed) peer.reconnect();
+         return; // Don't show error immediately, try to reconnect
+      }
+
       setTimeout(() => {
         if (!stateRef.current) {
           if (onError) onError('تعذر الاتصال بالغرفة - قد يكون المضيف غادر');
         }
       }, 500);
       setState(null);
+    });
+
+    peer.on('disconnected', () => {
+      console.log('Client disconnected from server, reconnecting...');
+      if (!peer.destroyed) {
+         peer.reconnect();
+      }
     });
   }, []);
 

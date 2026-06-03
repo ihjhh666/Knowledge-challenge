@@ -100,6 +100,31 @@ export interface PlayerStats {
   currentHockeyWinStreak?: number;
 }
 
+import { updateStats as doUpdateAchStats, getPlayerStats as getAchStats } from './achievements';
+
+const notifyAchievements = (isWin: boolean, goals: number = 0) => {
+  try {
+    const current = getAchStats();
+    let newStreak = isWin ? current.winStreak + 1 : 0;
+    
+    // Check if reaching first place - a bit heavy to do here, but we can evaluate it if we want.
+    // For now we omit checking first place strictly here.
+
+    const newUnlocked = doUpdateAchStats({
+      gamesPlayed: current.gamesPlayed + 1,
+      wins: current.wins + (isWin ? 1 : 0),
+      totalGoals: current.totalGoals + goals,
+      winStreak: newStreak
+    });
+
+    if (newUnlocked && newUnlocked.length > 0) {
+      window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: newUnlocked }));
+    }
+  } catch (err) {
+    console.error('Failed to notify achievements', err);
+  }
+};
+
 export const updatePenaltyStats = async (
   playerId: string,
   playerName: string,
@@ -107,6 +132,7 @@ export const updatePenaltyStats = async (
   goals: number,
   saves: number
 ) => {
+  notifyAchievements(isWin, goals);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
@@ -249,6 +275,7 @@ export const updatePlayerStats = async (
   points: number,
   category: string
 ) => {
+  notifyAchievements(isWin, 0);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
@@ -314,6 +341,7 @@ export const updateFishingStats = async (
   score: number,
   fishCaught: number
 ) => {
+  notifyAchievements(isWin, 0);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
@@ -363,6 +391,7 @@ export const updateHockeyStats = async (
   goalsConceded: number,
   pointsAwarded: number
 ) => {
+  notifyAchievements(isWin, goalsScored);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
@@ -611,6 +640,15 @@ export const subscribeToFriends = (playerId: string, callback: (friends: any[], 
       const friendId = r.fromId === playerId ? r.toId : r.fromId;
       return { ...r, friendId };
     });
+    
+    // Update local achievement proxy for friend counts
+    try {
+      const newUnlocked = doUpdateAchStats({ friendsCount: friends.length });
+      if (newUnlocked && newUnlocked.length > 0) {
+        window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: newUnlocked }));
+      }
+    } catch(e) {}
+    
     callback(friends, pending);
   };
 

@@ -135,8 +135,12 @@ export default function Lobby() {
                        return (
                          <div key={p.id} className="bg-blue-900/30 border border-blue-500/50 p-3 rounded-2xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                               <div className="w-10 h-10 bg-blue-800 rounded-full flex items-center justify-center">
-                                  <Users className="w-5 h-5 text-blue-300" />
+                               <div className="w-10 h-10 bg-blue-800 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
+                                  {p.avatarUrl || p.id ? (
+                                     <img src={p.id === playerId ? storage.getPlayerAvatar() : (p.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.id}`)} className="w-full h-full object-cover" />
+                                  ) : (
+                                     <Users className="w-5 h-5 text-blue-300" />
+                                  )}
                                </div>
                                <div>
                                   <p className="font-bold text-blue-100">{p.username} {p.id === playerId && '(أنت)'}</p>
@@ -177,8 +181,12 @@ export default function Lobby() {
                        return (
                          <div key={p.id} className="bg-rose-900/30 border border-rose-500/50 p-3 rounded-2xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                               <div className="w-10 h-10 bg-rose-800 rounded-full flex items-center justify-center">
-                                  <Users className="w-5 h-5 text-rose-300" />
+                               <div className="w-10 h-10 bg-rose-800 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
+                                  {p.avatarUrl || p.id ? (
+                                     <img src={p.id === playerId ? storage.getPlayerAvatar() : (p.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.id}`)} className="w-full h-full object-cover" />
+                                  ) : (
+                                     <Users className="w-5 h-5 text-rose-300" />
+                                  )}
                                </div>
                                <div>
                                   <p className="font-bold text-rose-100">{p.username} {p.id === playerId && '(أنت)'}</p>

@@ -389,6 +389,13 @@ export default function Home() {
           </button>
           
           <Link
+            to="/achievements"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-xl transition-colors text-purple-400 font-bold"
+          >
+            <Trophy className="w-5 h-5" />
+            الإنجازات
+          </Link>
+          <Link
             to="/leaderboard"
             className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-xl transition-colors text-amber-400"
           >

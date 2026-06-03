@@ -920,10 +920,10 @@ export default function HockeySolo() {
 
       if (label) {
         ctx.fillStyle = 'white';
-        ctx.font = '12px Inter';
+        ctx.font = '11px Inter';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(label, x, y - r - 15);
+        ctx.fillText(label, x, y - r - 22);
       }
     };
 

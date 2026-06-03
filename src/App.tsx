@@ -19,6 +19,8 @@ import { useOnlinePresence } from './hooks/useOnlinePresence';
 import { Footer } from './components/Footer';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
+import Achievements from './pages/Achievements';
+import { AchievementSystem } from './components/AchievementSystem';
 
 import Settings from './pages/Settings';
 import { GameInvitesListener } from './components/GameInvitesListener';
@@ -64,6 +66,7 @@ function AppContent() {
   
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 font-sans flex flex-col" dir="rtl">
+      <AchievementSystem />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -75,6 +78,7 @@ function AppContent() {
           <Route path="/hockey-solo" element={<HockeySolo />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/achievements" element={<Achievements />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/about" element={<AboutUs />} />

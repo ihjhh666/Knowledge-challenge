@@ -786,11 +786,11 @@ export default function Hockey2v2Room() {
         ctx.translate(x, y);
         if (!isTeam1) ctx.rotate(Math.PI);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.font = '600 13px "JetBrains Mono", sans-serif';
+        ctx.font = '600 11px "JetBrains Mono", sans-serif';
         ctx.textAlign = 'center';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 4;
-        ctx.fillText(label, 0, -r - 15);
+        ctx.fillText(label, 0, -r - 22);
         ctx.restore();
       }
     };
@@ -957,12 +957,12 @@ export default function Hockey2v2Room() {
                   tx = predicted.x;
                   ty = attackHomeY;
                   
-                  if (distToPuck < 100 && Math.random() < 0.8) {
+                  if (distToPuck < 130) {
                       // Attempt to smash when close
                       const goalY = isTeam1Bot ? 0 : CANVAS_HEIGHT;
                       const angleToGoal = Math.atan2(goalY - pad.pos.y, goalX - pad.pos.x);
-                      tx = predicted.x - Math.cos(angleToGoal) * 15;
-                      ty = predicted.y + (isTeam1Bot ? 25 : -25);
+                      tx = predicted.x - Math.cos(angleToGoal) * 20;
+                      ty = predicted.y + (isTeam1Bot ? 30 : -30);
                   }
               }
           }
@@ -992,7 +992,7 @@ export default function Hockey2v2Room() {
           let targetVelY = 0;
           if (dist > 0) {
               // Increase dynamic speed
-              const speed = Math.min(dist * 0.4, 13.0);
+              const speed = Math.min(dist * 0.5, 18.0);
               targetVelX = (dx / dist) * speed;
               targetVelY = (dy / dist) * speed;
           }
@@ -1030,7 +1030,9 @@ export default function Hockey2v2Room() {
       puckTrailRef.current.forEach(t => t.alpha -= 0.12);
 
       const now = performance.now();
-      const dtLoop = Math.max(1, now - (lastLoopTimeRef.current || now - 16.66)) / 16.66;
+      // Cap dtLoop to prevent physics explosions after goal pause
+      const deltaMs = Math.min(now - (lastLoopTimeRef.current || (now - 16.66)), 32); 
+      const dtLoop = Math.max(0.5, deltaMs / 16.66);
       lastLoopTimeRef.current = now;
       
       if (myIndex !== -1) {
@@ -1163,14 +1165,13 @@ export default function Hockey2v2Room() {
     }
 
     const now = performance.now();
-    const dt = Math.max(1, now - lastLocalTargetTimeRef.current);
     lastLocalTargetTimeRef.current = now;
 
     const p = paddlesRef.current[myIndex];
     
     if (targetMyPosRef.current) {
-        const vx = ((targetX - targetMyPosRef.current.x) / dt) * 16.66;
-        const vy = ((targetY - targetMyPosRef.current.y) / dt) * 16.66;
+        const vx = targetX - targetMyPosRef.current.x;
+        const vy = targetY - targetMyPosRef.current.y;
         p.vel = { x: vx, y: vy };
     }
 

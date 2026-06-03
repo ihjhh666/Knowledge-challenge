@@ -694,11 +694,11 @@ export default function HockeyRoom() {
       ctx.translate(x, y);
       if (!isHost) ctx.rotate(Math.PI);
       ctx.fillStyle = color;
-      ctx.font = '600 13px "JetBrains Mono", sans-serif';
+      ctx.font = '600 11px "JetBrains Mono", sans-serif';
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = 4;
-      ctx.fillText(text, 0, -35); // above paddle
+      ctx.fillText(text, 0, -42); // slightly higher above paddle
       ctx.restore();
     };
 
@@ -785,7 +785,8 @@ export default function HockeyRoom() {
 
       const p = myPaddleRef.current;
       const now = performance.now();
-      const dtLoop = Math.max(1, now - (lastLoopTimeRef.current || now - 16.66)) / 16.66;
+      const deltaMs = Math.min(now - (lastLoopTimeRef.current || (now - 16.66)), 32); 
+      const dtLoop = Math.max(0.5, deltaMs / 16.66);
       lastLoopTimeRef.current = now;
       
       // Decay local paddle velocity if pointer hasn't moved recently
