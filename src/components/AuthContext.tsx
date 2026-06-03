@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from '../lib/firebase';
+import { auth, onAuthStateChanged, User, signOut } from '../lib/firebase';
 import { storage } from '../lib/storage';
 
 export type AppUser = User | { uid: string; displayName: string | null; photoURL: string | null; isGuest: boolean };
@@ -7,7 +7,6 @@ export type AppUser = User | { uid: string; displayName: string | null; photoURL
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
-  loginWithGoogle: () => Promise<void>;
   loginAsGuest: (name: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -15,7 +14,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  loginWithGoogle: async () => {},
   loginAsGuest: async () => {},
   logout: async () => {},
 });
@@ -67,19 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const loginWithGoogle = async () => {
-    if (!auth) {
-      throw new Error("لم يتم تهيئة Firebase بنجاح. يرجى مراجعة إعدادات Firebase Setup وتعبئة جميع الحقول.");
-    }
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      console.error('Google login failed API error:', error);
-      throw error;
-    }
-  };
-
   const loginAsGuest = async (name: string) => {
     const newId = localStorage.getItem('know_player_id') || Math.floor(10000000 + Math.random() * 90000000).toString();
     localStorage.setItem('know_player_id', newId);
@@ -108,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginAsGuest, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );
