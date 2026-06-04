@@ -551,7 +551,7 @@ export default function KingModeRoom() {
     ctx.translate(w / 2, h / 2);
 
     // Scale to fit arena, a bit of padding
-    const scale = Math.min(w, h) / (ARENA_RADIUS * 2.3);
+    const scale = Math.min(w, h) / (ARENA_RADIUS * 2.1);
     ctx.scale(scale, scale);
     
     // 1. Draw Outer Arena Glow
@@ -972,7 +972,7 @@ export default function KingModeRoom() {
   const sortedLeaderboard = [...entities.current].sort((a,b) => b.score - a.score);
 
   return (
-    <div className="relative w-full h-[700px] bg-[#0a0a16] flex flex-col font-sans overflow-hidden touch-none overscroll-none rounded-3xl border border-slate-800 shadow-xl" dir="rtl">
+    <div className="relative w-full h-[70vh] min-h-[450px] lg:h-[700px] bg-[#0a0a16] flex flex-col font-sans overflow-hidden touch-none overscroll-none rounded-3xl border border-slate-800 shadow-xl" dir="rtl">
         
         {/* Top Header Overlay */}
         <header className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10 pointer-events-none">
@@ -1002,29 +1002,29 @@ export default function KingModeRoom() {
 
         {/* HUD Elements */}
         {gameState === 'playing' && (
-           <div className="absolute top-24 left-4 right-4 bottom-4 pointer-events-none flex justify-between items-start z-10">
+           <div className="absolute top-16 sm:top-24 left-2 sm:left-4 right-2 sm:right-4 bottom-2 sm:bottom-4 pointer-events-none flex justify-between items-start z-10">
                 
                 {/* Left: Leaderboard Container */}
-                <div className="bg-[#15132b]/80 backdrop-blur-md rounded-3xl border border-[#2d2b45] p-4 w-52 sm:w-60 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col gap-3">
-                   <h3 className="text-white font-bold text-sm flex items-center justify-between mb-1 px-1">
+                <div className="bg-[#15132b]/80 backdrop-blur-md rounded-3xl border border-[#2d2b45] p-2 sm:p-4 w-36 sm:w-60 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col gap-2 sm:gap-3">
+                   <h3 className="text-white font-bold text-xs sm:text-sm flex items-center justify-between mb-1 px-1">
                        ترتيب اللاعبين 
                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse drop-shadow-[0_0_5px_rgba(239,68,68,1)]"></span>
                    </h3>
                    {sortedLeaderboard.map((e, index) => (
-                       <div key={e.id} className={`flex items-center justify-between p-2 rounded-2xl transition-colors ${e.isPlayer ? 'bg-[#312e52]/80 border border-[#48427a]' : 'hover:bg-white/5'}`}>
-                          <div className="flex items-center gap-3">
+                       <div key={e.id} className={`flex items-center justify-between p-1.5 sm:p-2 rounded-2xl transition-colors ${e.isPlayer ? 'bg-[#312e52]/80 border border-[#48427a]' : 'hover:bg-white/5'}`}>
+                          <div className="flex items-center gap-2 sm:gap-3">
                              <div 
-                                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-inner" 
+                                className="w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-inner" 
                                 style={{backgroundColor: e.color}}
                              >
                                  {index + 1}
                              </div>
-                             <span className={`text-sm font-bold ${e.isPlayer ? 'text-white' : 'text-slate-300'}`}>
+                             <span className={`text-xs sm:text-sm font-bold truncate max-w-[50px] sm:max-w-max ${e.isPlayer ? 'text-white' : 'text-slate-300'}`}>
                                  {e.name}
-                                 {e.isKing && <Crown className="inline-block w-4 h-4 text-amber-400 mr-2 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" />}
+                                 {e.isKing && <Crown className="inline-block w-3 h-3 sm:w-4 sm:h-4 text-amber-400 mr-1 sm:mr-2 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" />}
                              </span>
                           </div>
-                          <span className={`text-lg transition-all pr-2 ${e.isKing ? 'text-amber-400 font-black' : 'text-white font-bold'}`}>
+                          <span className={`text-base sm:text-lg transition-all pr-1 sm:pr-2 ${e.isKing ? 'text-amber-400 font-black' : 'text-white font-bold'}`}>
                               {Math.floor(e.score)}
                           </span>
                        </div>
@@ -1032,46 +1032,46 @@ export default function KingModeRoom() {
                 </div>
 
                 {/* Center: Active Score & Timer */}
-                <div className="flex flex-col items-center mt-8 sm:mt-0 absolute left-1/2 -translate-x-1/2">
-                    <div className="bg-[#15132b]/80 backdrop-blur-md rounded-[2rem] border border-[#2d2b45] px-12 py-4 shadow-2xl flex flex-col items-center transform transition-transform hover:scale-105">
-                        <span className="text-slate-400 font-bold text-sm mb-1">نقاطك</span>
-                        <span className="text-6xl text-amber-400 font-black font-heading tracking-widest drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]">
+                <div className="flex flex-col items-center mt-0 absolute left-1/2 -translate-x-1/2">
+                    <div className="bg-[#15132b]/80 backdrop-blur-md rounded-2xl sm:rounded-[2rem] border border-[#2d2b45] px-6 py-2 sm:px-12 sm:py-4 shadow-2xl flex flex-col items-center transform transition-transform hover:scale-105">
+                        <span className="text-slate-400 font-bold text-xs sm:text-sm mb-0 sm:mb-1">نقاطك</span>
+                        <span className="text-3xl sm:text-6xl text-amber-400 font-black font-heading tracking-widest drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]">
                             {playerScore}
                         </span>
                     </div>
-                    <div className="mt-4 bg-[#15132b]/95 backdrop-blur-xl px-6 py-2 rounded-full border border-[#48427a] text-slate-200 font-bold flex items-center gap-3 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                        <span className="text-xl">⏱️</span>
-                        <span className="text-xl tracking-wider">{formatTime(gameTime)}</span>
+                    <div className="mt-2 sm:mt-4 bg-[#15132b]/95 backdrop-blur-xl px-4 py-1 sm:px-6 sm:py-2 rounded-full border border-[#48427a] text-slate-200 font-bold flex items-center gap-2 sm:gap-3 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                        <span className="text-base sm:text-xl">⏱️</span>
+                        <span className="text-base sm:text-xl tracking-wider">{formatTime(gameTime)}</span>
                     </div>
                 </div>
 
                 {/* Right: Goal Box (Hidden on small mobile) */}
-                <div className="hidden lg:block bg-[#15132b]/80 backdrop-blur-md rounded-3xl border border-[#2d2b45] p-6 w-56 shadow-2xl text-center">
-                     <span className="text-white font-bold block mb-3 text-sm">هدف الفوز</span>
-                     <p className="text-slate-400 text-xs mb-4">كن أول من يصل إلى</p>
-                     <div className="text-5xl text-amber-400 font-black font-heading drop-shadow-lg">{WIN_SCORE}</div>
-                     <span className="text-slate-400 text-xs mt-2 block">نقطة</span>
+                <div className="hidden lg:block bg-[#15132b]/80 backdrop-blur-md rounded-3xl border border-[#2d2b45] p-4 w-40 shadow-2xl text-center">
+                     <span className="text-white font-bold block mb-2 text-sm">هدف الفوز</span>
+                     <p className="text-slate-400 text-[10px] mb-2">كن أول من يصل إلى</p>
+                     <div className="text-4xl text-amber-400 font-black font-heading drop-shadow-lg">{WIN_SCORE}</div>
+                     <span className="text-slate-400 text-xs mt-1 block">نقطة</span>
                 </div>
 
                 {/* Mobile Specific Overlay Controls */}
-                <div className="md:hidden absolute bottom-12 left-8 w-44 h-44 rounded-full border border-white/20 flex items-center justify-center bg-black/30 pointer-events-auto transition-colors duration-200"
+                <div className="md:hidden absolute bottom-6 left-6 w-32 h-32 rounded-full border border-white/20 flex items-center justify-center bg-black/30 pointer-events-auto transition-colors duration-200"
                      ref={joystickBgRef}
                      onTouchStart={handleTouchStart}
                      onTouchMove={handleTouchMove}
                      onTouchEnd={handleTouchEnd}
                      onTouchCancel={handleTouchEnd}
                 >
-                    <div ref={joystickHandleRef} className="w-20 h-20 bg-white/40 backdrop-blur-md shadow-2xl border border-white/40 rounded-full transition-transform duration-75" />
+                    <div ref={joystickHandleRef} className="w-14 h-14 bg-white/40 backdrop-blur-md shadow-2xl border border-white/40 rounded-full transition-transform duration-75" />
                 </div>
 
-                <div className="md:hidden absolute bottom-12 right-8 pointer-events-auto">
+                <div className="md:hidden absolute bottom-6 right-6 pointer-events-auto flex items-end justify-center">
                     <button 
-                         className={`w-24 h-24 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${entities.current.find(e => e.isPlayer)?.energy! > 5 ? 'bg-amber-500 hover:bg-amber-400 text-white border-4 border-amber-600/50 shadow-[0_0_25px_rgba(245,158,11,0.6)]' : 'bg-slate-700 text-slate-400 border-4 border-slate-800'}`}
+                         className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${entities.current.find(e => e.isPlayer)?.energy! > 5 ? 'bg-amber-500 hover:bg-amber-400 text-white border-4 border-amber-600/50 shadow-[0_0_25px_rgba(245,158,11,0.6)]' : 'bg-slate-700 text-slate-400 border-4 border-slate-800'}`}
                          onPointerDown={() => isSprintingActive.current = true}
                          onPointerUp={() => isSprintingActive.current = false}
                          onPointerLeave={() => isSprintingActive.current = false}
                     >
-                        <Zap className="w-12 h-12" fill="currentColor" />
+                        <Zap className="w-8 h-8" fill="currentColor" />
                     </button>
                     {/* Energy bar ring could go here */}
                 </div>
