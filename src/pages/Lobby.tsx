@@ -42,7 +42,7 @@ export default function Lobby() {
             <h2 className="text-xl font-bold font-heading text-slate-200">اللاعبين في الغرفة</h2>
              {state.category && (
                <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-md text-xs font-bold border border-indigo-500/30">
-                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.gameMode === 'domino' ? '🎲 الدومينو' : state.category}
+                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : state.gameMode === 'domino' ? '🎲 الدومينو' : state.gameMode === 'hockey' ? '🏒 الهوكي' : state.gameMode === 'king' ? '👑 طور الملك' : state.category}
                </span>
             )}
             {state.gameMode === 'fishing' && (
@@ -103,6 +103,7 @@ export default function Lobby() {
               <option value="domino">🎲 الدومينو (1 ضد 1)</option>
               <option value="hockey">🏒 الهوكي (1 ضد 1)</option>
               <option value="hockey-2v2">🏒 الهوكي (2 ضد 2)</option>
+              <option value="king">👑 طور الملك</option>
             </select>
           </div>
 

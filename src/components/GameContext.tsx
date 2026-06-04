@@ -23,7 +23,7 @@ export interface GameContextType {
   state: GameState | null;
   playerId: string;
   isHost: boolean;
-  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey') => void;
+  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king', subMode?: string) => void;
   joinRoom: (roomId: string, password?: string, onError?: (err: string) => void) => void;
   sendMessage: (text: string) => void;
   toggleReady: () => void;
@@ -33,7 +33,7 @@ export interface GameContextType {
   kickPlayer: (playerId: string) => void;
   mutePlayer: (playerId: string, isMuted: boolean) => void;
   changeCategory: (category: string) => void;
-  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey') => void;
+  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king') => void;
   returnToLobby: () => void;
   requestRematch: () => void;
   forceNextQuestion: () => void;
@@ -43,6 +43,7 @@ export interface GameContextType {
   sendPenaltyAction: (action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right') => void;
   sendDominoAction: (actionDetails: any) => void;
   sendHockeyEvent: (event: any) => void;
+  sendKingEvent: (event: any) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -537,6 +538,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             startDominoMode(currentState);
           } else if (currentState.gameMode === 'hockey') {
             startHockeyMode(currentState);
+          } else if (currentState.gameMode === 'king') {
+            startKingMode(currentState);
           } else {
             startNextRound(currentState);
           }
@@ -563,11 +566,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'HOCKEY_ACTION':
       case 'HOCKEY_SYNC':
       case 'HOCKEY_RESTART':
+      case 'CHANGE_HOCKEY_MODE':
         if (stateRef.current && stateRef.current.gameMode === 'hockey') {
           if (isHostRef.current) {
              broadcast(message);
           }
           window.dispatchEvent(new CustomEvent('hockey_event', { detail: message }));
+        }
+        break;
+      case 'KING_INPUT':
+      case 'KING_SYNC':
+        if (stateRef.current && stateRef.current.gameMode === 'king') {
+          if (isHostRef.current && message.type === 'KING_SYNC') {
+            broadcast(message);
+          }
+          window.dispatchEvent(new CustomEvent('king_event', { detail: message }));
         }
         break;
       case 'SUBMIT_ANSWER':
@@ -1028,6 +1041,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updatePublicRoom(initialState.roomId, { status: 'playing' });
   };
 
+  const startKingMode = (currentState: GameState) => {
+    const updatedPlayers = { ...currentState.players };
+    Object.values(updatedPlayers).forEach(p => p.score = 0);
+    const newState: GameState = {
+      ...currentState,
+      status: 'playing',
+      players: updatedPlayers
+    };
+    setState(newState);
+    broadcast({ type: 'STATE_UPDATE', state: newState });
+    updatePublicRoom(newState.roomId, { status: 'playing' });
+  };
+
   const startHockeyMode = (currentState: GameState) => {
     const pIds = Object.keys(currentState.players);
     if (pIds.length < (currentState.subMode === '2v2' ? 1 : 2)) return;
@@ -1405,12 +1431,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAllAnswered(newState);
   };
 
-  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' = 'quiz', subMode?: string) => {
+  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' = 'quiz', subMode?: string) => {
     intentionalLeaveRef.current = false;
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
-    const roomCategory = gameMode === 'fishing' ? '🎣 صيد السمك' : gameMode === 'penalty' ? '⚽ ركلات الجزاء' : gameMode === 'domino' ? '🎲 الدومينو' : gameMode === 'hockey' ? (subMode === '2v2' ? '🏒 هوكي 2 ضد 2' : '🏒 هوكي 1 ضد 1') : category || '🧠 معلومات عامة';
+    const roomCategory = gameMode === 'king' ? '👑 طور الملك' : gameMode === 'fishing' ? '🎣 صيد السمك' : gameMode === 'penalty' ? '⚽ ركلات الجزاء' : gameMode === 'domino' ? '🎲 الدومينو' : gameMode === 'hockey' ? (subMode === '2v2' ? '🏒 هوكي 2 ضد 2' : '🏒 هوكي 1 ضد 1') : category || '🧠 معلومات عامة';
     
     setPlayerId(myId);
     setIsHost(true);
@@ -1772,7 +1798,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const changeGameMode = React.useCallback((gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino') => {
+  const changeGameMode = React.useCallback((gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king') => {
     if (isHostRef.current) {
       handleMessage({ type: 'CHANGE_MODE', gameMode });
     }
@@ -1842,6 +1868,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [playerId]);
 
+  const sendKingEvent = React.useCallback((event: any) => {
+    if (isHostRef.current) {
+      handleMessage({ ...event, playerId });
+    } else if (hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ ...event, playerId });
+    }
+  }, [playerId]);
+
   const disconnectedPlayer = state && state.status === 'playing' 
     ? (Object.values(state.players) as RoomPlayer[]).find(p => p.disconnectedAt) 
     : undefined;
@@ -1861,7 +1895,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [disconnectedPlayer]);
 
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent }}>
       {children}
       {disconnectedPlayer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

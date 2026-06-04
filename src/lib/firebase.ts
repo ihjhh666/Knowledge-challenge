@@ -56,7 +56,7 @@ export interface PublicRoom {
   roomId: string;
   hostName: string;
   category: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king';
   playerCount: number;
   maxPlayers: number;
   status: 'waiting' | 'playing' | 'finished' | 'revealing';
@@ -481,11 +481,10 @@ export const updateHockeyStats = async (
 export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRate' = 'totalPoints') => {
   if (!db) return [];
   try {
-    const q = query(
-      collection(db, 'users'),
-      orderBy(sortBy, 'desc'),
-      limit(50)
-    );
+    console.log('[Leaderboard] Fetching leaderboard for sortBy:', sortBy);
+    
+    // Fetch all users to avoid Firestore's behavior of omitting documents that lack the sort field
+    const q = query(collection(db, 'users'));
     const { getDocs } = await import('firebase/firestore');
     const snapshot = await getDocs(q);
     
@@ -497,9 +496,20 @@ export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRa
       results.push(data);
     });
     
-    return results;
+    // Default the value of the missing fields to 0 and sort locally
+    results.sort((a, b) => {
+      const valA = a[sortBy] || 0;
+      const valB = b[sortBy] || 0;
+      return (valB as number) - (valA as number);
+    });
+    
+    // Return top 50 valid players
+    const top50 = results.filter(p => !!p.playerName).slice(0, 50);
+    
+    console.log(`[Leaderboard] Successfully fetched and sorted ${results.length} players using sortBy ${sortBy}. Returning top ${top50.length}.`);
+    return top50;
   } catch (err) {
-    console.error('Error getting leaderboard:', err);
+    console.error('[Leaderboard] Error getting leaderboard:', err);
     return [];
   }
 };

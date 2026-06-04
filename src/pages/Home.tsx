@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
 import { useAuth } from '../components/AuthContext';
-import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell } from 'lucide-react';
+import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell, Crown } from 'lucide-react';
 import { subscribeToPublicRooms, PublicRoom, subscribeToOnlineCount, subscribeToFriends } from '../lib/firebase';
 import { RoomVisibility } from '../lib/types';
 import { FriendsSidebar } from '../components/FriendsSidebar';
@@ -35,7 +35,7 @@ export default function Home() {
     type: 'public' as RoomVisibility,
     password: '',
     maxPlayers: 10,
-    gameMode: 'quiz' as 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey',
+    gameMode: 'quiz' as 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king',
     hockeySubMode: '1v1' as '1v1' | '2v2'
   });
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
@@ -207,7 +207,7 @@ export default function Home() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey') ? 10 : createConfig.maxPlayers})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king') ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'quiz' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <Brain className="w-6 h-6 text-indigo-400" />
@@ -215,7 +215,7 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey') ? 10 : createConfig.maxPlayers})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king') ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'fishing' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <div className="text-2xl">🎣</div>
@@ -244,6 +244,14 @@ export default function Home() {
                 >
                   <div className="text-2xl">🏒</div>
                   <span className="text-sm font-bold text-slate-200 text-center">الهوكي</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'king', maxPlayers: 4})}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'king' ? 'border-amber-500 bg-amber-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                >
+                  <div className="text-2xl">👑</div>
+                  <span className="text-sm font-bold text-slate-200 text-center">التاج</span>
                 </button>
               </div>
             </div>
@@ -335,8 +343,8 @@ export default function Home() {
               <input 
                 type="number"
                 min="2"
-                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : "20"}
-                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey'}
+                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : createConfig.gameMode === 'king' ? "4" : "20"}
+                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king'}
                 value={createConfig.maxPlayers}
                 onChange={(e) => setCreateConfig({...createConfig, maxPlayers: parseInt(e.target.value) || 2})}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
@@ -520,6 +528,18 @@ export default function Home() {
                 </button>
              </div>
           </div>
+
+          <div 
+            onClick={() => navigate('/king-mode')}
+            className="cursor-pointer bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-amber-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-amber-500/20" 
+          >
+             <div className="bg-amber-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
+                <Crown className="w-12 h-12 text-amber-500 drop-shadow-md" />
+             </div>
+             <h3 className="text-2xl font-bold font-heading text-white mb-3">طور الملك</h3>
+             <p className="text-slate-400 text-sm mb-6 leading-relaxed">التقط التاج الذهبي وحافظ عليه لتجميع النقاط وتصبح الملك!</p>
+             <span className="mt-auto bg-amber-500/10 text-amber-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-colors">إلعب الآن</span>
+          </div>
         </div>
       </section>
 
@@ -595,7 +615,7 @@ export default function Home() {
                         </span>
                       </div>
                       <h4 className="font-bold text-white text-lg pr-8">
-                        {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : room.gameMode === 'domino' ? '🎲 الدومينو' : room.gameMode === 'hockey' ? '🏒 الهوكي' : room.category}
+                        {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : room.gameMode === 'domino' ? '🎲 الدومينو' : room.gameMode === 'hockey' ? '🏒 الهوكي' : room.gameMode === 'king' ? '👑 طور الملك' : room.category}
                       </h4>
                       <p className="text-slate-400 text-sm mt-1">المضيف: <span className="text-slate-300">{room.hostName}</span></p>
                     </div>

@@ -230,6 +230,43 @@ class WebAudioEngine {
     
     noiseSource.start();
   }
+
+  // --- King Mode Specific Sounds ---
+
+  public kingCrownPickup() {
+    this.playChord('triangle', [440, 554.37, 659.25, 880], 0.8, 0.15); // A major 7th chord
+    setTimeout(() => this.playTone('sine', 1108.73, 0.4, 0.1), 100);
+  }
+
+  public kingCrownSteal() {
+    this.playTone('sawtooth', 800, 0.3, 0.1, 1200);
+    setTimeout(() => this.playTone('square', 600, 0.2, 0.1, 800), 50);
+  }
+
+  public kingCrownLost() {
+    this.playTone('triangle', 300, 0.5, 0.15, 100);
+    this.playTone('sine', 200, 0.6, 0.1, 50);
+  }
+
+  public kingTickScore() {
+    this.playTone('sine', 1200, 0.05, 0.03, 1400);
+  }
+
+  public kingWin() {
+    this.playChord('square', [523.25, 659.25, 783.99], 0.3, 0.1); // C major
+    setTimeout(() => this.playChord('square', [659.25, 783.99, 987.77], 0.3, 0.1), 300); // E minor
+    setTimeout(() => this.playChord('square', [783.99, 987.77, 1174.66], 0.3, 0.1), 600); // G major
+    setTimeout(() => this.playChord('square', [1046.50, 1318.51, 1567.98, 2093.00], 1.5, 0.15), 900); // High C
+  }
+
+  public kingDash() {
+    this.playTone('sine', 200, 0.2, 0.1, 50);
+  }
+
+  public eventStart() {
+    this.playChord('sine', [440, 554.37], 0.4, 0.2); 
+    setTimeout(() => this.playChord('sine', [554.37, 880], 0.4, 0.5), 150);
+  }
 }
 
 export const audio = new WebAudioEngine();
