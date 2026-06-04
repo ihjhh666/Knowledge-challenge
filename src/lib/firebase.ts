@@ -244,7 +244,6 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
   }
   console.log("Subscribing to Firestore 'rooms' collection...");
   const roomsRef = collection(db, 'rooms');
-  // Subscribe to all rooms, filter locally like before (or we can use query)
   const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
     const rooms: PublicRoom[] = [];
     snapshot.forEach(doc => {
@@ -252,25 +251,12 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
     });
     console.log("Firestore onSnapshot received", rooms.length, "total rooms.");
     
-    // Clean up old or empty rooms
-    const now = Date.now();
     const validRooms = rooms.filter(r => {
-      // Room is considered dead if:
-      // 1. It is marked as finished
-      // 2. Play count is 0 or less
-      // 3. It hasn't been active for 10 minutes, or it's older than 8 hours
-      const inactiveMs = now - (r.lastActiveAt || r.createdAt);
-      const isDead = r.status === 'finished' 
-        || r.playerCount <= 0 
-        || (now - r.createdAt) > 8 * 60 * 60 * 1000
-        || inactiveMs > 10 * 60 * 1000;
+      const isDead = r.status === 'finished' || r.playerCount <= 0 || r.status === 'playing';
+      const isFull = r.playerCount >= r.maxPlayers;
       
-      if (isDead) {
-        // Aggressively delete dead rooms to keep Firestore clean (idempotent operation)
-        deletePublicRoom(r.roomId);
-        return false;
-      }
-      return true;
+      // Hide rooms that are finished, playing, empty, or full.
+      return !isDead && !isFull;
     });
     
     console.log("After local filter, sending", validRooms.length, "valid rooms to UI.");
@@ -518,9 +504,20 @@ export const updateOnlinePresence = async (playerId: string) => {
   if (!db) return;
   try {
     const heartRef = doc(db, 'online_players', playerId);
+    // Use Date.now() but rely on precise disconnect events as well
     await setDoc(heartRef, { lastActive: Date.now() }, { merge: true });
   } catch (err) {
     console.error('Error updating online presence:', err);
+  }
+};
+
+export const removeOnlinePresence = async (playerId: string) => {
+  if (!db) return;
+  try {
+    const heartRef = doc(db, 'online_players', playerId);
+    await deleteDoc(heartRef); // Remove immediately on tab close
+  } catch (err) {
+    console.error('Error removing online presence:', err);
   }
 };
 
@@ -532,7 +529,8 @@ export const subscribeToOnlineCount = (callback: (count: number) => void) => {
     let count = 0;
     snapshot.forEach(doc => {
       const data = doc.data();
-      if (data.lastActive && (now - data.lastActive) < 15000) {
+      // Increased threshold to 60 seconds to tolerate clock skew and network delays
+      if (data.lastActive && (now - data.lastActive) < 60000) {
         count++;
       }
     });
