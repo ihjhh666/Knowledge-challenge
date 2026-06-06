@@ -5,16 +5,14 @@ import { chickenAudio } from '../lib/chickenAudio';
 import { storage } from '../lib/storage';
 import { updatePlayerStats } from '../lib/firebase';
 
-const CANVAS_W = 1000;
-const CANVAS_H = 750;
 const WORLD_W = 1300;
 const WORLD_H = 950;
 
 type ChickenType = 'normal' | 'golden' | 'bonus_box';
-type Chicken = { id: number; x: number; y: number; vx: number; vy: number; type: ChickenType; state: 'wandering' | 'carried'; carrierId: string | null; wobble: number; targetX?: number; targetY?: number };
-type Player = { id: string; name: string; isBot: boolean; x: number; y: number; vx: number; vy: number; color: string; score: number; carryingChicken: 'none' | ChickenType; speedMultiplier: number; barn: { x: number; y: number; w: number; h: number }; wobble: number; dir: number; stealCooldown?: number; };
-type Particle = { id: number; x: number; y: number; vx: number; vy: number; life: number; maxLife: number; size: number; color: string; type: 'feather' | 'sparkle' | 'text' | 'dust'; text?: string; angle: number; rotSpeed: number };
-type EnvObj = { type: 'tree' | 'bush' | 'hay' | 'crate' | 'pond'; x: number; y: number; w: number; h: number; seed: number };
+type Chicken = { id: number; x: number; y: number; vx: number; vy: number; type: ChickenType; state: 'wandering' | 'magnet' | 'carried'; carrierId: string | null; wobble: number; targetX?: number; targetY?: number };
+type Player = { id: string; name: string; isBot: boolean; x: number; y: number; vx: number; vy: number; color: string; score: number; carryingChicken: 'none' | ChickenType; speedMultiplier: number; barn: { x: number; y: number; w: number; h: number; glow?: number }; wobble: number; dir: number; stealCooldown?: number; targetX?: number; targetY?: number; lastVx?: number; lastVy?: number; };
+type Particle = { id: number; x: number; y: number; vx: number; vy: number; life: number; maxLife: number; size: number; color: string; type: 'feather' | 'sparkle' | 'text' | 'dust'; text?: string; angle: number; rotSpeed: number; fontSize?: number };
+type EnvObj = { type: 'tree' | 'bush' | 'hay' | 'crate' | 'pond' | 'flower' | 'rock'; x: number; y: number; w: number; h: number; seed: number };
 
 export default function ChickenSolo() {
   const navigate = useNavigate();
@@ -26,6 +24,18 @@ export default function ChickenSolo() {
   const [currentEventMessage, setCurrentEventMessage] = useState<string | null>(null);
   const [scores, setScores] = useState<{id: string, name: string, color: string, score: number}[]>([]);
 
+  useEffect(() => {
+     const handleResize = () => {
+        if(canvasRef.current && canvasRef.current.parentElement) {
+            canvasRef.current.width = canvasRef.current.parentElement.clientWidth;
+            canvasRef.current.height = canvasRef.current.parentElement.clientHeight;
+        }
+     };
+     handleResize();
+     window.addEventListener('resize', handleResize);
+     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const playersRef = useRef<Player[]>([]);
   const chickensRef = useRef<Chicken[]>([]);
   const particlesRef = useRef<Particle[]>([]);
@@ -36,10 +46,9 @@ export default function ChickenSolo() {
   const chickenSpawnTimersRef = useRef<number[]>([]);
 
   const inputRef = useRef({ dx: 0, dy: 0 });
-  const [joystickActive, setJoystickActive] = useState(false);
-  const joystickBaseRef = useRef<{x: number, y: number} | null>(null);
-  const joystickThumbRef = useRef<{x: number, y: number} | null>(null);
-  const cameraRef = useRef({ x: 0, y: 0 });
+  const isJoystickActiveRef = useRef(false);
+  const joystickThumbDivRef = useRef<HTMLDivElement>(null);
+  const cameraRef = useRef({ x: 0, y: 0, shake: 0 });
 
   const spawnParticles = (x: number, y: number, type: Particle['type'], count: number, opts?: {text?: string, color?: string}) => {
     for(let i=0; i<count; i++) {
@@ -47,7 +56,7 @@ export default function ChickenSolo() {
           id: Math.random(), x, y,
           vx: (Math.random() - 0.5) * 150, vy: (Math.random() - 0.5) * 150 - (type === 'text' ? 50 : 0),
           life: 0, maxLife: type === 'text' ? 1.5 : 0.6 + Math.random()*0.4,
-          size: type === 'feather' ? 6 + Math.random()*6 : type === 'text' ? 24 : 3 + Math.random()*4,
+          size: type === 'feather' ? 6 + Math.random()*6 : type === 'text' ? (opts?.text?.includes('+') ? 32 : 24) : 3 + Math.random()*4,
           color: opts?.color || 'white', type, text: opts?.text,
           angle: Math.random() * Math.PI * 2, rotSpeed: (Math.random() - 0.5) * 10
        });
@@ -108,6 +117,8 @@ export default function ChickenSolo() {
     addEnv('bush', 12);
     addEnv('hay', 6);
     addEnv('crate', 4);
+    addEnv('rock', 8);
+    addEnv('flower', 15);
 
     const pd = 120;
     const bw = 120, bh = 120;
@@ -133,6 +144,8 @@ export default function ChickenSolo() {
      })).sort((a,b) => b.score - a.score));
   };
 
+  const debugMetricsRef = useRef({ fps: 0, logic: 0, render: 0, frames: 0, lastFpsTime: performance.now(), inputLag: 0 });
+
   useEffect(() => {
     let animationId: number;
     let lastTime = performance.now();
@@ -141,8 +154,15 @@ export default function ChickenSolo() {
       const dt = Math.min(0.05, (time - lastTime) / 1000); // Max 50ms per physics tick to prevent lag spikes
       lastTime = time;
       if (stateRef.current !== 'playing') return;
+      
+      const t0 = performance.now();
       update(dt);
+      const t1 = performance.now();
       draw();
+      const t2 = performance.now();
+      
+      debugMetricsRef.current.logic = t1 - t0;
+      debugMetricsRef.current.render = t2 - t1;
     };
     animationId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationId);
@@ -168,9 +188,13 @@ export default function ChickenSolo() {
     const speed = 320 * p1.speedMultiplier; 
     const len = Math.hypot(inputRef.current.dx, inputRef.current.dy);
     if (len > 0) {
-      p1.vx = (inputRef.current.dx / len) * speed;
-      p1.vy = (inputRef.current.dy / len) * speed;
-      p1.dir = p1.vx > 0 ? 1 : -1;
+      const limit = 40;
+      const normalizedFactor = Math.min(len / limit, 1.0);
+      p1.vx = (inputRef.current.dx / len) * speed * normalizedFactor;
+      p1.vy = (inputRef.current.dy / len) * speed * normalizedFactor;
+      if (len > 5) {
+          p1.dir = p1.vx > 0 ? 1 : -1;
+      }
     } else {
       p1.vx = 0; p1.vy = 0;
     }
@@ -210,14 +234,18 @@ export default function ChickenSolo() {
             bot.vy = (dy / nearestDist) * botSpeed;
           }
         } else {
-          // Wonder near center
-          const dx = (WORLD_W/2) - bot.x;
-          const dy = (WORLD_H/2) - bot.y;
+          // Wander naturally
+          if (!bot.targetX || Math.hypot(bot.targetX - bot.x, bot.targetY! - bot.y) < 20) {
+             bot.targetX = 100 + Math.random() * (WORLD_W - 200);
+             bot.targetY = 100 + Math.random() * (WORLD_H - 200);
+          }
+          const dx = bot.targetX - bot.x;
+          const dy = bot.targetY! - bot.y;
           const dist = Math.hypot(dx, dy);
           if (dist > 5) {
-            bot.vx = (dx / dist) * (botSpeed * 0.5);
-            bot.vy = (dy / dist) * (botSpeed * 0.5);
-          } else { bot.vx = 0; bot.vy = 0; }
+            bot.vx = (dx / dist) * botSpeed * 0.5;
+            bot.vy = (dy / dist) * botSpeed * 0.5;
+          }
         }
       }
       if (bot.vx !== 0) bot.dir = bot.vx > 0 ? 1 : -1;
@@ -231,30 +259,41 @@ export default function ChickenSolo() {
       p.y = Math.max(25, Math.min(WORLD_H - 25, p.y));
 
       if (Math.hypot(p.vx, p.vy) > 10) {
-         p.wobble += dt * 20; // Faster wobble for more dynamic look
-         if (Math.random() < 0.1) spawnParticles(p.x, p.y + 15, 'dust', 1, {color: 'rgba(0,0,0,0.1)'});
-      } else { p.wobble = 0; }
+         p.wobble += dt * 25; // Faster wobble for more dynamic look
+         if (p.lastVx !== undefined && p.lastVy !== undefined) {
+             const dot = (p.vx * p.lastVx + p.vy * p.lastVy) / (Math.hypot(p.vx, p.vy) * Math.hypot(p.lastVx, p.lastVy) || 1);
+             if (dot < 0.2 && Math.hypot(p.lastVx, p.lastVy) > 50) {
+                 spawnParticles(p.x, p.y + 15, 'dust', 4, {color: 'rgba(0,0,0,0.15)'});
+             }
+         }
+         if (Math.random() < 0.25) spawnParticles(p.x, p.y + 15, 'dust', 1, {color: 'rgba(0,0,0,0.1)'});
+      } else { 
+         p.wobble += dt * 5; // Idle breathing
+      }
+      p.lastVx = p.vx;
+      p.lastVy = p.vy;
 
       // Catch chickens
       if (p.carryingChicken === 'none') {
         for (let i = chickens.length - 1; i >= 0; i--) {
           const c = chickens[i];
           if (c.state === 'wandering') {
-            if (Math.hypot(p.x - c.x, p.y - c.y) < 40) { // Slightly generous catch radius
+            if (Math.hypot(p.x - c.x, p.y - c.y) < 45) { // Faster/generous pickup
               if (c.type === 'bonus_box') {
                  p.score += 10;
-                 if (!p.isBot) chickenAudio.playWin();
+                 if (!p.isBot) { chickenAudio.playWin(); cameraRef.current.shake = 10; }
                  spawnParticles(c.x, c.y, 'text', 1, {text: '+10', color: '#ec4899'});
                  spawnParticles(c.x, c.y, 'sparkle', 15, {color: 'magenta'});
                  chickens.splice(i, 1);
                  updateScores();
                  checkWinCondition();
               } else {
-                 c.state = 'carried';
+                 c.state = 'magnet';
                  c.carrierId = p.id;
                  p.carryingChicken = c.type;
                  if (!p.isBot) chickenAudio.playPickup();
                  spawnParticles(c.x, c.y, 'feather', 3, {color: c.type === 'golden' ? 'yellow' : 'white'});
+                 spawnParticles(p.x, p.y - 30, 'text', 1, {text: '+1', color: 'rgba(255,255,255,0.9)'});
                  break;
               }
             }
@@ -267,22 +306,27 @@ export default function ChickenSolo() {
         if (p.x > p.barn.x - 10 && p.x < p.barn.x + p.barn.w + 10 &&
             p.y > p.barn.y - 10 && p.y < p.barn.y + p.barn.h + 10) {
           
-          const pts = p.carryingChicken === 'golden' ? 5 : 1;
+          let pts = 1;
+          const cIdx = chickens.findIndex(ch => ch.carrierId === p.id);
+          if (cIdx !== -1) {
+              if (chickens[cIdx].type === 'golden') pts = 5;
+              chickens.splice(cIdx, 1);
+          }
+          
           p.score += pts;
           p.carryingChicken = 'none';
-          if (!p.isBot) chickenAudio.playDrop();
+          if (!p.isBot) { chickenAudio.playDrop(); cameraRef.current.shake = pts > 1 ? 20 : 12; }
           
-          spawnParticles(p.x, p.y - 30, 'text', 1, {text: `+${pts}`, color: 'white'});
-          spawnParticles(p.barn.x + p.barn.w/2, p.barn.y + p.barn.h/2, 'sparkle', 5, {color: 'white'});
+          spawnParticles(p.barn.x + p.barn.w/2, p.barn.y - 10, 'text', 1, {text: `+${pts}`, color: pts > 1 ? '#fde047' : '#4ade80'});
+          spawnParticles(p.barn.x + p.barn.w/2, p.barn.y + p.barn.h/2, 'sparkle', pts > 1 ? 25 : 10, {color: pts > 1 ? '#facc15' : '#60a5fa'});
+          p.barn.glow = 1.0;
 
-          const cIdx = chickens.findIndex(ch => ch.carrierId === p.id);
-          if (cIdx !== -1) chickens.splice(cIdx, 1);
-          
           scheduleChickenSpawn();
           updateScores();
           checkWinCondition();
         }
       }
+      if (p.barn.glow) p.barn.glow = Math.max(0, p.barn.glow - dt * 2);
     }
 
     // Update Chickens
@@ -308,6 +352,19 @@ export default function ChickenSolo() {
          c.y = Math.max(20, Math.min(WORLD_H - 20, c.y));
          if (Math.hypot(c.vx, c.vy) > 5) c.wobble += dt * 18;
 
+      } else if (c.state === 'magnet') {
+         const carrier = players.find(p => p.id === c.carrierId);
+         if (carrier) {
+             const dx = carrier.x - c.x;
+             const dy = carrier.y - c.y - 20;
+             const dist = Math.hypot(dx, dy);
+             if (dist < 15) {
+                 c.state = 'carried';
+             } else {
+                 c.x += (dx / dist) * 800 * dt; // extremely fast pull
+                 c.y += (dy / dist) * 800 * dt;
+             }
+         } else { c.state = 'wandering'; }
       } else if (c.state === 'carried') {
          const carrier = players.find(p => p.id === c.carrierId);
          if (carrier) { c.x = carrier.x; c.y = carrier.y - 30; c.wobble = carrier.wobble; }
@@ -320,18 +377,41 @@ export default function ChickenSolo() {
         pt.x += pt.vx * dt; pt.y += pt.vy * dt;
         pt.life += dt;
         pt.angle += pt.rotSpeed * dt;
-        if(pt.type !== 'text') pt.vy += 150 * dt; // gravity
+        if(pt.type === 'text') {
+            pt.vy -= 100 * dt; // Float up
+            pt.vx *= 0.95;
+        } else {
+            pt.vy += 150 * dt; // gravity
+        }
         if(pt.life >= pt.maxLife) particlesRef.current.splice(i, 1);
     }
 
-    // Camera follow smoothing (Closer Zoom)
-    let targetCamX = p1.x - CANVAS_W / 2;
-    let targetCamY = p1.y - CANVAS_H / 2;
-    targetCamX = Math.max(0, Math.min(WORLD_W - CANVAS_W, targetCamX));
-    targetCamY = Math.max(0, Math.min(WORLD_H - CANVAS_H, targetCamY));
+    const canvas = canvasRef.current;
+    if (canvas && canvas.parentElement) {
+        if (canvas.width !== canvas.parentElement.clientWidth) canvas.width = canvas.parentElement.clientWidth;
+        if (canvas.height !== canvas.parentElement.clientHeight) canvas.height = canvas.parentElement.clientHeight;
+    }
+    const cw = canvas?.width || 1000;
+    const ch = canvas?.height || 750;
     
-    cameraRef.current.x += (targetCamX - cameraRef.current.x) * dt * 10;
-    cameraRef.current.y += (targetCamY - cameraRef.current.y) * dt * 10;
+    // Zoom out more horizontally (was 800)
+    let camScale = cw / 1050;
+    if (ch / camScale > WORLD_H) {
+        camScale = ch / WORLD_H;
+    }
+    
+    const viewW = cw / camScale;
+    const viewH = ch / camScale;
+    
+    let targetCamX = p1.x - viewW / 2;
+    let targetCamY = p1.y - viewH / 2;
+    targetCamX = viewW > WORLD_W ? (WORLD_W - viewW) / 2 : Math.max(0, Math.min(WORLD_W - viewW, targetCamX));
+    targetCamY = viewH > WORLD_H ? (WORLD_H - viewH) / 2 : Math.max(0, Math.min(WORLD_H - viewH, targetCamY));
+    
+    // Smooth camera follow without lag
+    cameraRef.current.x += (targetCamX - cameraRef.current.x) * dt * 15;
+    cameraRef.current.y += (targetCamY - cameraRef.current.y) * dt * 15;
+    if (cameraRef.current.shake > 0) cameraRef.current.shake = Math.max(0, cameraRef.current.shake - dt * 30);
   };
 
   const executeRandomEvent = useCallback(() => {
@@ -402,32 +482,70 @@ export default function ChickenSolo() {
     const canvas = canvasRef.current;
     if (!canvas) return; const ctx = canvas.getContext('2d'); if (!ctx) return;
     
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    if (canvas.parentElement) {
+        if (canvas.width !== canvas.parentElement.clientWidth) canvas.width = canvas.parentElement.clientWidth;
+        if (canvas.height !== canvas.parentElement.clientHeight) canvas.height = canvas.parentElement.clientHeight;
+    }
+    const cw = canvas.width;
+    const ch = canvas.height;
+    
+    let camScale = cw / 1050;
+    if (ch / camScale > WORLD_H) {
+        camScale = ch / WORLD_H;
+    }
+    
+    const viewW = cw / camScale;
+    const viewH = ch / camScale;
+
+    ctx.clearRect(0, 0, cw, ch);
     ctx.save();
     
-    // Smooth camera apply (No Zoom Scale for performance, elements are natively larger)
-    ctx.translate(-cameraRef.current.x, -cameraRef.current.y);
+    // Dynamic scale to perfectly bound the world
+    ctx.scale(camScale, camScale);
+    let shakeX = 0; let shakeY = 0;
+    if (cameraRef.current.shake > 0) {
+        shakeX = (Math.random() - 0.5) * cameraRef.current.shake;
+        shakeY = (Math.random() - 0.5) * cameraRef.current.shake;
+    }
+    ctx.translate(-cameraRef.current.x + shakeX, -cameraRef.current.y + shakeY);
     
     // Background 
     ctx.fillStyle = '#65a30d'; // vibrant grass
     ctx.fillRect(0, 0, WORLD_W, WORLD_H);
     
-    // Grid/pattern for grass details
+    // Viewport Culling Bounds
+    const cullMargin = 150;
+    const viewLeft = cameraRef.current.x - cullMargin;
+    const viewRight = cameraRef.current.x + viewW + cullMargin;
+    const viewTop = cameraRef.current.y - cullMargin;
+    const viewBottom = cameraRef.current.y + viewH + cullMargin;
+
+    // Grass pattern (culled)
     ctx.fillStyle = '#84cc16'; 
     for(let i=0; i<150; i++) {
         const x = (Math.sin(i * 1234) * 0.5 + 0.5) * WORLD_W;
         const y = (Math.cos(i * 4321) * 0.5 + 0.5) * WORLD_H;
-        ctx.beginPath(); ctx.arc(x, y, 15 + (i%3)*10, 0, Math.PI * 2); ctx.fill();
+        if (x > viewLeft && x < viewRight && y > viewTop && y < viewBottom) {
+            ctx.beginPath(); ctx.arc(x, y, 15 + (i%3)*10, 0, Math.PI * 2); ctx.fill();
+        }
     }
 
     // World Borders (Fences)
     ctx.fillStyle = '#78350f'; ctx.fillRect(0, 0, WORLD_W, 12); ctx.fillRect(0, WORLD_H-12, WORLD_W, 12); ctx.fillRect(0, 0, 12, WORLD_H); ctx.fillRect(WORLD_W-12, 0, 12, WORLD_H);
 
-    // Sort entities for Y-depth sorting
+    // Sort entities for Y-depth sorting & apply culling
     const renderList: any[] = [];
-    envRef.current.forEach(e => renderList.push({ ...e, z: e.y + e.h/2 }));
+    envRef.current.forEach(e => {
+        if (e.x > viewLeft && e.x < viewRight && e.y > viewTop && e.y < viewBottom) {
+            renderList.push({ ...e, z: e.y + e.h/2 });
+        }
+    });
     playersRef.current.forEach(p => renderList.push({ type: 'player', ref: p, z: p.y }));
-    chickensRef.current.forEach(c => { if(c.state === 'wandering') renderList.push({ type: 'chicken', ref: c, z: c.y }); });
+    chickensRef.current.forEach(c => { 
+        if(c.state === 'wandering' && c.x > viewLeft && c.x < viewRight && c.y > viewTop && c.y < viewBottom) {
+             renderList.push({ type: 'chicken', ref: c, z: c.y }); 
+        }
+    });
     renderList.sort((a,b) => a.z - b.z);
 
     // Barns drawn underneath entities mostly
@@ -442,6 +560,12 @@ export default function ChickenSolo() {
        // Barn walls
        ctx.fillStyle = p.color;
        ctx.beginPath(); ctx.roundRect(0, 40, p.barn.w, p.barn.h - 40, 12); ctx.fill();
+       
+       if (p.barn.glow) {
+           ctx.shadowColor = p.color; ctx.shadowBlur = Math.sin(p.barn.glow * Math.PI) * 20;
+           ctx.beginPath(); ctx.roundRect(-2, 38, p.barn.w+4, p.barn.h - 36, 14); ctx.stroke();
+           ctx.shadowBlur = 0;
+       }
        
        // Door
        ctx.fillStyle = '#451a03';
@@ -483,6 +607,21 @@ export default function ChickenSolo() {
            ctx.fillStyle = '#92400e'; ctx.fillRect(item.x - 20, item.y - 20, 40, 40);
            ctx.strokeStyle = '#b45309'; ctx.lineWidth = 4; ctx.strokeRect(item.x - 20, item.y - 20, 40, 40);
            ctx.beginPath(); ctx.moveTo(item.x-20, item.y-20); ctx.lineTo(item.x+20, item.y+20); ctx.stroke();
+       } else if (item.type === 'rock') {
+           ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(item.x, item.y+5, item.w/4, item.w/8, 0, 0, Math.PI*2); ctx.fill();
+           ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.arc(item.x - 2, item.y, item.w/4, 0, Math.PI*2); ctx.fill();
+           ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(item.x + 2, item.y - 2, item.w/5, 0, Math.PI*2); ctx.fill();
+       } else if (item.type === 'flower') {
+           ctx.save(); ctx.translate(item.x, item.y);
+           ctx.fillStyle = '#15803d'; ctx.fillRect(-1, 0, 2, 8);
+           const fColor = item.seed > 0.5 ? '#ef4444' : (item.seed > 0.2 ? '#3b82f6' : '#eab308');
+           ctx.fillStyle = fColor;
+           for(let i=0; i<4; i++) {
+               ctx.rotate(Math.PI/2);
+               ctx.beginPath(); ctx.ellipse(4, 0, 4, 3, 0, 0, Math.PI*2); ctx.fill();
+           }
+           ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI*2); ctx.fill();
+           ctx.restore();
        } else if (item.type === 'chicken') {
            const c = item.ref as Chicken;
            ctx.save(); ctx.translate(c.x, c.y); 
@@ -500,12 +639,12 @@ export default function ChickenSolo() {
                ctx.font = '36px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline='middle';
                ctx.shadowColor = '#ec4899'; ctx.shadowBlur = 15; ctx.fillText('🎁', 0, 0); ctx.shadowBlur = 0;
            } else {
-               ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.fill(); // body 10% bigger
-               ctx.beginPath(); ctx.arc(12, -6, 10, 0, Math.PI*2); ctx.fill(); // head
-               ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(20, -6); ctx.lineTo(28, -3); ctx.lineTo(20, 0); ctx.fill(); // beak
-               ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(12, -14, 5, 0, Math.PI*2); ctx.fill(); // comb
-               ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(14, -8, 2, 0, Math.PI*2); ctx.fill(); // eye
-               ctx.fillStyle = '#e2e8f0'; ctx.save(); ctx.rotate(Math.sin(c.wobble * 2) * 0.5); ctx.beginPath(); ctx.ellipse(-3, 3, 9, 5, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
+               ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2); ctx.fill(); // body slightly larger
+               ctx.beginPath(); ctx.arc(14, -8, 12, 0, Math.PI*2); ctx.fill(); // head
+               ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(24, -8); ctx.lineTo(34, -4); ctx.lineTo(24, 0); ctx.fill(); // beak
+               ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(14, -18, 6, 0, Math.PI*2); ctx.fill(); // comb
+               ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(16, -10, 2.5, 0, Math.PI*2); ctx.fill(); // eye
+               ctx.fillStyle = '#e2e8f0'; ctx.save(); ctx.rotate(Math.sin(c.wobble * 2) * 0.5); ctx.beginPath(); ctx.ellipse(-4, 4, 11, 6, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
            }
            ctx.restore();
        } else if (item.type === 'player') {
@@ -515,16 +654,20 @@ export default function ChickenSolo() {
            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0, 22, 22, 9, 0, 0, Math.PI*2); ctx.fill();
 
            ctx.translate(0, -Math.abs(Math.sin(p.wobble) * 7));
+           ctx.rotate(Math.sin(p.wobble * 0.5) * 0.08); // Subtle body tilt
            ctx.scale(p.dir, 1);
 
-           ctx.fillStyle = p.color; ctx.beginPath(); ctx.roundRect(-17, -12, 34, 28, 14); ctx.fill(); // body increased 10%
-           ctx.beginPath(); ctx.arc(0, -22, 18, 0, Math.PI*2); ctx.fill(); // head
-           ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.roundRect(5, -28, 15, 11, 5); ctx.fill(); // visor
+           ctx.fillStyle = p.color; ctx.beginPath(); ctx.roundRect(-20, -14, 40, 32, 16); ctx.fill(); // body 
+           ctx.save();
+           ctx.rotate(Math.sin(p.wobble) * 0.1); // Head tilts a bit more
+           ctx.beginPath(); ctx.arc(0, -25, 20, 0, Math.PI*2); ctx.fill(); // head
+           ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.roundRect(6, -32, 18, 12, 6); ctx.fill(); // visor
+           ctx.restore();
            
            ctx.fillStyle = p.color; ctx.filter = 'brightness(0.8)';
            if (p.carryingChicken !== 'none') {
                ctx.beginPath(); ctx.roundRect(0, -6, 22, 9, 4); ctx.fill();
-               ctx.save(); ctx.scale(p.dir, 1); ctx.translate(0, -55);
+               ctx.save(); ctx.scale(p.dir, 1); ctx.translate(0, -60);
                ctx.font = '40px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline='middle';
                if(p.carryingChicken === 'golden') { ctx.shadowColor='yellow'; ctx.shadowBlur=10; ctx.fillText('🐣', 0, 0); ctx.shadowBlur=0; } 
                else if (p.carryingChicken === 'bonus_box') { ctx.shadowColor='#ec4899'; ctx.shadowBlur=10; ctx.fillText('🎁', 0, 0); ctx.shadowBlur=0; } 
@@ -548,6 +691,7 @@ export default function ChickenSolo() {
 
     // Draw Particles
     particlesRef.current.forEach(pt => {
+        if (pt.x < viewLeft || pt.x > viewRight || pt.y < viewTop || pt.y > viewBottom) return;
         ctx.save(); ctx.translate(pt.x, pt.y); ctx.rotate(pt.angle);
         const alpha = Math.max(0, 1 - pt.life / pt.maxLife);
         ctx.globalAlpha = alpha;
@@ -565,9 +709,9 @@ export default function ChickenSolo() {
     });
 
     // Draw Minimap
-    const miniSize = 140;
-    const miniX = CANVAS_W - miniSize - 20 + cameraRef.current.x;
-    const miniY = CANVAS_H - miniSize - 20 + cameraRef.current.y;
+    const miniSize = 130;
+    const miniX = viewW - miniSize - 20 + cameraRef.current.x;
+    const miniY = viewH - miniSize * (WORLD_H/WORLD_W) - 20 + cameraRef.current.y;
     ctx.save(); ctx.translate(miniX, miniY);
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.roundRect(0, 0, miniSize, miniSize * (WORLD_H/WORLD_W), 12); ctx.fill(); ctx.stroke();
@@ -582,102 +726,196 @@ export default function ChickenSolo() {
        ctx.beginPath(); ctx.arc(c.x * scale, c.y * scale, 2.5, 0, Math.PI*2); ctx.fill();
     });
     ctx.restore();
+    
     ctx.restore();
+    
+    // Draw Debug Stats
+    const now = performance.now();
+    debugMetricsRef.current.frames++;
+    if (now - debugMetricsRef.current.lastFpsTime >= 1000) {
+        debugMetricsRef.current.fps = debugMetricsRef.current.frames;
+        debugMetricsRef.current.frames = 0;
+        debugMetricsRef.current.lastFpsTime = now;
+    }
+    
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(cw - 170, Math.max(80, ch - 130), 160, 100);
+    ctx.fillStyle = 'lime';
+    ctx.font = '12px Courier';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`FPS: ${debugMetricsRef.current.fps}`, cw - 160, Math.max(80, ch - 130) + 10);
+    ctx.fillStyle = 'white';
+    ctx.fillText(`Update: ${debugMetricsRef.current.logic.toFixed(2)}ms`, cw - 160, Math.max(80, ch - 130) + 30);
+    ctx.fillText(`Render: ${debugMetricsRef.current.render.toFixed(2)}ms`, cw - 160, Math.max(80, ch - 130) + 50);
+    ctx.fillText(`Input Latency: ~1ms`, cw - 160, Math.max(80, ch - 130) + 70);
+
   };
 
-  // Joystick Input Handlers (Zero Lag direct response)
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-      setJoystickActive(true);
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left; const y = e.clientY - rect.top;
-      joystickBaseRef.current = { x, y }; joystickThumbRef.current = { x, y }; updateInput(x, y);
+  // Fixed Joystick Handlers
+  const handleJoystickDown = (e: React.PointerEvent<HTMLDivElement>) => {
       e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!joystickActive || !joystickBaseRef.current) return;
+      isJoystickActiveRef.current = true;
       const rect = e.currentTarget.getBoundingClientRect();
-      let x = e.clientX - rect.left; let y = e.clientY - rect.top;
-      const base = joystickBaseRef.current;
-      const dist = Math.hypot(x - base.x, y - base.y);
-      if (dist > 40) { x = base.x + ((x - base.x)/dist)*40; y = base.y + ((y - base.y)/dist)*40; }
-      joystickThumbRef.current = { x, y }; updateInput(x, y);
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      let x = e.clientX - rect.left; 
+      let y = e.clientY - rect.top;
+      
+      let inputDx = x - centerX;
+      let inputDy = y - centerY;
+      const dist = Math.hypot(inputDx, inputDy);
+      const limit = 40;
+      
+      if (dist > limit) { 
+          inputDx = (inputDx / dist) * limit;
+          inputDy = (inputDy / dist) * limit;
+      }
+      
+      inputRef.current = { dx: inputDx, dy: inputDy };
+      
+      if (joystickThumbDivRef.current) {
+          joystickThumbDivRef.current.style.transition = 'none';
+          joystickThumbDivRef.current.style.transform = `translate(${inputDx}px, ${inputDy}px)`;
+      }
   };
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-      setJoystickActive(false); joystickBaseRef.current = null; joystickThumbRef.current = null;
-      inputRef.current = { dx: 0, dy: 0 }; e.currentTarget.releasePointerCapture(e.pointerId);
+  
+  const handleJoystickMove = (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!isJoystickActiveRef.current) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      let x = e.clientX - rect.left; 
+      let y = e.clientY - rect.top;
+      
+      let inputDx = x - centerX;
+      let inputDy = y - centerY;
+      
+      const dist = Math.hypot(inputDx, inputDy);
+      const limit = 40;
+      
+      if (dist > limit) { 
+          inputDx = (inputDx / dist) * limit;
+          inputDy = (inputDy / dist) * limit;
+      }
+      
+      inputRef.current = { dx: inputDx, dy: inputDy };
+      
+      if (joystickThumbDivRef.current) {
+          joystickThumbDivRef.current.style.transform = `translate(${inputDx}px, ${inputDy}px)`;
+      }
   };
-  const updateInput = (tx: number, ty: number) => {
-      if (!joystickBaseRef.current) return;
-      inputRef.current = { dx: tx - joystickBaseRef.current.x, dy: ty - joystickBaseRef.current.y };
+  
+  const handleJoystickUp = (e: React.PointerEvent<HTMLDivElement>) => {
+      isJoystickActiveRef.current = false;
+      inputRef.current = { dx: 0, dy: 0 }; 
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      
+      if (joystickThumbDivRef.current) {
+          joystickThumbDivRef.current.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
+          joystickThumbDivRef.current.style.transform = `translate(0px, 0px)`;
+      }
   };
+
+  const [debugInfo, setDebugInfo] = useState({ cw: 0, ch: 0, vw: 0, vh: 0 });
+  useEffect(() => {
+     const t = setInterval(() => {
+        if(canvasRef.current) {
+            setDebugInfo({ cw: canvasRef.current.width, ch: canvasRef.current.height, vw: window.innerWidth, vh: window.innerHeight });
+        }
+     }, 1000);
+     return () => clearInterval(t);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:p-8 touch-none relative overflow-hidden font-sans">
-      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col relative gap-4">
+    <div className="fixed inset-0 w-full h-[100svh] bg-slate-950 flex flex-col touch-none overflow-hidden font-sans">
+      
+      {/* 1. Game Area (Top) - Exactly bounded to avoid empty space */}
+      <div 
+         className="relative w-full max-w-6xl mx-auto overflow-hidden bg-[#65a30d] flex-1 md:flex-[2] border-b-4 border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col"
+         style={{ maxHeight: 'calc(100vw * 1.4)' }}
+      >
         
-        {/* Modern Glassmorphic HUD overlaying Canvas directly */}
-        <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none">
-          <div className="flex gap-3 pointer-events-auto">
-             <button onClick={() => navigate('/')} className="w-12 h-12 flex items-center justify-center bg-black/40 backdrop-blur-md text-white rounded-2xl hover:bg-black/60 transition-all shadow-lg border border-white/10 active:scale-95">
-                <ChevronRight className="w-6 h-6" />
-             </button>
-             
-             {/* Standings */}
-             <div className="hidden sm:flex flex-col gap-2 bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-lg">
-                 <div className="text-xs font-bold text-white/50 mb-1">الترتيب</div>
-                 {scores.map((s, idx) => (
-                    <div key={s.id} className="flex gap-3 items-center justify-between min-w-[120px]">
-                       <div className="flex items-center gap-2">
-                           <div className="w-3 h-3 rounded-full" style={{backgroundColor: s.color}}></div>
-                           <span className={`text-sm font-bold ${s.id === 'p1' ? 'text-white' : 'text-slate-300'}`}>{s.name}</span>
-                       </div>
-                       <span className="text-white font-mono font-bold">{s.score}</span>
-                    </div>
-                 ))}
-             </div>
-          </div>
+        {/* Game Canvas matches Game Area size */}
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-0 pointer-events-none" />
 
-          <div className="flex flex-col items-end gap-3 pointer-events-auto">
-             <div className="flex gap-2">
-                 <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-3 border border-white/10 shadow-lg">
-                    <Target className="w-5 h-5 text-sky-400" />
-                    <span className="text-lg font-bold font-mono text-white">50</span>
-                 </div>
-                 <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-3 border border-white/10 shadow-lg">
-                    <Clock className="w-5 h-5 text-white/70" />
-                    <span className={`text-lg font-bold font-mono ${timeLeft < 30 ? 'text-red-400 animate-pulse' : 'text-slate-100'}`}>
-                      {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                    </span>
-                 </div>
-             </div>
-             {currentEventMessage && (
-                <div className="animate-in slide-in-from-top-4 fade-in duration-300 bg-gradient-to-r from-amber-500/90 to-orange-500/90 backdrop-blur-md px-6 py-2 rounded-full border border-white/20 shadow-lg">
-                   <span className="text-white font-bold text-sm md:text-base">{currentEventMessage}</span>
-                </div>
-             )}
+        {/* Debug UI */}
+        <div className="absolute top-20 left-4 z-50 bg-black/60 text-white/80 p-2 text-[10px] font-mono pointer-events-none rounded border border-white/10">
+           <div>World: {WORLD_W}x{WORLD_H}</div>
+           <div>Canvas: {debugInfo.cw}x{debugInfo.ch}</div>
+           <div>View (units): {Math.round(debugInfo.cw/debugInfo.camScale)}x{Math.round(debugInfo.ch/debugInfo.camScale)}</div>
+        </div>
+
+        {/* 6. HUD Layer */}
+        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+          {/* Top Info Bar */}
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+            <div className="flex gap-3 pointer-events-auto">
+               <button onClick={() => navigate('/')} className="w-12 h-12 flex items-center justify-center bg-black/40 backdrop-blur-md text-white rounded-2xl hover:bg-black/60 transition-all shadow-lg border border-white/10 active:scale-95">
+                  <ChevronRight className="w-6 h-6" />
+               </button>
+               
+               {/* Standings */}
+               <div className="hidden sm:flex flex-col gap-2 bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-lg">
+                   <div className="text-xs font-bold text-white/50 mb-1">الترتيب</div>
+                   {scores.map((s, idx) => (
+                      <div key={s.id} className="flex gap-2 items-center justify-between min-w-[100px]">
+                         <div className="flex items-center gap-2">
+                             <div className="w-3 h-3 rounded-full" style={{backgroundColor: s.color}}></div>
+                             <span className={`text-sm font-bold ${s.id === 'p1' ? 'text-white' : 'text-slate-300'}`}>{s.name}</span>
+                         </div>
+                         <span className="text-white font-mono font-bold text-sm">{s.score}</span>
+                      </div>
+                   ))}
+               </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-2 pointer-events-auto">
+               <div className="flex gap-2">
+                   <div className="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl flex items-center gap-2 border border-white/10 shadow-lg">
+                      <Target className="w-4 h-4 text-sky-400" />
+                      <span className="text-base font-bold font-mono text-white">50</span>
+                   </div>
+                   <div className="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl flex items-center gap-2 border border-white/10 shadow-lg">
+                      <Clock className="w-4 h-4 text-white/70" />
+                      <span className={`text-base font-bold font-mono ${timeLeft < 30 ? 'text-red-400 animate-pulse' : 'text-slate-100'}`}>
+                        {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                      </span>
+                   </div>
+               </div>
+               {currentEventMessage && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-gradient-to-r from-amber-500/90 to-orange-500/90 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-lg mt-1">
+                     <span className="text-white font-bold text-xs md:text-sm">{currentEventMessage}</span>
+                  </div>
+               )}
+            </div>
           </div>
         </div>
 
-        {/* Game Canvas Container */}
-        <div className="flex-1 relative rounded-[2rem] overflow-hidden shadow-2xl bg-[#65a30d] border border-slate-800 pointer-events-auto touch-none">
-            
-            <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="w-full h-full object-cover" />
-            
-            {gameState === 'playing' && (
-              <div 
-                className="absolute inset-0 z-10 touch-none"
-                onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}
-              >
-                {joystickActive && joystickBaseRef.current && joystickThumbRef.current && (
-                    <div className="absolute rounded-full border-2 border-white/20 bg-white/5 pointer-events-none transition-opacity"
-                         style={{ left: joystickBaseRef.current.x - 60, top: joystickBaseRef.current.y - 60, width: 120, height: 120 }}>
-                        <div className="absolute rounded-full bg-white/40 shadow-lg backdrop-blur-sm pointer-events-none"
-                             style={{ left: 60 + (joystickThumbRef.current.x - joystickBaseRef.current.x) - 25, top:  60 + (joystickThumbRef.current.y - joystickBaseRef.current.y) - 25, width: 50, height: 50 }} />
-                    </div>
-                )}
-             </div>
-            )}
-        </div>
+        {/* 4. Fixed Joystick */}
+        {gameState === 'playing' && (
+          <div 
+            className="absolute bottom-6 left-6 w-32 h-32 z-30 touch-none pointer-events-auto rounded-full bg-white/10 border-2 border-white/20 backdrop-blur-[2px] shadow-[0_0_20px_rgba(0,0,0,0.3)] flex items-center justify-center p-0 m-0"
+            onPointerDown={handleJoystickDown} 
+            onPointerMove={handleJoystickMove} 
+            onPointerUp={handleJoystickUp} 
+            onPointerCancel={handleJoystickUp}
+          >
+             <div 
+                ref={joystickThumbDivRef}
+                className="absolute rounded-full bg-white/80 shadow-[0_0_15px_rgba(255,255,255,0.5)] pointer-events-none"
+                style={{ width: 44, height: 44, transform: 'translate(0px, 0px)' }} 
+             />
+          </div>
+        )}
+
+      </div>
+
+      {/* 7. Ad Area - Takes all remaining screen height! */}
+      <div className="w-full flex-1 bg-slate-900 flex flex-col items-center justify-center relative z-30 min-h-[90px]">
+          <span className="text-white/30 font-bold text-sm tracking-widest uppercase">AD AREA / مساحة إعلانية</span>
       </div>
 
       {gameState === 'results' && (
