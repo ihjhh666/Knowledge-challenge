@@ -540,6 +540,18 @@ export default function Home() {
              <p className="text-slate-400 text-sm mb-6 leading-relaxed">التقط التاج الذهبي وحافظ عليه لتجميع النقاط وتصبح الملك!</p>
              <span className="mt-auto bg-amber-500/10 text-amber-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-colors">إلعب الآن</span>
           </div>
+
+          <div 
+            onClick={() => navigate('/chicken-solo')}
+            className="cursor-pointer bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-lime-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-lime-500/20" 
+          >
+             <div className="bg-lime-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-lime-500/20 transition-all duration-300">
+                <div className="text-5xl drop-shadow-md">🐔</div>
+             </div>
+             <h3 className="text-2xl font-bold font-heading text-white mb-3">جمع الدجاج</h3>
+             <p className="text-slate-400 text-sm mb-6 leading-relaxed">اجمع الدجاج وأعده إلى حظيرتك قبل البوتات، الفوز لأول من يجمع 50 دجاجة!</p>
+             <span className="mt-auto bg-lime-500/10 text-lime-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-lime-500/20 group-hover:bg-lime-500 group-hover:text-white transition-colors">إلعب الآن</span>
+          </div>
         </div>
       </section>
 

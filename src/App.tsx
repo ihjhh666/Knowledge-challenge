@@ -9,6 +9,7 @@ import FishingSolo from './pages/FishingSolo';
 import PenaltySolo from './pages/PenaltySolo';
 import DominoSolo from './pages/DominoSolo';
 import HockeySolo from './pages/HockeySolo';
+import ChickenSolo from './pages/ChickenSolo';
 import KingMode from './pages/KingMode';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AboutUs from './pages/AboutUs';
@@ -80,6 +81,7 @@ function AppContent() {
           <Route path="/penalty" element={<PenaltySolo />} />
           <Route path="/domino" element={<DominoSolo />} />
           <Route path="/hockey-solo" element={<HockeySolo />} />
+          <Route path="/chicken-solo" element={<ChickenSolo />} />
           <Route path="/king-mode" element={<KingMode />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
