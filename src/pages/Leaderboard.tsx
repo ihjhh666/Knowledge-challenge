@@ -21,6 +21,9 @@ export default function Leaderboard() {
         getLeaderboard(sortMethod).then(data => {
           setLeaders(data);
           setLoading(false);
+        }).catch(err => {
+          console.error("[Leaderboard] Error fetching data:", err);
+          setLoading(false);
         });
     });
   }, [sortMethod, myPlayerId, myPlayerName]);
@@ -58,6 +61,10 @@ export default function Leaderboard() {
           <div className="p-12 text-center text-slate-500">لا توجد بيانات حالياً</div>
         ) : (
           <div className="divide-y divide-slate-800">
+            {/* نظام تشخيص مؤقت: Diagnostics */}
+            <div className="p-4 bg-slate-950 text-emerald-400 text-xs font-mono border-b border-slate-800">
+                [Diagnostics] اللاعبون في قاعدة البيانات: تم تحميل {leaders.length} سجل بنجاح.
+            </div>
             {leaders.map((player, idx) => {
               const winRate = player.gamesPlayed > 0 ? Math.round((player.wins / player.gamesPlayed) * 100) : 0;
               const playerAvatar = player.playerId === myPlayerId ? (myAvatar || player.avatarUrl) : player.avatarUrl;
@@ -74,7 +81,7 @@ export default function Leaderboard() {
                     {idx === 0 ? <Trophy className="w-5 h-5" /> : idx === 1 ? <Medal className="w-5 h-5" /> : idx === 2 ? <Medal className="w-5 h-5" /> : idx + 1}
                   </div>
                   <img src={playerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.playerId}`} className="w-10 h-10 rounded-xl bg-slate-950 object-cover shrink-0" alt="avatar" />
-                  <div className="font-bold text-white truncate text-lg flex-1 sm:w-36 sm:flex-none hover:text-indigo-400 transition-colors" title={player.playerName}>{player.playerName}</div>
+                  <div className="font-bold text-white truncate text-lg flex-1 sm:w-36 sm:flex-none hover:text-indigo-400 transition-colors" title={player.playerName || 'لاعب مجهول'}>{player.playerName || 'لاعب مجهول'}</div>
                 </div>
                 
                 <div className="flex flex-wrap gap-2 sm:gap-6 text-xs sm:text-sm text-slate-400 w-full sm:w-auto flex-1 justify-between sm:justify-start">

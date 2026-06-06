@@ -340,6 +340,15 @@ export default function HockeyRoom() {
      console.log("[HockeyRoom] Initial positions reset. Puck vel:", puckRef.current.vel);
   }, [resetPositions, isHost]);
 
+  useEffect(() => {
+    if (state?.status === 'finished' && localGameState !== 'results') {
+       setLocalGameState('results');
+       setWinner(isHost ? 'player1' : 'player2');
+       updateStats(true, 10, 0);
+       playWinSound();
+    }
+  }, [state?.status]);
+
   const updateStats = (isWin: boolean, pScore: number, oScore: number) => {
     const pId = storage.getPlayerId();
     const pName = storage.getPlayerName() || 'لاعب مجهول';

@@ -1,8 +1,22 @@
 import 'dotenv/config';
-import { db, getLeaderboard } from './src/lib/firebase';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 async function test() {
-  const lb = await getLeaderboard('wins');
-  console.log(lb);
+  console.log("Checking DB users...");
+  const snap = await getDocs(collection(db, "users"));
+  const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  console.log("Total users:", users.length);
+  console.log("Users:", users);
 }
-test();
+
+test().catch(console.error);
+

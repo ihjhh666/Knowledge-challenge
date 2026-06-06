@@ -1865,6 +1865,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              const elapsed = Date.now() - disconnectedPlayer.disconnectedAt!;
              const rem = Math.max(0, 10 - Math.floor(elapsed / 1000));
              setDisconnectCountdown(rem);
+             
+             if (rem === 0 && isHostRef.current && stateRef.current && stateRef.current.status === 'playing') {
+                 clearInterval(interval);
+                 const currentState = stateRef.current;
+                 const pId = disconnectedPlayer.id;
+                 
+                 // End game, others win
+                 const updatedPlayers = { ...currentState.players };
+                 Object.values(updatedPlayers).forEach(p => {
+                     if (p.id !== pId) {
+                         p.score += 10;
+                         // Persist free win stats for players.
+                         updatePlayerStats(p.userId || p.id, p.username, true, 0, 0, 10, currentState.category || 'عام');
+                     } else {
+                         // Loser stats
+                         updatePlayerStats(p.userId || p.id, p.username, false, 0, 0, 0, currentState.category || 'عام');
+                     }
+                 });
+                 const newState: GameState = { ...currentState, players: updatedPlayers, status: 'finished' };
+                 setState(newState);
+                 broadcast({ type: 'STATE_UPDATE', state: newState });
+             }
          }, 500);
      }
      return () => clearInterval(interval);

@@ -523,6 +523,9 @@ export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRa
     snapshot.forEach(docSnap => {
       const data = docSnap.data() as PlayerStats;
       data.playerId = docSnap.id; // Force ID to match document
+      if (!data.playerName || data.playerName.trim() === '') {
+         data.playerName = 'لاعب مجهول';
+      }
       results.push(data);
     });
     
@@ -530,13 +533,13 @@ export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRa
     
     // Default the value of the missing fields to 0 and sort locally
     results.sort((a, b) => {
-      const valA = a[sortBy] || 0;
-      const valB = b[sortBy] || 0;
+      const valA = Number.isNaN(a[sortBy]) ? 0 : (a[sortBy] || 0);
+      const valB = Number.isNaN(b[sortBy]) ? 0 : (b[sortBy] || 0);
       return (valB as number) - (valA as number);
     });
     
     // Return top 50 valid players
-    const top50 = results.filter(p => !!p.playerName).slice(0, 50);
+    const top50 = results.slice(0, 50);
     
     console.log(`[Leaderboard] Successfully fetched and sorted ${results.length} players using sortBy ${sortBy}. Returning top ${top50.length}.`);
     return top50;
