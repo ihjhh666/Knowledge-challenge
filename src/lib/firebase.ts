@@ -464,6 +464,50 @@ export const updateHockeyStats = async (
   }
 };
 
+import { getPlayerStats } from './achievements';
+
+export const syncLocalStatsToFirebase = async (playerId: string, playerName: string) => {
+  if (!db) return;
+  try {
+    const playerRef = doc(db, 'users', playerId);
+    const snap = await getDoc(playerRef);
+    
+    const localStats = getPlayerStats();
+    if (!localStats || (localStats.gamesPlayed === 0 && localStats.wins === 0)) return;
+    
+    if (snap.exists()) {
+       const data = snap.data() as PlayerStats;
+       if (localStats.gamesPlayed > (data.gamesPlayed || 0)) {
+           await setDoc(playerRef, {
+             playerName,
+             gamesPlayed: localStats.gamesPlayed,
+             wins: localStats.wins,
+             totalPoints: (localStats.wins * 10) + ((localStats.gamesPlayed - localStats.wins) * 2),
+             lastUpdated: Date.now()
+           }, { merge: true });
+           console.log("Synced local stats to Firebase successfully.");
+       }
+    } else {
+       const newStats: PlayerStats = {
+         playerId,
+         playerName,
+         gamesPlayed: localStats.gamesPlayed,
+         wins: localStats.wins,
+         correctAnswers: localStats.wins * 5, 
+         wrongAnswers: 0,
+         totalPoints: (localStats.wins * 10) + ((localStats.gamesPlayed - localStats.wins) * 2),
+         categoryCounts: {},
+         successRate: 50,
+         lastUpdated: Date.now()
+       };
+       await setDoc(playerRef, newStats, { merge: true });
+       console.log("Created Firebase profile from local stats.");
+    }
+  } catch (err) {
+    console.error("Error syncing local stats to Firebase:", err);
+  }
+};
+
 export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRate' = 'totalPoints') => {
   if (!db) return [];
   try {
@@ -481,6 +525,8 @@ export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRa
       data.playerId = docSnap.id; // Force ID to match document
       results.push(data);
     });
+    
+    console.log('[Leaderboard] Fetched documents:', results.length, results);
     
     // Default the value of the missing fields to 0 and sort locally
     results.sort((a, b) => {

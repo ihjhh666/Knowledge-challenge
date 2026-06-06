@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Trophy, Medal, Star, Target } from 'lucide-react';
-import { getLeaderboard, PlayerStats } from '../lib/firebase';
+import { getLeaderboard, syncLocalStatsToFirebase, PlayerStats } from '../lib/firebase';
 import { storage } from '../lib/storage';
 
 export default function Leaderboard() {
@@ -11,15 +11,19 @@ export default function Leaderboard() {
   const [sortMethod, setSortMethod] = useState<'wins' | 'totalPoints' | 'successRate'>('totalPoints');
 
   const myPlayerId = storage.getPlayerId();
+  const myPlayerName = storage.getPlayerName() || 'لاعب مجهول';
   const myAvatar = storage.getPlayerAvatar();
 
   useEffect(() => {
     setLoading(true);
-    getLeaderboard(sortMethod).then(data => {
-      setLeaders(data);
-      setLoading(false);
+    // Sync local stats to firebase first
+    syncLocalStatsToFirebase(myPlayerId, myPlayerName).finally(() => {
+        getLeaderboard(sortMethod).then(data => {
+          setLeaders(data);
+          setLoading(false);
+        });
     });
-  }, [sortMethod]);
+  }, [sortMethod, myPlayerId, myPlayerName]);
 
   return (
     <div className="min-h-screen max-w-4xl mx-auto p-4 md:p-8 space-y-8">

@@ -924,18 +924,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                  c.on('data', (data) => handleMessage(data as PeerMessage, c.peer));
                  c.on('close', () => {
                     connectionsRef.current.delete(c.peer);
-                    disconnectDelays.current[c.peer] = setTimeout(() => {
-                      if (stateRef.current) {
-                         const { [c.peer]: _, ...remainingPlayers } = stateRef.current.players;
-                         const newState = { ...stateRef.current, players: remainingPlayers };
-                         setState(newState);
-                         broadcast({ type: 'STATE_UPDATE', state: newState });
-                         updatePublicRoom(newState.roomId, {
-                           playerCount: Object.keys(newState.players).length
-                         });
-                         checkAllAnswered(newState);
-                      }
-                    }, 7000);
+                    if (stateRef.current) {
+                       handlePlayerDisconnect(c.peer);
+                    }
                  });
                  c.on('error', (err) => console.error('New host conn error:', err));
                  
@@ -1496,24 +1487,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       conn.on('close', () => {
         connectionsRef.current.delete(conn.peer);
-        // Wait 7 seconds before removing player
-        disconnectDelays.current[conn.peer] = setTimeout(() => {
-          if (stateRef.current) {
-             const { [conn.peer]: _, ...remainingPlayers } = stateRef.current.players;
-             const newState = { ...stateRef.current, players: remainingPlayers };
-             
-             // Auto-transfer host logic: If we wanted to transfer host, we do it here. 
-             // But the host is the server, so you can't transfer from here if the host themselves leaves!
-             // This event only fires when a client leaves.
-
-             setState(newState);
-             broadcast({ type: 'STATE_UPDATE', state: newState });
-             updatePublicRoom(newState.roomId, {
-               playerCount: Object.keys(newState.players).length
-             });
-             checkAllAnswered(newState);
-          }
-        }, 7000);
+        if (stateRef.current) {
+           handlePlayerDisconnect(conn.peer);
+        }
       });
       
       conn.on('error', (err) => {
@@ -1607,7 +1583,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     if (oldHostId) delete updatedPlayers[oldHostId];
                     
                     updatedPlayers[myId] = { ...updatedPlayers[myId], isHost: true };
-                    const newState = { ...oldState, players: updatedPlayers };
+                    
+                    let newState = { ...oldState, players: updatedPlayers };
+                    const needsTwo = newState.gameMode === 'penalty' || newState.gameMode === 'domino' || newState.gameMode === 'hockey';
+                    if (needsTwo && newState.status === 'playing' && Object.keys(updatedPlayers).length < 2) {
+                        if (updatedPlayers[myId]) {
+                            updatedPlayers[myId].score += 10;
+                        }
+                        newState.status = 'finished';
+                    }
+                    
                     setState(newState);
                     
                     if (newState.roomVisibility === 'public' || newState.roomVisibility === 'password') {
@@ -1629,18 +1614,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     c.on('data', (data) => handleMessage(data as PeerMessage, c.peer));
                     c.on('close', () => {
                        connectionsRef.current.delete(c.peer);
-                       disconnectDelays.current[c.peer] = setTimeout(() => {
-                         if (stateRef.current) {
-                            const { [c.peer]: _, ...remainingPlayers } = stateRef.current.players;
-                            const newState = { ...stateRef.current, players: remainingPlayers };
-                            setState(newState);
-                            broadcast({ type: 'STATE_UPDATE', state: newState });
-                            updatePublicRoom(newState.roomId, {
-                              playerCount: Object.keys(newState.players).length
-                            });
-                            checkAllAnswered(newState);
-                         }
-                       }, 7000);
+                       if (stateRef.current) {
+                          handlePlayerDisconnect(c.peer);
+                       }
                     });
                     c.on('error', (err) => console.error('New host conn error:', err));
                     
