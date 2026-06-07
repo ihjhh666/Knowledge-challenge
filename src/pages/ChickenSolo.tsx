@@ -394,8 +394,8 @@ export default function ChickenSolo() {
     const cw = canvas?.width || 1000;
     const ch = canvas?.height || 750;
     
-    // Zoom out more horizontally (was 800)
-    let camScale = cw / 1050;
+    // Zoom in for a closer, professional view
+    let camScale = cw / 750;
     if (ch / camScale > WORLD_H) {
         camScale = ch / WORLD_H;
     }
@@ -489,7 +489,8 @@ export default function ChickenSolo() {
     const cw = canvas.width;
     const ch = canvas.height;
     
-    let camScale = cw / 1050;
+    // Match camera zoom
+    let camScale = cw / 750;
     if (ch / camScale > WORLD_H) {
         camScale = ch / WORLD_H;
     }
@@ -708,48 +709,26 @@ export default function ChickenSolo() {
         ctx.restore();
     });
 
-    // Draw Minimap
-    const miniSize = 130;
-    const miniX = viewW - miniSize - 20 + cameraRef.current.x;
-    const miniY = viewH - miniSize * (WORLD_H/WORLD_W) - 20 + cameraRef.current.y;
+    // Draw Minimap (Smaller for mobile)
+    const miniSize = 90;
+    const miniX = viewW - miniSize - 16 + cameraRef.current.x;
+    const miniY = viewH - miniSize * (WORLD_H/WORLD_W) - 16 + cameraRef.current.y;
     ctx.save(); ctx.translate(miniX, miniY);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(0, 0, miniSize, miniSize * (WORLD_H/WORLD_W), 12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(0, 0, miniSize, miniSize * (WORLD_H/WORLD_W), 8); ctx.fill(); ctx.stroke();
     const scale = miniSize / WORLD_W;
     playersRef.current.forEach(p => {
-        ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x * scale, p.y * scale, 5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x * scale, p.y * scale, 3, 0, Math.PI*2); ctx.fill();
         if (p.id === 'p1') { ctx.shadowColor = 'white'; ctx.shadowBlur = 4; ctx.stroke(); ctx.shadowBlur = 0; }
     });
     ctx.fillStyle = 'white';
     chickensRef.current.forEach(c => {
        if(c.type === 'golden') ctx.fillStyle = 'yellow'; else if(c.type === 'bonus_box') ctx.fillStyle = '#ec4899'; else ctx.fillStyle = 'white';
-       ctx.beginPath(); ctx.arc(c.x * scale, c.y * scale, 2.5, 0, Math.PI*2); ctx.fill();
+       ctx.beginPath(); ctx.arc(c.x * scale, c.y * scale, 1.5, 0, Math.PI*2); ctx.fill();
     });
     ctx.restore();
     
     ctx.restore();
-    
-    // Draw Debug Stats
-    const now = performance.now();
-    debugMetricsRef.current.frames++;
-    if (now - debugMetricsRef.current.lastFpsTime >= 1000) {
-        debugMetricsRef.current.fps = debugMetricsRef.current.frames;
-        debugMetricsRef.current.frames = 0;
-        debugMetricsRef.current.lastFpsTime = now;
-    }
-    
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(cw - 170, Math.max(80, ch - 130), 160, 100);
-    ctx.fillStyle = 'lime';
-    ctx.font = '12px Courier';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(`FPS: ${debugMetricsRef.current.fps}`, cw - 160, Math.max(80, ch - 130) + 10);
-    ctx.fillStyle = 'white';
-    ctx.fillText(`Update: ${debugMetricsRef.current.logic.toFixed(2)}ms`, cw - 160, Math.max(80, ch - 130) + 30);
-    ctx.fillText(`Render: ${debugMetricsRef.current.render.toFixed(2)}ms`, cw - 160, Math.max(80, ch - 130) + 50);
-    ctx.fillText(`Input Latency: ~1ms`, cw - 160, Math.max(80, ch - 130) + 70);
-
   };
 
   // Fixed Joystick Handlers
@@ -819,85 +798,67 @@ export default function ChickenSolo() {
       }
   };
 
-  const [debugInfo, setDebugInfo] = useState({ cw: 0, ch: 0, vw: 0, vh: 0 });
-  useEffect(() => {
-     const t = setInterval(() => {
-        if(canvasRef.current) {
-            setDebugInfo({ cw: canvasRef.current.width, ch: canvasRef.current.height, vw: window.innerWidth, vh: window.innerHeight });
-        }
-     }, 1000);
-     return () => clearInterval(t);
-  }, []);
-
+  // We removed debugInfo state.
   return (
     <div className="fixed inset-0 w-full h-[100svh] bg-slate-950 flex flex-col touch-none overflow-hidden font-sans">
       
-      {/* 1. Game Area (Top) - Exactly bounded to avoid empty space */}
+      {/* 1. Game Area (Top) - Maximized */}
       <div 
-         className="relative w-full max-w-6xl mx-auto overflow-hidden bg-[#65a30d] flex-1 md:flex-[2] border-b-4 border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col"
-         style={{ maxHeight: 'calc(100vw * 1.4)' }}
+         className="relative w-full mx-auto overflow-hidden bg-[#65a30d] flex-1 border-b-[3px] border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col"
       >
         
         {/* Game Canvas matches Game Area size */}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-0 pointer-events-none" />
 
-        {/* Debug UI */}
-        <div className="absolute top-20 left-4 z-50 bg-black/60 text-white/80 p-2 text-[10px] font-mono pointer-events-none rounded border border-white/10">
-           <div>World: {WORLD_W}x{WORLD_H}</div>
-           <div>Canvas: {debugInfo.cw}x{debugInfo.ch}</div>
-           <div>View (units): {Math.round(debugInfo.cw/debugInfo.camScale)}x{Math.round(debugInfo.ch/debugInfo.camScale)}</div>
-        </div>
-
         {/* 6. HUD Layer */}
         <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
           {/* Top Info Bar */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-            <div className="flex gap-3 pointer-events-auto">
-               <button onClick={() => navigate('/')} className="w-12 h-12 flex items-center justify-center bg-black/40 backdrop-blur-md text-white rounded-2xl hover:bg-black/60 transition-all shadow-lg border border-white/10 active:scale-95">
-                  <ChevronRight className="w-6 h-6" />
+            <div className="flex gap-2 pointer-events-auto">
+               <button onClick={() => navigate('/')} className="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md text-white rounded-xl hover:bg-black/50 transition-all shadow-lg border border-white/10 active:scale-95">
+                  <ChevronRight className="w-5 h-5" />
                </button>
                
                {/* Standings */}
-               <div className="hidden sm:flex flex-col gap-2 bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-lg">
-                   <div className="text-xs font-bold text-white/50 mb-1">الترتيب</div>
-                   {scores.map((s, idx) => (
-                      <div key={s.id} className="flex gap-2 items-center justify-between min-w-[100px]">
-                         <div className="flex items-center gap-2">
-                             <div className="w-3 h-3 rounded-full" style={{backgroundColor: s.color}}></div>
-                             <span className={`text-sm font-bold ${s.id === 'p1' ? 'text-white' : 'text-slate-300'}`}>{s.name}</span>
+               <div className="flex flex-col gap-1.5 bg-black/30 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 shadow-lg">
+                   {scores.slice(0, 2).map((s) => (
+                      <div key={s.id} className="flex items-center justify-between min-w-[70px]">
+                         <div className="flex items-center gap-1.5">
+                             <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: s.color}}></div>
+                             <span className={`text-xs font-bold ${s.id === 'p1' ? 'text-white' : 'text-slate-300'}`}>{s.name.substring(0, 8)}</span>
                          </div>
-                         <span className="text-white font-mono font-bold text-sm">{s.score}</span>
+                         <span className="text-white font-mono font-bold text-xs ml-2">{s.score}</span>
                       </div>
                    ))}
                </div>
             </div>
 
             <div className="flex flex-col items-end gap-2 pointer-events-auto">
-               <div className="flex gap-2">
-                   <div className="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl flex items-center gap-2 border border-white/10 shadow-lg">
-                      <Target className="w-4 h-4 text-sky-400" />
-                      <span className="text-base font-bold font-mono text-white">50</span>
+               <div className="flex gap-1.5">
+                   <div className="bg-black/30 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/10 shadow-lg">
+                      <Target className="w-3.5 h-3.5 text-sky-400" />
+                      <span className="text-sm font-bold font-mono text-white">50</span>
                    </div>
-                   <div className="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl flex items-center gap-2 border border-white/10 shadow-lg">
-                      <Clock className="w-4 h-4 text-white/70" />
-                      <span className={`text-base font-bold font-mono ${timeLeft < 30 ? 'text-red-400 animate-pulse' : 'text-slate-100'}`}>
+                   <div className="bg-black/30 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/10 shadow-lg">
+                      <Clock className="w-3.5 h-3.5 text-white/70" />
+                      <span className={`text-sm font-bold font-mono ${timeLeft < 30 ? 'text-red-400 animate-pulse' : 'text-slate-100'}`}>
                         {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                       </span>
                    </div>
                </div>
                {currentEventMessage && (
-                  <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-gradient-to-r from-amber-500/90 to-orange-500/90 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-lg mt-1">
-                     <span className="text-white font-bold text-xs md:text-sm">{currentEventMessage}</span>
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-gradient-to-r from-amber-500/80 to-orange-500/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg mt-1">
+                     <span className="text-white font-bold text-[10px] sm:text-xs">{currentEventMessage}</span>
                   </div>
                )}
             </div>
           </div>
         </div>
 
-        {/* 4. Fixed Joystick */}
+        {/* 4. Fixed Mobile Joystick */}
         {gameState === 'playing' && (
           <div 
-            className="absolute bottom-6 left-6 w-32 h-32 z-30 touch-none pointer-events-auto rounded-full bg-white/10 border-2 border-white/20 backdrop-blur-[2px] shadow-[0_0_20px_rgba(0,0,0,0.3)] flex items-center justify-center p-0 m-0"
+            className="absolute bottom-6 left-6 w-24 h-24 z-30 touch-none pointer-events-auto rounded-full bg-black/10 border-2 border-white/10 backdrop-blur-[2px] shadow-lg flex items-center justify-center p-0 m-0 opacity-60 active:opacity-100 transition-opacity"
             onPointerDown={handleJoystickDown} 
             onPointerMove={handleJoystickMove} 
             onPointerUp={handleJoystickUp} 
@@ -905,17 +866,17 @@ export default function ChickenSolo() {
           >
              <div 
                 ref={joystickThumbDivRef}
-                className="absolute rounded-full bg-white/80 shadow-[0_0_15px_rgba(255,255,255,0.5)] pointer-events-none"
-                style={{ width: 44, height: 44, transform: 'translate(0px, 0px)' }} 
+                className="absolute rounded-full bg-white/70 shadow-md pointer-events-none"
+                style={{ width: 32, height: 32, transform: 'translate(0px, 0px)' }} 
              />
           </div>
         )}
 
       </div>
 
-      {/* 7. Ad Area - Takes all remaining screen height! */}
-      <div className="w-full flex-1 bg-slate-900 flex flex-col items-center justify-center relative z-30 min-h-[90px]">
-          <span className="text-white/30 font-bold text-sm tracking-widest uppercase">AD AREA / مساحة إعلانية</span>
+      {/* 7. Ad Area - Fixed Height */}
+      <div className="w-full h-[50px] md:h-[90px] bg-slate-900 flex shrink-0 items-center justify-center relative z-30">
+          <span className="text-white/20 font-bold text-[10px] md:text-sm tracking-widest uppercase">AD AREA</span>
       </div>
 
       {gameState === 'results' && (
