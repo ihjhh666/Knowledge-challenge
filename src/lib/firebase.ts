@@ -205,33 +205,41 @@ export const updatePenaltyStats = async (
 };
 
 export const createPublicRoom = async (roomData: PublicRoom) => {
-  if (!db) return;
-  console.log("=== CREATE PUBLIC ROOM ===");
-  console.log("Data to save:", JSON.stringify(roomData, null, 2));
+  console.log("=== CREATE PUBLIC ROOM ATTEMPT ===");
   console.log("Room ID:", roomData.roomId);
   console.log("Game Mode:", roomData.gameMode);
   console.log("Status:", roomData.status);
   console.log("Visibility:", roomData.roomVisibility);
+  
+  if (!db) {
+     console.error("❌ CREATE FAILED: db object is null. Firebase not initialized properly.");
+     return;
+  }
+  
   try {
     const roomRef = doc(db, 'rooms', roomData.roomId);
     await setDoc(roomRef, { ...roomData, lastActiveAt: Date.now() });
-    console.log("Successfully saved room to Firestore:", roomData.roomId);
+    console.log("✅ CREATE SUCCESS: Document written to Firebase!");
     console.log("Full path: rooms/" + roomData.roomId);
   } catch (err) {
-    console.error("Firebase Create Room Error:", err);
+    console.error("❌ CREATE FAILED (Firebase Error):", err);
   }
 };
 
 export const updatePublicRoom = async (roomId: string, updates: Partial<PublicRoom>) => {
   if (!db) return;
+  console.log(`=== UPDATE PUBLIC ROOM ATTEMPT: ${roomId} ===`, updates);
   try {
     const roomRef = doc(db, 'rooms', roomId);
     const snapshot = await getDoc(roomRef);
     if (snapshot.exists()) {
        await setDoc(roomRef, { ...snapshot.data(), ...updates, lastActiveAt: Date.now() }, { merge: true });
+       console.log(`✅ UPDATE SUCCESS: ${roomId}`);
+    } else {
+       console.warn(`⚠️ UPDATE SKIPPED: Room ${roomId} not found in Firebase`);
     }
   } catch (err) {
-    console.error("Firebase Update Room Error:", err);
+    console.error(`❌ UPDATE FAILED: ${roomId}`, err);
   }
 };
 
@@ -287,7 +295,11 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[], stats?: {
          deletePublicRoom(r.roomId);
       }
       
-      return !isDead && !isFull && isActive && r.roomVisibility !== 'private';
+      const isValid = !isDead && !isFull && isActive && r.roomVisibility !== 'private';
+      if (isValid) {
+         console.log(`✅ Accepted room ${r.roomId}: mode=${r.gameMode}, status=${r.status}, players=${r.playerCount}/${r.maxPlayers}`);
+      }
+      return isValid;
     });
     
     console.log(`=== ROOM SCAN: Sending ${validRooms.length} valid rooms to UI ===`);

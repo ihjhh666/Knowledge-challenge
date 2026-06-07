@@ -1502,20 +1502,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setState(initialState);
       audio.joinLobby();
       
-      // Save Public Room to Firebase only if public or password
-      if (roomVisibility === 'public' || roomVisibility === 'password') {
-        createPublicRoom({
-          roomId,
-          hostName: username,
-          category: roomCategory,
-          gameMode,
-          playerCount: 1,
-          maxPlayers,
-          roomVisibility,
-          status: 'waiting',
-          createdAt: Date.now()
-        });
-      }
+      // Save all rooms to Firebase so we can debug, but firebase.ts filter decides what shows
+      createPublicRoom({
+        roomId,
+        hostName: username,
+        category: roomCategory,
+        gameMode,
+        playerCount: 1,
+        maxPlayers,
+        roomVisibility,
+        status: 'waiting',
+        createdAt: Date.now()
+      });
     });
 
     peer.on('connection', (conn) => {
