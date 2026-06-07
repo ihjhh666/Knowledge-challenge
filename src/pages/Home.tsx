@@ -35,7 +35,7 @@ export default function Home() {
     type: 'public' as RoomVisibility,
     password: '',
     maxPlayers: 10,
-    gameMode: 'quiz' as 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king',
+    gameMode: 'quiz' as 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken',
     hockeySubMode: '1v1' as '1v1' | '2v2'
   });
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
@@ -207,7 +207,7 @@ export default function Home() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king') ? 10 : createConfig.maxPlayers})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken') ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'quiz' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <Brain className="w-6 h-6 text-indigo-400" />
@@ -215,7 +215,7 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king') ? 10 : createConfig.maxPlayers})}
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken') ? 10 : createConfig.maxPlayers})}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'fishing' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
                 >
                   <div className="text-2xl">🎣</div>
@@ -252,6 +252,14 @@ export default function Home() {
                 >
                   <div className="text-2xl">👑</div>
                   <span className="text-sm font-bold text-slate-200 text-center">التاج</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateConfig({...createConfig, gameMode: 'chicken', maxPlayers: 6})}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'chicken' ? 'border-lime-500 bg-lime-500/10' : 'border-slate-800 hover:border-slate-600'}`}
+                >
+                  <div className="text-2xl">🐔</div>
+                  <span className="text-sm font-bold text-slate-200 text-center">سباق الدجاج</span>
                 </button>
               </div>
             </div>
@@ -343,8 +351,8 @@ export default function Home() {
               <input 
                 type="number"
                 min="2"
-                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : createConfig.gameMode === 'king' ? "4" : "20"}
-                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king'}
+                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : createConfig.gameMode === 'king' ? "4" : createConfig.gameMode === 'chicken' ? "6" : "20"}
+                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken'}
                 value={createConfig.maxPlayers}
                 onChange={(e) => setCreateConfig({...createConfig, maxPlayers: parseInt(e.target.value) || 2})}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
@@ -627,7 +635,7 @@ export default function Home() {
                         </span>
                       </div>
                       <h4 className="font-bold text-white text-lg pr-8">
-                        {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : room.gameMode === 'domino' ? '🎲 الدومينو' : room.gameMode === 'hockey' ? '🏒 الهوكي' : room.gameMode === 'king' ? '👑 طور الملك' : room.category}
+                        {room.gameMode === 'fishing' ? '🎣 صيد السمك' : room.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : room.gameMode === 'domino' ? '🎲 الدومينو' : room.gameMode === 'hockey' ? '🏒 الهوكي' : room.gameMode === 'king' ? '👑 طور الملك' : room.gameMode === 'chicken' ? '🐔 سباق الدجاج' : room.category}
                       </h4>
                       <p className="text-slate-400 text-sm mt-1">المضيف: <span className="text-slate-300">{room.hostName}</span></p>
                     </div>

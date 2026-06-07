@@ -255,8 +255,16 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
       const isDead = r.status === 'finished' || r.playerCount <= 0 || r.status === 'playing';
       const isFull = r.playerCount >= r.maxPlayers;
       
-      // Hide rooms that are finished, playing, empty, or full.
-      return !isDead && !isFull;
+      const now = Date.now();
+      const isActive = r.lastActiveAt ? (now - r.lastActiveAt < 1000 * 60 * 15) : true; // 15 mins
+      
+      // Also cleanup dead rooms from DB if very old
+      if (!isActive && r.lastActiveAt && (now - r.lastActiveAt > 1000 * 60 * 60)) {
+         deletePublicRoom(r.roomId);
+      }
+      
+      // Hide rooms that are finished, playing, empty, full, or inactive.
+      return !isDead && !isFull && isActive;
     });
     
     console.log("After local filter, sending", validRooms.length, "valid rooms to UI.");

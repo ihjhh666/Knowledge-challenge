@@ -34,7 +34,7 @@ export type RoomVisibility = 'public' | 'private' | 'link' | 'password';
 export interface GameState {
   roomId: string;
   category?: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken';
   subMode?: string;
   roomVisibility?: RoomVisibility;
   maxPlayers?: number;
@@ -108,11 +108,12 @@ export type PeerMessage =
   | { type: 'KICKED', reason: string }
   | { type: 'MUTE', playerId: string, isMuted: boolean }
   | { type: 'CHANGE_CATEGORY', category: string }
-  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' }
+  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' }
   | { type: 'FORCE_NEXT_QUESTION' }
   | { type: 'LEAVE', playerId: string }
   | { type: 'TRANSFER_HOST', playerId: string }
   | { type: 'PING', playerId: string }
+  | { type: 'PING_HOST' }
   | { type: 'FISH_SPAWN', fish: any }
   | { type: 'FISH_CATCH', playerId: string, fishId: number, points: number, fType: string }
   | { type: 'PENALTY_ACTION', playerId: string, action: 'kicker' | 'goalie', dir: 'left' | 'center' | 'right' }
@@ -125,5 +126,7 @@ export type PeerMessage =
   | { type: 'ADD_BOT', team: 1 | 2 }
   | { type: 'REMOVE_BOT', botId: string }
   | { type: 'KING_INPUT', playerId?: string, dx: number, dy: number, isSprinting: boolean }
-  | { type: 'KING_SYNC', entities: any[], crown: any, activeEvent: any, gameState: string, winner: any };
+  | { type: 'KING_SYNC', entities: any[], crown: any, activeEvent: any, gameState: string, winner: any }
+  | { type: 'CHICKEN_INPUT', playerId: string, dx: number, dy: number }
+  | { type: 'CHICKEN_SYNC', players: any[], chickens: any[], events: any, gameState: string, timeOut: number };
 

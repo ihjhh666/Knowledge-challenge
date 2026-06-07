@@ -33,7 +33,7 @@ export interface GameContextType {
   kickPlayer: (playerId: string) => void;
   mutePlayer: (playerId: string, isMuted: boolean) => void;
   changeCategory: (category: string) => void;
-  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king') => void;
+  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken') => void;
   returnToLobby: () => void;
   requestRematch: () => void;
   forceNextQuestion: () => void;
@@ -44,6 +44,7 @@ export interface GameContextType {
   sendDominoAction: (actionDetails: any) => void;
   sendHockeyEvent: (event: any) => void;
   sendKingEvent: (event: any) => void;
+  sendChickenEvent: (event: any) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -61,6 +62,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const intentionalLeaveRef = useRef<boolean>(false);
   const fishingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastPingTimes = useRef<Record<string, number>>({});
+  const lastHostPingTime = useRef<number>(Date.now());
 
   // Sync state ref
   useEffect(() => {
@@ -101,12 +103,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Ping interval
   useEffect(() => {
     const pingInterval = setInterval(() => {
+      const now = Date.now();
+      
       if (!isHostRef.current && hostConnectionRef.current?.open) {
          hostConnectionRef.current.send({ type: 'PING', playerId });
+         
+         // Timeout recovery
+         if (now - lastHostPingTime.current > 7000) {
+             console.warn("Host timeout detected! Triggering migration.");
+             hostConnectionRef.current.close();
+         }
       }
       
       if (isHostRef.current && stateRef.current) {
-         const now = Date.now();
+         broadcast({ type: 'PING_HOST' });
          const players = { ...stateRef.current.players };
          
          Object.keys(players).forEach(pId => {
@@ -540,6 +550,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             startHockeyMode(currentState);
           } else if (currentState.gameMode === 'king') {
             startKingMode(currentState);
+          } else if (currentState.gameMode === 'chicken') {
+            startChickenMode(currentState);
           } else {
             startNextRound(currentState);
           }
@@ -581,6 +593,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             broadcast(message);
           }
           window.dispatchEvent(new CustomEvent('king_event', { detail: message }));
+        }
+        break;
+      case 'CHICKEN_INPUT':
+      case 'CHICKEN_SYNC':
+        if (stateRef.current && stateRef.current.gameMode === 'chicken') {
+          if (isHostRef.current && message.type === 'CHICKEN_SYNC') {
+            broadcast(message);
+          }
+          window.dispatchEvent(new CustomEvent('chicken_event', { detail: message }));
         }
         break;
       case 'SUBMIT_ANSWER':
@@ -948,6 +969,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            lastPingTimes.current[message.playerId] = Date.now();
         }
         break;
+      case 'PING_HOST':
+        if (!isHostRef.current) {
+           lastHostPingTime.current = Date.now();
+        }
+        break;
     }
   };
 
@@ -1033,6 +1059,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const startKingMode = (currentState: GameState) => {
+    const updatedPlayers = { ...currentState.players };
+    Object.values(updatedPlayers).forEach(p => p.score = 0);
+    const newState: GameState = {
+      ...currentState,
+      status: 'playing',
+      players: updatedPlayers
+    };
+    setState(newState);
+    broadcast({ type: 'STATE_UPDATE', state: newState });
+    updatePublicRoom(newState.roomId, { status: 'playing' });
+  };
+
+  const startChickenMode = (currentState: GameState) => {
     const updatedPlayers = { ...currentState.players };
     Object.values(updatedPlayers).forEach(p => p.score = 0);
     const newState: GameState = {
@@ -1422,7 +1461,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAllAnswered(newState);
   };
 
-  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' = 'quiz', subMode?: string) => {
+  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' = 'quiz', subMode?: string) => {
     intentionalLeaveRef.current = false;
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
@@ -1774,7 +1813,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const changeGameMode = React.useCallback((gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king') => {
+  const changeGameMode = React.useCallback((gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken') => {
     if (isHostRef.current) {
       handleMessage({ type: 'CHANGE_MODE', gameMode });
     }
@@ -1852,18 +1891,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [playerId]);
 
+  const sendChickenEvent = React.useCallback((event: any) => {
+    if (isHostRef.current) {
+      handleMessage({ ...event, playerId });
+    } else if (hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ ...event, playerId });
+    }
+  }, [playerId]);
+
   const disconnectedPlayer = state && state.status === 'playing' 
     ? (Object.values(state.players) as RoomPlayer[]).find(p => p.disconnectedAt) 
     : undefined;
     
-  const [disconnectCountdown, setDisconnectCountdown] = useState(10);
+  const [disconnectCountdown, setDisconnectCountdown] = useState(45);
   
   useEffect(() => {
      let interval: any;
      if (disconnectedPlayer && disconnectedPlayer.disconnectedAt) {
          interval = setInterval(() => {
              const elapsed = Date.now() - disconnectedPlayer.disconnectedAt!;
-             const rem = Math.max(0, 10 - Math.floor(elapsed / 1000));
+             const rem = Math.max(0, 45 - Math.floor(elapsed / 1000));
              setDisconnectCountdown(rem);
              
              if (rem === 0 && isHostRef.current && stateRef.current && stateRef.current.status === 'playing') {
@@ -1893,7 +1940,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [disconnectedPlayer]);
 
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent, sendChickenEvent }}>
       {children}
       {disconnectedPlayer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

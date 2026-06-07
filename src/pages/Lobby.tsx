@@ -42,7 +42,7 @@ export default function Lobby() {
             <h2 className="text-xl font-bold font-heading text-slate-200">اللاعبين في الغرفة</h2>
              {state.category && (
                <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-md text-xs font-bold border border-indigo-500/30">
-                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : state.gameMode === 'domino' ? '🎲 الدومينو' : state.gameMode === 'hockey' ? '🏒 الهوكي' : state.gameMode === 'king' ? '👑 طور الملك' : state.category}
+                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : state.gameMode === 'domino' ? '🎲 الدومينو' : state.gameMode === 'hockey' ? '🏒 الهوكي' : state.gameMode === 'king' ? '👑 طور الملك' : state.gameMode === 'chicken' ? '🐔 سباق الدجاج' : state.category}
                </span>
             )}
             {state.gameMode === 'fishing' && (
@@ -104,6 +104,7 @@ export default function Lobby() {
               <option value="hockey">🏒 الهوكي (1 ضد 1)</option>
               <option value="hockey-2v2">🏒 الهوكي (2 ضد 2)</option>
               <option value="king">👑 طور الملك</option>
+              <option value="chicken">🐔 سباق الدجاج</option>
             </select>
           </div>
 
@@ -122,6 +123,21 @@ export default function Lobby() {
             </div>
           )}
         </div>
+      )}
+
+      {state.gameMode === 'chicken' && (
+         <div className="bg-lime-900/10 border border-lime-500/30 rounded-3xl p-6 text-center shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none w-full h-full flex justify-center items-center text-9xl">🐔</div>
+            <div className="bg-lime-500/20 w-16 h-16 rounded-2xl mx-auto flex flex-col items-center justify-center mb-4 text-3xl shadow-inner relative z-10">🐔</div>
+            <h3 className="text-xl font-bold text-lime-400 mb-2 relative z-10">الطور الحالي: Chicken Rush Online</h3>
+            <p className="text-slate-300 text-sm max-w-sm mx-auto mb-4 relative z-10">تسابق مع اللاعبين لجمع أكبر عدد من الدجاج وإعادته لحظيرتك المضيئة. احذر من اللاعبين الآخرين فقد يسرقون الدجاج منك!</p>
+            <div className="flex flex-wrap items-center justify-center gap-3 relative z-10">
+               <span className="bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 flex items-center gap-2">⏱️ المدة: 60 ثانية</span>
+               <span className="bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 flex items-center gap-2">🏆 الفوز: أعلى نقاط</span>
+               <span className="bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 flex items-center gap-2">👥 {state.maxPlayers} لاعبين كحد أقصى</span>
+               <span className="bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 flex items-center gap-2">🐔 عدد الدجاج: 25 في الخريطة</span>
+            </div>
+         </div>
       )}
 
       {state.gameMode === 'hockey' && state.hockeyState?.is2v2 ? (

@@ -10,6 +10,7 @@ import DominoRoom from './DominoRoom';
 import HockeyRoom from './HockeyRoom';
 import Hockey2v2Room from './Hockey2v2Room';
 import KingModeRoom from './KingModeRoom';
+import ChickenRoom from './ChickenRoom';
 import Chat from './Chat';
 import { LogOut, Users, Lock, UserPlus, Settings } from 'lucide-react';
 import { FriendsSidebar } from '../components/FriendsSidebar';
@@ -188,7 +189,14 @@ export default function Room() {
       
       <header className="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-3xl shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl md:text-2xl font-bold font-heading text-white">تحدي المعرفة</h1>
+          <h1 className="text-xl md:text-2xl font-bold font-heading text-white">
+            {state.gameMode === 'chicken' ? 'Chicken Rush Online' :
+             state.gameMode === 'fishing' ? '🎣 صيد السمك' :
+             state.gameMode === 'penalty' ? '⚽ ركلات الجزاء' :
+             state.gameMode === 'domino' ? '🎲 الدومينو' :
+             state.gameMode === 'hockey' ? '🏒 الهوكي' :
+             state.gameMode === 'king' ? '👑 طور الملك' : '🧠 تحدي المعرفة'}
+          </h1>
           <span className="px-3 py-1 bg-slate-800 text-xs text-slate-400 rounded-lg hidden sm:block">
             {state.status === 'waiting' ? 'في الانتظار' : 'جاري اللعب'}
           </span>
@@ -214,13 +222,14 @@ export default function Room() {
       <div className="flex-1 grid lg:grid-cols-3 gap-8 pb-8 items-start">
         <div className="lg:col-span-2 space-y-6">
           {state.status === 'waiting' && <Lobby />}
-          {state.status !== 'waiting' && state.gameMode !== 'fishing' && state.gameMode !== 'penalty' && state.gameMode !== 'domino' && state.gameMode !== 'hockey' && state.gameMode !== 'king' && <PlayingField />}
+          {state.status !== 'waiting' && state.gameMode !== 'fishing' && state.gameMode !== 'penalty' && state.gameMode !== 'domino' && state.gameMode !== 'hockey' && state.gameMode !== 'king' && state.gameMode !== 'chicken' && <PlayingField />}
           {state.status !== 'waiting' && state.gameMode === 'fishing' && <FishingRoom />}
           {state.status !== 'waiting' && state.gameMode === 'penalty' && <PenaltyRoom />}
           {state.status !== 'waiting' && state.gameMode === 'domino' && <DominoRoom />}
           {state.status !== 'waiting' && state.gameMode === 'hockey' && !state.hockeyState?.is2v2 && <HockeyRoom />}
           {state.status !== 'waiting' && state.gameMode === 'hockey' && state.hockeyState?.is2v2 && <Hockey2v2Room />}
           {state.status !== 'waiting' && state.gameMode === 'king' && <KingModeRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'chicken' && <ChickenRoom />}
         </div>
         
         <div className="h-[500px] lg:h-[calc(100vh-160px)] lg:sticky lg:top-8 flex flex-col">
