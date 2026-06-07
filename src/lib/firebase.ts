@@ -20,7 +20,8 @@ const getFirebaseConfig = () => {
           projectId: cleanValue(parsed.projectId),
           storageBucket: cleanValue(parsed.storageBucket),
           messagingSenderId: cleanValue(parsed.messagingSenderId),
-          appId: cleanValue(parsed.appId)
+          appId: cleanValue(parsed.appId),
+          firestoreDatabaseId: cleanValue(parsed.firestoreDatabaseId) || 'ai-studio-312513b5-9b52-4eac-b060-23f7c26e6de6'
         };
       }
     }
@@ -35,7 +36,8 @@ const getFirebaseConfig = () => {
     projectId: cleanValue(import.meta.env.VITE_FIREBASE_PROJECT_ID),
     storageBucket: cleanValue(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
     messagingSenderId: cleanValue(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
-    appId: cleanValue(import.meta.env.VITE_FIREBASE_APP_ID)
+    appId: cleanValue(import.meta.env.VITE_FIREBASE_APP_ID),
+    firestoreDatabaseId: cleanValue(import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) || 'ai-studio-312513b5-9b52-4eac-b060-23f7c26e6de6'
   };
 };
 
@@ -48,7 +50,7 @@ if (!isFirebaseConfigured) {
 }
 
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
-export const db = app ? getFirestore(app) : null;
+export const db = app ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : null;
 export const auth = app ? getAuth(app) : null;
 export { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, type User };
 
