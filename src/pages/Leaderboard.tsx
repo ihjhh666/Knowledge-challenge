@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Trophy, Medal, Star, Target } from 'lucide-react';
-import { getLeaderboard, syncLocalStatsToFirebase, PlayerStats } from '../lib/firebase';
+import { subscribeToLeaderboard, syncLocalStatsToFirebase, PlayerStats } from '../lib/firebase';
 import { storage } from '../lib/storage';
 
 export default function Leaderboard() {
@@ -9,6 +9,7 @@ export default function Leaderboard() {
   const [leaders, setLeaders] = useState<PlayerStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortMethod, setSortMethod] = useState<'wins' | 'totalPoints' | 'successRate'>('totalPoints');
+  const [dbStats, setDbStats] = useState({ fetched: 0 });
 
   const myPlayerId = storage.getPlayerId();
   const myPlayerName = storage.getPlayerName() || 'لاعب مجهول';
@@ -16,16 +17,20 @@ export default function Leaderboard() {
 
   useEffect(() => {
     setLoading(true);
+    let unsubscribe: (() => void) | undefined;
+    
     // Sync local stats to firebase first
     syncLocalStatsToFirebase(myPlayerId, myPlayerName).finally(() => {
-        getLeaderboard(sortMethod).then(data => {
+        unsubscribe = subscribeToLeaderboard(sortMethod, (data, stats) => {
           setLeaders(data);
-          setLoading(false);
-        }).catch(err => {
-          console.error("[Leaderboard] Error fetching data:", err);
+          if (stats) setDbStats(stats);
           setLoading(false);
         });
     });
+    
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [sortMethod, myPlayerId, myPlayerName]);
 
   return (
@@ -37,12 +42,18 @@ export default function Leaderboard() {
         >
           <ChevronRight className="w-8 h-8" />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold font-heading flex items-center gap-2 text-amber-400">
             <Trophy className="w-8 h-8" />
             لوحة المتصدرين
           </h1>
-          <p className="text-slate-400 mt-1">أفضل اللاعبين في تحدي المعرفة</p>
+          <p className="text-slate-400 mt-1">أفضل اللاعبين في المنصة</p>
+        </div>
+        
+        {/* Debug Info */}
+        <div className="hidden sm:flex flex-col text-xs text-slate-500 bg-slate-900 border border-slate-800 p-2 rounded-lg text-right min-w-[120px]">
+           <span>السجلات المقروءة: {dbStats.fetched}</span>
+           <span>أخر تحديث: {new Date().toLocaleTimeString()}</span>
         </div>
       </header>
 

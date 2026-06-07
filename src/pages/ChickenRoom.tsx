@@ -26,6 +26,19 @@ export default function ChickenRoom() {
 
   const [gameState, setGameState] = useState<'playing' | 'results'>('playing');
   const [timeLeft, setTimeLeft] = useState(180);
+  const [statsSaved, setStatsSaved] = useState(false);
+
+  useEffect(() => {
+    if (gameState === 'results' && !statsSaved && winnerRef.current) {
+        const localPlayer = playersRef.current.find(p => p.id === playerId);
+        if (localPlayer) {
+             const isWin = winnerRef.current.id === localPlayer.id && localPlayer.score > 0;
+             const pName = storage.getPlayerName() || 'أنت';
+             updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, localPlayer.score, '🐔 جمع الدجاج');
+             setStatsSaved(true);
+        }
+    }
+  }, [gameState, statsSaved, playerId]);
   const [isWin, setIsWin] = useState<boolean | null>(null);
   const [currentEventMessage, setCurrentEventMessage] = useState<string | null>(null);
   const [scores, setScores] = useState<{id: string, name: string, color: string, score: number}[]>([]);

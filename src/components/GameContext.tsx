@@ -1508,6 +1508,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           roomId,
           hostName: username,
           category: roomCategory,
+          gameMode,
           playerCount: 1,
           maxPlayers,
           roomVisibility,

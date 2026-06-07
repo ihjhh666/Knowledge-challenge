@@ -38,6 +38,18 @@ export default function KingModeRoom() {
   const animationRef = useRef<number>();
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
   const [winner, setWinner] = useState<Entity | null>(null);
+  const [statsSaved, setStatsSaved] = useState(false);
+
+  useEffect(() => {
+     if ((gameState === 'won' || gameState === 'lost') && !statsSaved && winner) {
+         import('../lib/firebase').then(({ updatePlayerStats }) => {
+             const isWin = gameState === 'won';
+             const pName = storage.getPlayerName() || 'أنت';
+             updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, winner.score || 10, '👑 طور الملك');
+         });
+         setStatsSaved(true);
+     }
+  }, [gameState, statsSaved, winner, playerId]);
 
   // States for UI
   const [, setTick] = useState(0); // Force re-render periodically

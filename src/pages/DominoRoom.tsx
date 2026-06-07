@@ -185,6 +185,21 @@ export default function DominoRoom() {
 
   const ds = state.dominoState;
   
+  const [statsSaved, setStatsSaved] = useState(false);
+
+  useEffect(() => {
+    if (ds?.winnerId && !statsSaved) {
+       import('../lib/firebase').then(({ updatePlayerStats }) => {
+           const isWin = ds.winnerId === playerId;
+           const pName = storage.getPlayerName() || 'أنت';
+           let pScore = 0;
+           if (ds.pointsMatch) pScore = ds.pointsMatch[playerId] || 10;
+           updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, pScore, '🎲 الدومينو');
+       });
+       setStatsSaved(true);
+    }
+  }, [ds?.winnerId, statsSaved, playerId]);
+
   if (hasDisconnectedOpponent && !ds.winnerId) {
      ds.winnerId = playerId;
   }

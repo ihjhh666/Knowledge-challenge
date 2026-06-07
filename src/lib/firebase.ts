@@ -56,7 +56,7 @@ export interface PublicRoom {
   roomId: string;
   hostName: string;
   category: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken';
   playerCount: number;
   maxPlayers: number;
   status: 'waiting' | 'playing' | 'finished' | 'revealing';
@@ -237,9 +237,9 @@ export const deletePublicRoom = async (roomId: string) => {
   }
 };
 
-export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) => {
+export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[], stats?: { fetched: number, filtered: number }) => void) => {
   if (!db) {
-    callback([]);
+    callback([], { fetched: 0, filtered: 0 });
     return () => {};
   }
   console.log("Subscribing to Firestore 'rooms' collection...");
@@ -268,7 +268,7 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[]) => void) 
     });
     
     console.log("After local filter, sending", validRooms.length, "valid rooms to UI.");
-    callback(validRooms);
+    callback(validRooms, { fetched: rooms.length, filtered: validRooms.length });
   }, (err) => {
     console.error("Firebase Subscribe Error:", err);
   });
@@ -516,45 +516,42 @@ export const syncLocalStatsToFirebase = async (playerId: string, playerName: str
   }
 };
 
-export const getLeaderboard = async (sortBy: 'wins' | 'totalPoints' | 'successRate' = 'totalPoints') => {
-  if (!db) return [];
-  try {
-    console.log('[Leaderboard] Fetching leaderboard for sortBy:', sortBy);
-    
-    // Fetch all users to avoid Firestore's behavior of omitting documents that lack the sort field
-    const q = query(collection(db, 'users'));
-    const { getDocs } = await import('firebase/firestore');
-    const snapshot = await getDocs(q);
-    
+export const subscribeToLeaderboard = (sortBy: 'wins' | 'totalPoints' | 'successRate' = 'totalPoints', callback: (players: PlayerStats[], stats?: { fetched: number }) => void) => {
+  if (!db) {
+    callback([], { fetched: 0 });
+    return () => {};
+  }
+  
+  console.log('[Leaderboard] Subscribing to leaderboard for sortBy:', sortBy);
+  
+  // Use orderBy and limit(50) to make it super fast. Single-field indexes are auto-created by Firestore.
+  const q = query(collection(db, 'users'), orderBy(sortBy, 'desc'), limit(50));
+  
+  const unsubscribe = onSnapshot(q, (snapshot) => {
     const results: PlayerStats[] = [];
-    
     snapshot.forEach(docSnap => {
       const data = docSnap.data() as PlayerStats;
-      data.playerId = docSnap.id; // Force ID to match document
+      data.playerId = docSnap.id;
       if (!data.playerName || data.playerName.trim() === '') {
          data.playerName = 'لاعب مجهول';
       }
+      // Ensure local sorting is robust against missing fields, though query should handle it
       results.push(data);
     });
     
-    console.log('[Leaderboard] Fetched documents:', results.length, results);
-    
-    // Default the value of the missing fields to 0 and sort locally
+    // Sort locally just in case (e.g. if some fields had NaN)
     results.sort((a, b) => {
       const valA = Number.isNaN(a[sortBy]) ? 0 : (a[sortBy] || 0);
       const valB = Number.isNaN(b[sortBy]) ? 0 : (b[sortBy] || 0);
       return (valB as number) - (valA as number);
     });
     
-    // Return top 50 valid players
-    const top50 = results.slice(0, 50);
-    
-    console.log(`[Leaderboard] Successfully fetched and sorted ${results.length} players using sortBy ${sortBy}. Returning top ${top50.length}.`);
-    return top50;
-  } catch (err) {
-    console.error('[Leaderboard] Error getting leaderboard:', err);
-    return [];
-  }
+    callback(results, { fetched: snapshot.size });
+  }, (err) => {
+    console.error('[Leaderboard] Subscribe Error:', err);
+  });
+  
+  return () => unsubscribe();
 };
 
 export const updateOnlinePresence = async (playerId: string) => {
