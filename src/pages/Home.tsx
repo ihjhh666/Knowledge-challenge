@@ -39,7 +39,7 @@ export default function Home() {
     hockeySubMode: '1v1' as '1v1' | '2v2'
   });
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
-  const [roomStats, setRoomStats] = useState({ fetched: 0, filtered: 0 });
+  const [roomStats, setRoomStats] = useState<{ fetched: number, filtered: number, lastRoomId?: string, rawRooms?: any[] }>({ fetched: 0, filtered: 0 });
   const [joinError, setJoinError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -621,24 +621,41 @@ export default function Home() {
           <div className="space-y-4">
             <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-4 shadow-lg mb-2">
                <h3 className="text-white font-bold opacity-80 mb-2 flex items-center gap-2 text-sm border-b border-slate-800 pb-2">📋 System Test Report</h3>
-               <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-4">
+               <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-4 lg:grid-cols-5">
                   <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
                      <span className="block text-slate-500 mb-1">المنصلين الآن</span>
                      <span className="text-emerald-400 font-bold text-lg">{onlineCount}</span>
                   </div>
                   <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                     <span className="block text-slate-500 mb-1">الغرف النشطة</span>
+                     <span className="block text-slate-500 mb-1">الخام (Firebase)</span>
+                     <span className="text-indigo-400 font-bold text-lg">{roomStats.fetched}</span>
+                  </div>
+                  <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
+                     <span className="block text-slate-500 mb-1">الغرف المعروضة</span>
                      <span className="text-sky-400 font-bold text-lg">{publicRooms.length}</span>
                   </div>
                   <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
                      <span className="block text-slate-500 mb-1">زمن الاستجابة</span>
                      <span className="text-amber-400 font-bold text-lg">{ping} ms</span>
                   </div>
-                  <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                     <span className="block text-slate-500 mb-1">Reads/Writes</span>
-                     <span className="text-indigo-400 font-bold text-lg">{roomStats.fetched}/min</span>
+                  <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 truncate col-span-2 md:col-span-1">
+                     <span className="block text-slate-500 mb-1">آخر رمز</span>
+                     <span className="text-slate-300 font-mono text-xs">{roomStats.lastRoomId || 'لا يوجد'}</span>
                   </div>
                </div>
+               
+               {roomStats.rawRooms && roomStats.rawRooms.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-slate-800">
+                     <p className="text-slate-500 text-[10px] mb-1">Raw Database Dump (First 3):</p>
+                     <div className="flex flex-col gap-1">
+                        {roomStats.rawRooms.slice(0, 3).map((r, i) => (
+                           <div key={i} className="text-[10px] font-mono text-slate-400 bg-black p-1 rounded overflow-hidden truncate">
+                             [{r.roomId}] {r.status} | Vis: {r.roomVisibility} | Players: {r.playerCount}/{r.maxPlayers}
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               )}
                <div className="text-[10px] text-slate-600 mt-2 text-center">Firebase Realtime Sync: <span className="text-emerald-500 font-bold">Stable</span> | Auto-Refresh: <span className="text-emerald-500 font-bold">Enabled</span></div>
             </div>
 

@@ -204,11 +204,17 @@ export const updatePenaltyStats = async (
 
 export const createPublicRoom = async (roomData: PublicRoom) => {
   if (!db) return;
-  console.log("Saving room to Firestore 'rooms' collection:", roomData.roomId);
+  console.log("=== CREATE PUBLIC ROOM ===");
+  console.log("Data to save:", JSON.stringify(roomData, null, 2));
+  console.log("Room ID:", roomData.roomId);
+  console.log("Game Mode:", roomData.gameMode);
+  console.log("Status:", roomData.status);
+  console.log("Visibility:", roomData.roomVisibility);
   try {
     const roomRef = doc(db, 'rooms', roomData.roomId);
     await setDoc(roomRef, { ...roomData, lastActiveAt: Date.now() });
     console.log("Successfully saved room to Firestore:", roomData.roomId);
+    console.log("Full path: rooms/" + roomData.roomId);
   } catch (err) {
     console.error("Firebase Create Room Error:", err);
   }
@@ -237,38 +243,53 @@ export const deletePublicRoom = async (roomId: string) => {
   }
 };
 
-export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[], stats?: { fetched: number, filtered: number }) => void) => {
+export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[], stats?: { fetched: number, filtered: number, lastRoomId?: string, rawRooms?: PublicRoom[] }) => void) => {
   if (!db) {
     callback([], { fetched: 0, filtered: 0 });
     return () => {};
   }
   console.log("Subscribing to Firestore 'rooms' collection...");
   const roomsRef = collection(db, 'rooms');
+  
+  // Use a query without filters to debug what is actually returning
   const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
     const rooms: PublicRoom[] = [];
     snapshot.forEach(doc => {
       rooms.push({ ...doc.data(), roomId: doc.id } as PublicRoom);
     });
-    console.log("Firestore onSnapshot received", rooms.length, "total rooms.");
+    console.log(`=== ROOM SCAN: Fetched ${rooms.length} raw rooms ===`);
+    
+    // Sort descending by creation/activity so the newest is first
+    rooms.sort((a, b) => (b.lastActiveAt || 0) - (a.lastActiveAt || 0));
     
     const validRooms = rooms.filter(r => {
       const isDead = r.status === 'finished' || r.playerCount <= 0 || r.status === 'playing';
-      const isFull = r.playerCount >= r.maxPlayers;
+      const isFull = r.playerCount >= (r.maxPlayers || 10);
       
       const now = Date.now();
       const isActive = r.lastActiveAt ? (now - r.lastActiveAt < 1000 * 60 * 15) : true; // 15 mins
+      
+      if (isDead) {
+        console.log(`Filtering out ${r.roomId}: isDead=true (status=${r.status}, players=${r.playerCount})`);
+      } else if (isFull) {
+        console.log(`Filtering out ${r.roomId}: isFull=true (${r.playerCount}/${r.maxPlayers})`);
+      } else if (!isActive) {
+        console.log(`Filtering out ${r.roomId}: isActive=false`);
+      } else if (r.roomVisibility === 'private') {
+         console.log(`Filtering out ${r.roomId}: visibility is private`);
+         return false; // added check for private just in case
+      }
       
       // Also cleanup dead rooms from DB if very old
       if (!isActive && r.lastActiveAt && (now - r.lastActiveAt > 1000 * 60 * 60)) {
          deletePublicRoom(r.roomId);
       }
       
-      // Hide rooms that are finished, playing, empty, full, or inactive.
-      return !isDead && !isFull && isActive;
+      return !isDead && !isFull && isActive && r.roomVisibility !== 'private';
     });
     
-    console.log("After local filter, sending", validRooms.length, "valid rooms to UI.");
-    callback(validRooms, { fetched: rooms.length, filtered: validRooms.length });
+    console.log(`=== ROOM SCAN: Sending ${validRooms.length} valid rooms to UI ===`);
+    callback(validRooms, { fetched: rooms.length, filtered: validRooms.length, lastRoomId: rooms[0]?.roomId, rawRooms: rooms });
   }, (err) => {
     console.error("Firebase Subscribe Error:", err);
   });
