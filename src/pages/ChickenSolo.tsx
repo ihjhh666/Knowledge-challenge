@@ -800,7 +800,7 @@ export default function ChickenSolo() {
 
   // We removed debugInfo state.
   return (
-    <div className="fixed inset-0 w-full h-[100svh] bg-slate-950 flex flex-col touch-none overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[100] w-full h-[100svh] bg-slate-950 flex flex-col touch-none overflow-hidden font-sans">
       
       {/* 1. Game Area (Top) - Maximized */}
       <div 
