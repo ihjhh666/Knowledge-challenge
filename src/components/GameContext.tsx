@@ -51,7 +51,7 @@ export interface GameContextType {
 const GameContext = createContext<GameContextType | null>(null);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<GameState | null>(null);
+  const [state, setReactState] = useState<GameState | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [playerId, setPlayerId] = useState<string>('');
   
@@ -59,16 +59,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const connectionsRef = useRef<Map<string, DataConnection>>(new Map());
   const hostConnectionRef = useRef<DataConnection | null>(null);
   const stateRef = useRef<GameState | null>(null);
+  
+  // Custom setState that synchronously sets the ref,
+  // preventing stale closure updates on rapid successive async events.
+  const setState = (newState: GameState | null) => {
+     stateRef.current = newState;
+     setReactState(newState);
+  };
+  
   const isHostRef = useRef<boolean>(false);
   const intentionalLeaveRef = useRef<boolean>(false);
   const fishingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastPingTimes = useRef<Record<string, number>>({});
   const lastHostPingTime = useRef<number>(Date.now());
-
-  // Sync state ref
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
 
   useEffect(() => {
     isHostRef.current = isHost;
@@ -122,9 +125,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
          
          Object.keys(players).forEach(pId => {
            if (pId !== playerId) {
-              const lastPing = lastPingTimes.current[pId] || now; // if not set yet, assume now
-              if (now - lastPing > 7000) {
-                 // Missed pings for 7 seconds!
+              const lastPing = lastPingTimes.current[pId];
+              if (lastPing && (now - lastPing > 15000)) {
+                 console.log(`[DEBUG] PING TIMEOUT FOR ${pId}. Last ping: ${now - lastPing}ms ago.`);
+                 // Missed pings for 15 seconds!
                  const conn = connectionsRef.current.get(pId);
                  if (conn) {
                    conn.close();
@@ -144,7 +148,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handlePlayerDisconnect = (pId: string) => {
     if (!stateRef.current) return;
-    console.log(`[DEBUG] PLAYER LEFT OR DISCONNECTED: ${stateRef.current.players[pId]?.username || 'Unknown'} (${pId})`);
+    console.log(`[DEBUG] PLAYER LEAVE EVENT: ${stateRef.current.players[pId]?.username || 'Unknown'} (${pId})`);
     
     // Clear ping time
     delete lastPingTimes.current[pId];
@@ -355,7 +359,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'JOIN':
         if (isHostRef.current && stateRef.current) {
-          console.log(`[DEBUG] PLAYER JOINED: ${message.player.username} (${message.player.id})`);
+          console.log(`[DEBUG] PLAYER JOIN EVENT: ${message.player.username} (${message.player.id})`);
+          console.log(`[DEBUG] HOST PLAYERS BEFORE UPDATE:`, Object.keys(stateRef.current.players));
+          lastPingTimes.current[message.player.id] = Date.now();
           const conn = senderId ? connectionsRef.current.get(senderId) : null;
           
           if (stateRef.current.roomVisibility === 'password' && message.password !== stateRef.current.password) {
@@ -483,6 +489,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           setState(newState);
           broadcast({ type: 'STATE_UPDATE', state: newState });
+          console.log(`[DEBUG] HOST PLAYERS AFTER UPDATE:`, Object.keys(newState.players));
           
           updatePublicRoom(newState.roomId, {
             playerCount: Object.keys(newState.players).length
@@ -580,7 +587,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'HOCKEY_ACTION':
       case 'HOCKEY_SYNC':
       case 'HOCKEY_RESTART':
-      case 'CHANGE_HOCKEY_MODE':
         if (stateRef.current && stateRef.current.gameMode === 'hockey') {
           if (isHostRef.current) {
              broadcast(message);

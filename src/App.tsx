@@ -4,6 +4,7 @@ import { AuthProvider } from './components/AuthContext';
 import { GameProvider } from './components/GameContext';
 import Home from './pages/Home';
 import Room from './pages/Room';
+import Debug from './pages/Debug';
 import SoloPlay from './pages/SoloPlay';
 import FishingSolo from './pages/FishingSolo';
 import PenaltySolo from './pages/PenaltySolo';
@@ -94,6 +95,7 @@ function AppContent() {
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/debug" element={<DebugRooms />} />
           <Route path="/debug-supabase" element={<DebugSupabase />} />
+          <Route path="/debug-tables" element={<Debug />} />
         </Routes>
       </main>
       
