@@ -4,7 +4,8 @@ import { createPeer } from '../lib/peer';
 import { storage } from '../lib/storage';
 import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC, MATH_EXPANDED as MATH } from '../lib/dynamicQuestions';
 import { audio } from '../lib/audio';
-import { createPublicRoom, updatePublicRoom, deletePublicRoom } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
+const { createPublicRoom, updatePublicRoom, deletePublicRoom, updatePlayerStats } = supabaseService;
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 
@@ -1919,7 +1920,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                  
                  // End game, others win
                  const updatedPlayers = { ...currentState.players };
-                 Object.values(updatedPlayers).forEach(p => {
+                 Object.values(updatedPlayers).forEach((p: any) => {
                      if (p.id !== pId) {
                          p.score += 10;
                          // Persist free win stats for players.

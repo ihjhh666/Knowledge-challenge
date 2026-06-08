@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGame } from '../components/GameContext';
 import { ChevronRight, Home as HomeIcon, RotateCcw, Volume2, VolumeX, Grid2X2, Trophy, Target, Settings2, Play } from 'lucide-react';
 import { audio } from '../lib/audio';
+import { storage } from '../lib/storage';
 
 const BOARD_L = 120;
 const BOARD_W = 60;

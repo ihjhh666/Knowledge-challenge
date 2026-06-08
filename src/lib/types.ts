@@ -1,5 +1,18 @@
 export type RoomStatus = 'waiting' | 'playing' | 'revealing' | 'finished';
 
+export interface PublicRoom {
+  roomId: string;
+  hostName: string;
+  category: string;
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken';
+  playerCount: number;
+  maxPlayers: number;
+  status: RoomStatus;
+  createdAt: number;
+  lastActiveAt?: number;
+  roomVisibility: 'public' | 'private' | 'link' | 'password';
+}
+
 export interface Question {
   text: string;
   options: string[];

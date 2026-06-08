@@ -540,6 +540,7 @@ export const syncLocalStatsToFirebase = async (playerId: string, playerName: str
          wrongAnswers: 0,
          totalPoints: (localStats.wins * 10) + ((localStats.gamesPlayed - localStats.wins) * 2),
          categoryCounts: {},
+         mostPlayedCategory: 'عام',
          successRate: 50,
          lastUpdated: Date.now()
        };

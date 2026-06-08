@@ -16,6 +16,7 @@ import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import TermsOfService from './pages/TermsOfService';
 import DebugRooms from './pages/DebugRooms';
+import DebugSupabase from './pages/DebugSupabase';
 import { AdBanner } from './components/AdBanner';
 import { useOnlinePresence } from './hooks/useOnlinePresence';
 import { Footer } from './components/Footer';
@@ -92,6 +93,7 @@ function AppContent() {
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/debug" element={<DebugRooms />} />
+          <Route path="/debug-supabase" element={<DebugSupabase />} />
         </Routes>
       </main>
       

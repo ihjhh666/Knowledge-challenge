@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Trophy, Crown, RefreshCcw, Settings, Lightbulb, Zap, Users } from 'lucide-react';
 import { useGame } from '../components/GameContext';
 import { audio } from '../lib/audio';
+import { storage } from '../lib/storage';
 import confetti from 'canvas-confetti';
 import { RoomPlayer } from '../lib/types';
 

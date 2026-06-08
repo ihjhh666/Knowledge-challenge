@@ -4,9 +4,11 @@ import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
 import { useAuth } from '../components/AuthContext';
 import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell, Crown } from 'lucide-react';
-import { subscribeToPublicRooms, PublicRoom, subscribeToOnlineCount, subscribeToFriends } from '../lib/firebase';
-import { RoomVisibility } from '../lib/types';
+import { subscribeToFriends } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
+import { RoomVisibility, PublicRoom } from '../lib/types';
 import { FriendsSidebar } from '../components/FriendsSidebar';
+import { supabase } from '../lib/supabase';
 
 import { CATEGORIES as SOLO_CATEGORIES } from './SoloPlay';
 
@@ -48,6 +50,28 @@ export default function Home() {
   const [showFriends, setShowFriends] = useState(false);
   const [pendingFriendsCount, setPendingFriendsCount] = useState(0);
   const [ping, setPing] = useState(0);
+  const [supabaseStatus, setSupabaseStatus] = useState<'pending' | 'connected' | 'error'>('pending');
+
+  useEffect(() => {
+    const checkSupabase = async () => {
+      try {
+        const { error } = await supabase.from('test_connection').select('*').limit(1);
+        if (error && (error.code === 'PGRST205' || error.message.includes('relation') || error.message.includes('Could not find the table'))) {
+           // This means we connected successfully but the table doesn't exist yet!
+           setSupabaseStatus('connected');
+        } else if (error && (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network'))) {
+           setSupabaseStatus('error');
+        } else if (!error) {
+           setSupabaseStatus('connected');
+        } else {
+           setSupabaseStatus('error');
+        }
+      } catch (e) {
+        setSupabaseStatus('error');
+      }
+    };
+    checkSupabase();
+  }, []);
 
   useEffect(() => {
     const measurePing = () => {
@@ -87,11 +111,24 @@ export default function Home() {
   }, [state?.roomId, navigate]);
 
   useEffect(() => {
-    const unsubscribeRooms = subscribeToPublicRooms((rooms, stats) => {
-      setPublicRooms(rooms || []);
-      if (stats) setRoomStats(stats);
+    const unsubscribeRooms = supabaseService.subscribeToRooms((rooms) => {
+      // Map SupabaseRoom to PublicRoom for UI compatibility
+      const mappedRooms = rooms.map(r => ({
+        roomId: r.id,
+        hostName: r.host_name,
+        category: r.category,
+        gameMode: r.game_mode as any,
+        playerCount: r.player_count,
+        maxPlayers: r.max_players,
+        status: r.status as any,
+        createdAt: new Date(r.created_at).getTime(),
+        lastActiveAt: new Date(r.last_active_at).getTime(),
+        roomVisibility: r.room_visibility as any
+      }));
+      setPublicRooms(mappedRooms);
+      setRoomStats({ fetched: mappedRooms.length, filtered: mappedRooms.length });
     });
-    const unsubscribeOnline = subscribeToOnlineCount((count) => {
+    const unsubscribeOnline = supabaseService.subscribeToOnlineCount((count) => {
       setOnlineCount(count);
     });
     return () => {
@@ -620,7 +657,20 @@ export default function Home() {
           {/* الغرف العامة */}
           <div className="space-y-4">
             <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-4 shadow-lg mb-2">
-               <h3 className="text-white font-bold opacity-80 mb-2 flex items-center gap-2 text-sm border-b border-slate-800 pb-2">📋 System Test Report</h3>
+               <div className="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
+                 <h3 className="text-white font-bold opacity-80 flex items-center gap-2 text-sm">📋 System Test Report</h3>
+                 <div className="flex gap-2 items-center">
+                   <div className="text-xs font-bold px-2 py-1 rounded bg-slate-950 border border-slate-800 flex items-center gap-2">
+                      <span className="text-slate-400">Supabase DB:</span>
+                      {supabaseStatus === 'pending' && <span className="text-slate-500 animate-pulse">⏳ جاري الاتصال...</span>}
+                      {supabaseStatus === 'connected' && <span className="text-emerald-400">✅ متصل بنجاح</span>}
+                      {supabaseStatus === 'error' && <span className="text-rose-400">❌ فشل الاتصال</span>}
+                   </div>
+                   <button onClick={() => navigate('/debug-supabase')} className="text-xs font-bold px-3 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
+                      <span>⚡</span> فحص الجداول (المرحلة 1)
+                   </button>
+                 </div>
+               </div>
                <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-4 lg:grid-cols-5">
                   <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
                      <span className="block text-slate-500 mb-1">المنصلين الآن</span>

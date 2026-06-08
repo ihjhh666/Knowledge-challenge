@@ -1,20 +1,22 @@
 import { useEffect } from 'react';
 import { storage } from '../lib/storage';
 import { updateOnlinePresence, removeOnlinePresence, updateUserProfile } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 
 export function useOnlinePresence() {
   useEffect(() => {
     const playerId = storage.getPlayerId();
+    const playerName = storage.getPlayerName() || `لاعب مجهول`;
     
     const syncProfile = async () => {
         // Initial heartbeat
         updateOnlinePresence(playerId);
+        supabaseService.setPlayerOnline(playerName);
         
         // Also sync profile info to ensure they are searchable
-        const name = storage.getPlayerName();
         const avatar = storage.getPlayerAvatar();
         await updateUserProfile(playerId, { 
-            username: name || `لاعب مجهول`,
+            username: playerName,
             avatarUrl: avatar,
             playerId: playerId 
         });
@@ -25,10 +27,12 @@ export function useOnlinePresence() {
     // Heartbeat every 10 seconds
     const interval = setInterval(() => {
       updateOnlinePresence(playerId);
+      supabaseService.setPlayerOnline(storage.getPlayerName() || `لاعب مجهول`);
     }, 10000);
     
     const handleUnload = () => {
       removeOnlinePresence(playerId);
+      supabaseService.setPlayerOffline(storage.getPlayerName() || `لاعب مجهول`);
     };
 
     window.addEventListener('beforeunload', handleUnload);
