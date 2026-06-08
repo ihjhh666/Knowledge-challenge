@@ -86,17 +86,25 @@ export const supabaseService = {
 
 
   subscribeToRooms(callback: (rooms: SupabaseRoom[]) => void) {
+    const channelId = `rooms_${Math.random().toString(36).substring(7)}`;
+    console.log(`[Supabase] Subscribing to rooms... Channel: ${channelId}`);
+    
     // Initial fetch
     supabase.from('rooms').select('*')
       .neq('room_visibility', 'private')
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) callback(data);
+      .then(({ data, error }) => {
+        if (error) console.error('[Supabase] Initial rooms fetch error:', error);
+        if (data) {
+          console.log(`[Supabase] Initial rooms fetched: ${data.length} rooms`);
+          callback(data);
+        }
       });
 
     // Realtime subscription
-    const subscription = supabase.channel('public:rooms')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
+    const subscription = supabase.channel(channelId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
+        console.log('[Supabase] Room realtime event received:', payload.eventType, payload.new);
         supabase.from('rooms').select('*')
           .neq('room_visibility', 'private')
           .order('created_at', { ascending: false })
@@ -104,9 +112,14 @@ export const supabaseService = {
             if (data) callback(data);
           });
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[Supabase] Room channel status: ${status}`);
+      });
 
-    return () => { supabase.removeChannel(subscription); };
+    return () => { 
+      console.log(`[Supabase] Unsubscribing from rooms... Channel: ${channelId}`);
+      supabase.removeChannel(subscription); 
+    };
   },
 
   // Leaderboard
@@ -147,52 +160,85 @@ export const supabaseService = {
   },
 
   subscribeToLeaderboard(callback: (entries: import('../lib/supabaseTypes').SupabaseLeaderboardEntry[]) => void) {
-    supabase.from('leaderboard').select('*').order('total_points', { ascending: false }).limit(50).then(({ data }) => {
+    const channelId = `leaderboard_${Math.random().toString(36).substring(7)}`;
+    console.log(`[Supabase] Subscribing to leaderboard... Channel: ${channelId}`);
+    
+    supabase.from('leaderboard').select('*').order('total_points', { ascending: false }).limit(50).then(({ data, error }) => {
+      if (error) console.error('[Supabase] Initial leaderboard fetch error:', error);
       if (data) callback(data);
     });
 
-    const subscription = supabase.channel('public:leaderboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => {
+    const subscription = supabase.channel(channelId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
+        console.log('[Supabase] Leaderboard realtime event:', payload.eventType);
         supabase.from('leaderboard').select('*').order('total_points', { ascending: false }).limit(50).then(({ data }) => {
           if (data) callback(data);
         });
       })
-      .subscribe();
+      .subscribe((status) => {
+         console.log(`[Supabase] Leaderboard channel status: ${status}`);
+      });
 
-    return () => { supabase.removeChannel(subscription); };
+    return () => { 
+      console.log(`[Supabase] Unsubscribing from leaderboard... Channel: ${channelId}`);
+      supabase.removeChannel(subscription); 
+    };
   },
 
   // Players / Presence
   async setPlayerOnline(username: string) {
+    if (!username) return;
+    console.log(`[Supabase_Presence] Heartbeat/Online for: ${username}`);
     const { data } = await supabase.from('players').select('*').eq('username', username).single();
     if (data) {
       await supabase.from('players').update({ is_online: true, last_active_at: new Date().toISOString() }).eq('id', data.id);
     } else {
-      await supabase.from('players').insert({ username, is_online: true });
+      await supabase.from('players').insert({ username, is_online: true, last_active_at: new Date().toISOString() });
     }
   },
 
   async setPlayerOffline(username: string) {
+    if (!username) return;
+    console.log(`[Supabase_Presence] Setting offline manually (unload): ${username}`);
     await supabase.from('players').update({ is_online: false }).eq('username', username);
   },
 
   subscribeToOnlineCount(callback: (count: number) => void) {
+    const channelId = `players_${Math.random().toString(36).substring(7)}`;
+    console.log(`[Supabase] Subscribing to online count... Channel: ${channelId}`);
     const updateCount = () => {
-       const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-       supabase.from('players').select('*', { count: 'exact', head: true })
-         .eq('is_online', true)
-         .gte('last_active_at', fiveMinsAgo)
-         .then(({ count }) => {
-           if (count !== null) callback(count);
+       // Do not consider player offline unless 60 seconds have passed since last activity
+       const sixtySecondsAgo = new Date(Date.now() - 60 * 1000).toISOString();
+       supabase.from('players')
+         .select('*', { count: 'exact', head: true })
+         .or(`is_online.eq.true,last_active_at.gte.${sixtySecondsAgo}`)
+         .then(({ count, error }) => {
+           if (error) console.error('[Supabase] Online count error:', error);
+           if (count !== null) {
+              console.log(`[Supabase] Online count updated: ${count}`);
+              callback(count);
+           }
          });
     };
     
     updateCount();
     
-    const subscription = supabase.channel('public:players')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, updateCount)
-      .subscribe();
+    const subscription = supabase.channel(channelId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, (payload) => {
+         console.log('[Supabase] Player realtime event:', payload.eventType);
+         updateCount();
+      })
+      .subscribe((status) => {
+         console.log(`[Supabase] Player channel status: ${status}`);
+      });
 
-    return () => { supabase.removeChannel(subscription); };
+    // Also run an interval to check for timeouts independently of postgres events
+    const interval = setInterval(updateCount, 15000); 
+
+    return () => { 
+      console.log(`[Supabase] Unsubscribing from players... Channel: ${channelId}`);
+      clearInterval(interval);
+      supabase.removeChannel(subscription); 
+    };
   }
 };

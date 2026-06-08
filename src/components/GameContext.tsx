@@ -144,6 +144,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handlePlayerDisconnect = (pId: string) => {
     if (!stateRef.current) return;
+    console.log(`[DEBUG] PLAYER LEFT OR DISCONNECTED: ${stateRef.current.players[pId]?.username || 'Unknown'} (${pId})`);
     
     // Clear ping time
     delete lastPingTimes.current[pId];
