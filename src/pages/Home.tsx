@@ -398,7 +398,12 @@ export default function Home() {
             متعة التحدي
           </h1>
           <div className="flex items-center gap-2 mt-2">
-            <p className="text-slate-400">مرحباً {username}!</p>
+            <p className="text-slate-400">
+               مرحباً {username}!
+               {user?.user_metadata?.account_type === 'guest' && (
+                 <span className="bg-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded-md mr-2 border border-slate-700">زائر</span>
+               )}
+            </p>
             <span className="text-slate-600">•</span>
             <div className="flex items-center gap-1.5 text-emerald-400 text-sm font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">
               <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>

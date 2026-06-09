@@ -51,6 +51,8 @@ export default function App() {
 import { migrateUserData } from './lib/firebase';
 import { storage } from './lib/storage';
 
+import { UsernamePrompt } from './components/UsernamePrompt';
+
 function AppContent() {
   useOnlinePresence();
 
@@ -78,6 +80,7 @@ function AppContent() {
     <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 font-sans flex flex-col" dir="rtl">
       <AchievementSystem />
       <GlobalProfileModal />
+      <UsernamePrompt />
       <main className="flex-1">
         <Routes>
           <Route path="/login" element={<Login />} />

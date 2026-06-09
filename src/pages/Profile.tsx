@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, User, Trophy, Star, Target, CheckCircle, XCircle, Gamepad2, BrainCircuit, Users, Copy, Upload, Trash2 } from 'lucide-react';
+import { ChevronRight, User, Trophy, Star, Target, CheckCircle, XCircle, Gamepad2, BrainCircuit, Users, Copy, Upload, Trash2, LogIn } from 'lucide-react';
 import { db, PlayerStats, subscribeToFriends, updateUserProfile } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { storage } from '../lib/storage';
 import { ACHIEVEMENTS } from '../lib/achievements';
+import { useAuth } from '../components/AuthContext';
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [friendCount, setFriendCount] = useState(0);
@@ -17,9 +19,11 @@ export default function Profile() {
   const playerId = storage.getPlayerId();
   const [avatar, setAvatar] = useState(storage.getPlayerAvatar());
 
+  const isGuest = user?.user_metadata?.account_type === 'guest';
+
   useEffect(() => {
     const fetchStats = async () => {
-      if (!db || !playerId) {
+      if (!db || !playerId || isGuest) {
         setLoading(false);
         return;
       }
@@ -35,15 +39,16 @@ export default function Profile() {
       setLoading(false);
     };
     fetchStats();
-  }, [playerId]);
+  }, [playerId, isGuest]);
 
+  // ... (keeping other useEffects but they won't render if isGuest returns early, see below)
   useEffect(() => {
-      if (!playerId) return;
+      if (!playerId || isGuest) return;
       const unsub = subscribeToFriends(playerId, (friends) => {
           setFriendCount(friends.length);
       });
       return unsub;
-  }, [playerId]);
+  }, [playerId, isGuest]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(playerId);
@@ -108,6 +113,36 @@ export default function Profile() {
      await updateUserProfile(playerId, { avatarUrl: defaultAvatar });
      setIsUploading(false);
   };
+
+  if (isGuest) {
+    return (
+      <div className="min-h-screen max-w-4xl mx-auto p-4 md:p-8 space-y-8" dir="rtl">
+        <header className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(-1)}
+            className="text-slate-400 hover:text-white bg-slate-900 border border-slate-800 p-2 rounded-xl transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <h1 className="text-3xl font-bold font-heading text-indigo-400">الملف الشخصي</h1>
+        </header>
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center shadow-xl">
+          <User className="w-16 h-16 text-indigo-400 mx-auto mb-4 opacity-50" />
+          <h2 className="text-2xl font-bold text-white mb-3">خاصية غير متاحة للزوار</h2>
+          <p className="text-slate-400 mb-8 max-w-md mx-auto">قم بإنشاء حساب دائم لحفظ تقدمك، تغيير صورتك الشخصية، وتتبع إحصائياتك وإنجازاتك.</p>
+          <button 
+            onClick={async () => {
+              await logout();
+              navigate('/register');
+            }}
+            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 mx-auto"
+          >
+            <LogIn className="w-5 h-5" /> إنشاء حساب دائم
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen max-w-4xl mx-auto p-4 md:p-8 space-y-8" dir="rtl">

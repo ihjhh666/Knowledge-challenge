@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { ACHIEVEMENTS, getUnlockedAchievements, getPlayerStats, Rarity, Achievement } from '../lib/achievements';
-import { Trophy, ChevronRight, Lock, Flame } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Trophy, ChevronRight, Lock, Flame, User, LogIn } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext';
 
 export default function Achievements() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [unlockedIds, setUnlockedIds] = useState<string[]>([]);
   const [stats, setStats] = useState(getPlayerStats());
   const [filter, setFilter] = useState<Rarity | 'all'>('all');
 
+  const isGuest = user?.user_metadata?.account_type === 'guest';
+
   useEffect(() => {
+    if (isGuest) return;
     setUnlockedIds(getUnlockedAchievements());
     setStats(getPlayerStats());
     
@@ -18,7 +24,37 @@ export default function Achievements() {
     };
     window.addEventListener('achievement_unlocked', handleUpdate);
     return () => window.removeEventListener('achievement_unlocked', handleUpdate);
-  }, []);
+  }, [isGuest]);
+
+  if (isGuest) {
+    return (
+      <div className="min-h-screen max-w-4xl mx-auto p-4 md:p-8 space-y-8" dir="rtl">
+        <header className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(-1)}
+            className="text-slate-400 hover:text-white bg-slate-900 border border-slate-800 p-2 rounded-xl transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <h1 className="text-3xl font-bold font-heading text-amber-400">الإنجازات</h1>
+        </header>
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center shadow-xl">
+          <Trophy className="w-16 h-16 text-amber-400 mx-auto mb-4 opacity-50" />
+          <h2 className="text-2xl font-bold text-white mb-3">خاصية غير متاحة للزوار</h2>
+          <p className="text-slate-400 mb-8 max-w-md mx-auto">قم بإنشاء حساب دائم لحفظ تقدمك وفتح الإنجازات وجمع الجوائز والترقيات.</p>
+          <button 
+            onClick={async () => {
+              await logout();
+              navigate('/register');
+            }}
+            className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 mx-auto"
+          >
+            <LogIn className="w-5 h-5" /> إنشاء حساب دائم
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const getRarityConfig = (rarity: Rarity) => {
     switch (rarity) {
