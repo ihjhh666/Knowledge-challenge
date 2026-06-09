@@ -109,6 +109,7 @@ export interface GameState {
 
 export type PeerMessage = 
   | { type: 'STATE_UPDATE', state: GameState }
+  | { type: 'NEW_QUESTION', question: any, status: string, round: number, roundStartTime: number }
   | { type: 'JOIN', player: RoomPlayer, password?: string }
   | { type: 'JOIN_REJECTED', reason: string }
   | { type: 'CHAT', message: ChatMessage }

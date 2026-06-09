@@ -370,12 +370,52 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleMessage = (message: PeerMessage, senderId?: string) => {
+    // 1. Permissions (Host Authority)
+    const hostOnlyActions = [
+      'START_GAME',
+      'KICK',
+      'CHANGE_CATEGORY',
+      'CHANGE_MODE',
+      'CHANGE_HOCKEY_MODE',
+      'ADD_BOT',
+      'REMOVE_BOT',
+      'RETURN_TO_LOBBY',
+      'FORCE_NEXT_QUESTION',
+      'TRANSFER_HOST',
+      'MUTE',
+      'FISH_SPAWN',
+      'HOCKEY_SYNC',
+      'KING_SYNC',
+      'CHICKEN_SYNC'
+    ];
+
+    if (isHostRef.current && senderId && hostOnlyActions.includes(message.type)) {
+         console.warn(`[GameContext] Unauthorized action ${message.type} from player ${senderId}. Only host controls this.`);
+         return;
+    }
+
     switch (message.type) {
       case 'STATE_UPDATE':
         if (stateRef.current?.status === 'waiting' && message.state.status === 'playing') {
+          console.log(`[GameContext] STATE_UPDATE_RECEIVED: Transitioning from waiting to playing`);
           audio.startGame();
+        } else {
+          console.log(`[GameContext] STATE_UPDATE_RECEIVED: updating game state. (Status: ${message.state.status})`);
         }
         setState(message.state);
+        break;
+      case 'NEW_QUESTION':
+        console.log(`[GameContext] QUESTION_SYNC_RECEIVED: Forcing state to playing and setting question`);
+        if (stateRef.current) {
+          const forceState = { 
+            ...stateRef.current, 
+            status: message.status as any, 
+            currentQuestion: message.question,
+            round: message.round,
+            roundStartTime: message.roundStartTime
+          };
+          setState(forceState);
+        }
         break;
       case 'JOIN':
         if (isHostRef.current && stateRef.current) {
@@ -1383,6 +1423,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const startNextRound = (currentState: GameState) => {
+    console.log(`[GameContext] START_GAME_TRIGGERED - Generating new question and preparing to broadcast state...`);
     let nextRound = currentState.round + 1;
     if (nextRound > currentState.totalRounds) {
        // Game Over
@@ -1456,8 +1497,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       players: updatedPlayers
     };
     setState(newState);
+    console.log(`[GameContext] STATE_UPDATE_SENT - status: playing, question: ${newState.currentQuestion?.text.substring(0, 20)}...`);
     broadcast({ type: 'STATE_UPDATE', state: newState });
     
+    // Optional: send explicit QUESTION_SYNC to guarantee transition
+    console.log(`[GameContext] QUESTION_SYNC_SENT - broadcasting individual question update...`);
+    broadcast({ type: 'NEW_QUESTION', question: newState.currentQuestion, status: 'playing', round: nextRound, roundStartTime: newState.roundStartTime! });
+
     if (nextRound === 1) {
       updatePublicRoom(currentState.roomId, { status: 'playing' });
     }
@@ -1611,16 +1657,42 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let rejectedReason: string | null = null;
       conn.on('data', (data) => {
         const msg = data as PeerMessage;
+        
         if (msg.type === 'STATE_UPDATE') {
+          if (stateRef.current?.status === 'waiting' && msg.state.status === 'playing') {
+            console.log(`[GameContext] STATE_UPDATE_RECEIVED: Transitioning from waiting to playing`);
+            audio.startGame();
+          } else {
+            console.log(`[GameContext] STATE_UPDATE_RECEIVED: updating game state. (Status: ${msg.state.status})`);
+          }
           setState(msg.state);
+        } else if (msg.type === 'NEW_QUESTION') {
+          console.log(`[GameContext] QUESTION_SYNC_RECEIVED: Forcing state to playing and setting question`);
+          if (stateRef.current) {
+            const forceState = { 
+              ...stateRef.current, 
+              status: msg.status as any, 
+              currentQuestion: msg.question,
+              round: msg.round,
+              roundStartTime: msg.roundStartTime
+            };
+            setState(forceState);
+          }
         } else if (msg.type === 'JOIN_REJECTED') {
           rejectedReason = msg.reason;
           if (onError) onError(msg.reason);
+          conn.close();
+        } else if (msg.type === 'KICKED') {
+          alert(msg.reason || 'لقد تم طردك من الغرفة.');
           conn.close();
         } else if (msg.type === 'FISH_CATCH' || msg.type === 'FISH_SPAWN') {
           window.dispatchEvent(new CustomEvent('fishing_event', { detail: msg }));
         } else if (msg.type === 'HOCKEY_ACTION' || msg.type === 'HOCKEY_SYNC' || msg.type === 'HOCKEY_RESTART') {
           window.dispatchEvent(new CustomEvent('hockey_event', { detail: msg }));
+        } else if (msg.type === 'KING_SYNC' || msg.type === 'KING_INPUT') {
+          window.dispatchEvent(new CustomEvent('king_event', { detail: msg }));
+        } else if (msg.type === 'CHICKEN_SYNC' || msg.type === 'CHICKEN_INPUT') {
+          window.dispatchEvent(new CustomEvent('chicken_event', { detail: msg }));
         }
       });
       
