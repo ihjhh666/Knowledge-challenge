@@ -1065,9 +1065,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                  connectionsRef.current.set(c.peer, c);
                  c.on('data', (data) => handleMessage(data as PeerMessage, c.peer));
                  c.on('close', () => {
-                    connectionsRef.current.delete(c.peer);
-                    if (stateRef.current) {
-                       handlePlayerDisconnect(c.peer);
+                    if (connectionsRef.current.get(c.peer) === c) {
+                        connectionsRef.current.delete(c.peer);
+                        if (stateRef.current) {
+                           handlePlayerDisconnect(c.peer);
+                        }
+                    } else {
+                        console.warn(`[GameContext] IGNORING 'close' for peer ${c.peer} because we have a newer active connection for them.`);
                     }
                  });
                  c.on('error', (err) => console.error('New host conn error:', err));
@@ -1652,9 +1656,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       conn.on('close', () => {
         console.warn(`[GameContext] CONNECTION_MARKED_DISCONNECTED for peer ${conn.peer}. Triggered by PeerJS conn.on('close').`);
-        connectionsRef.current.delete(conn.peer);
-        if (stateRef.current) {
-           handlePlayerDisconnect(conn.peer);
+        if (connectionsRef.current.get(conn.peer) === conn) {
+            connectionsRef.current.delete(conn.peer);
+            if (stateRef.current) {
+               handlePlayerDisconnect(conn.peer);
+            }
+        } else {
+            console.warn(`[GameContext] IGNORING 'close' for peer ${conn.peer} because we have a newer active connection for them.`);
         }
       });
       
@@ -1757,6 +1765,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       conn.on('close', () => {
         console.warn(`[GameContext] CONNECTION_MARKED_DISCONNECTED for peer ${conn.peer}. Triggered by PeerJS conn.on('close') on client side.`);
         if (intentionalLeaveRef.current) return;
+        
+        if (hostConnectionRef.current && hostConnectionRef.current !== conn) {
+            console.warn(`[GameContext] IGNORING host 'close' because we have a newer active connection to the host.`);
+            return;
+        }
 
         const oldState = stateRef.current;
         if (oldState && !rejectedReason) {
@@ -1810,9 +1823,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     connectionsRef.current.set(c.peer, c);
                     c.on('data', (data) => handleMessage(data as PeerMessage, c.peer));
                     c.on('close', () => {
-                       connectionsRef.current.delete(c.peer);
-                       if (stateRef.current) {
-                          handlePlayerDisconnect(c.peer);
+                       if (connectionsRef.current.get(c.peer) === c) {
+                           connectionsRef.current.delete(c.peer);
+                           if (stateRef.current) {
+                              handlePlayerDisconnect(c.peer);
+                           }
+                       } else {
+                           console.warn(`[GameContext] IGNORING 'close' for peer ${c.peer} because we have a newer active connection for them.`);
                        }
                     });
                     c.on('error', (err) => console.error('New host conn error:', err));
