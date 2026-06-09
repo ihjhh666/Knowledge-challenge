@@ -63,6 +63,23 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Custom setState that synchronously sets the ref,
   // preventing stale closure updates on rapid successive async events.
   const setState = (newState: GameState | null) => {
+     if (isHostRef.current && stateRef.current && newState) {
+        const oldIds = Object.keys(stateRef.current.players);
+        const newIds = Object.keys(newState.players);
+        if (oldIds.length !== newIds.length) {
+            console.log(`[GameContext] [setState] HOST PLAYERS COUNT CHANGED. Old:`, oldIds, `New:`, newIds);
+            
+            // Check who was added or removed
+            const added = newIds.filter(id => !oldIds.includes(id));
+            const removed = oldIds.filter(id => !newIds.includes(id));
+            if (added.length > 0) {
+              console.log(`[GameContext] PLAYER ADDED: ${added.map(id => `${newState.players[id]?.username} (${id})`).join(', ')}`);
+            }
+            if (removed.length > 0) {
+              console.log(`[GameContext] PLAYER REMOVED: ${removed.map(id => `${stateRef.current?.players[id]?.username} (${id})`).join(', ')}`);
+            }
+        }
+     }
      stateRef.current = newState;
      setReactState(newState);
   };
@@ -126,9 +143,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
          Object.keys(players).forEach(pId => {
            if (pId !== playerId) {
               const lastPing = lastPingTimes.current[pId];
-              if (lastPing && (now - lastPing > 15000)) {
-                 console.log(`[DEBUG] PING TIMEOUT FOR ${pId}. Last ping: ${now - lastPing}ms ago.`);
-                 // Missed pings for 15 seconds!
+              if (lastPing && (now - lastPing > 30000)) {
+                 console.log(`[GameContext.tsx] [pingInterval] PLAYER REMOVED: ${players[pId]?.username} (${pId}) - Reason: Ping timeout > 30s. Before:`, Object.keys(players));
                  const conn = connectionsRef.current.get(pId);
                  if (conn) {
                    conn.close();
@@ -148,34 +164,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handlePlayerDisconnect = (pId: string) => {
     if (!stateRef.current) return;
-    console.log(`[DEBUG] PLAYER LEAVE EVENT: ${stateRef.current.players[pId]?.username || 'Unknown'} (${pId})`);
+    const playerToRemove = stateRef.current.players[pId];
+    console.log(`[GameContext.tsx] [handlePlayerDisconnect] PLAYER REMOVED: ${playerToRemove?.username || 'Unknown'} (${pId}) - Reason: PeerJS disconnect / Left room. Before:`, Object.keys(stateRef.current.players));
     
     // Clear ping time
     delete lastPingTimes.current[pId];
     
     const currentState = stateRef.current;
     
-    if (currentState.status === 'waiting') {
-       // Remove them immediately
-       const { [pId]: _, ...remainingPlayers } = currentState.players;
-       let newHockeyState = currentState.hockeyState;
-       if (newHockeyState) {
-           newHockeyState = {
-               ...newHockeyState,
-               team1: (newHockeyState.team1 || []).filter(id => id !== pId),
-               team2: (newHockeyState.team2 || []).filter(id => id !== pId)
-           };
-       }
-       const newState = { ...currentState, players: remainingPlayers, hockeyState: newHockeyState };
-       setState(newState);
-       broadcast({ type: 'STATE_UPDATE', state: newState });
-       updatePublicRoom(newState.roomId, {
-         playerCount: Object.keys(newState.players).length
-       });
-       return;
-    }
-    
-    // In-game disconnect
+    // If status is waiting, add disconnectedAt and remove after 30s just like in-game
+    // Only difference is what happens to the state afterwards
     const player = currentState.players[pId];
     if (player && !player.disconnectedAt) {
        const newState = {
@@ -194,7 +192,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        
        disconnectDelays.current[pId] = setTimeout(() => {
           if (stateRef.current && stateRef.current.players[pId]?.disconnectedAt) {
+             console.log(`[GameContext] [disconnectDelays] Removing player ${pId} after 30s timeout`);
              const st = stateRef.current;
+             
+             if (st.status === 'waiting') {
+                 const updatedPlayers = { ...st.players };
+                 delete updatedPlayers[pId];
+                 
+                 let newHockeyState = st.hockeyState;
+                 if (newHockeyState) {
+                     newHockeyState = {
+                         ...newHockeyState,
+                         team1: (newHockeyState.team1 || []).filter(id => id !== pId),
+                         team2: (newHockeyState.team2 || []).filter(id => id !== pId)
+                     };
+                 }
+                 const newSt = { ...st, players: updatedPlayers, hockeyState: newHockeyState };
+                 setState(newSt);
+                 broadcast({ type: 'STATE_UPDATE', state: newSt });
+                 updatePublicRoom(newSt.roomId, {
+                   playerCount: Object.keys(newSt.players).length
+                 });
+                 return;
+             }
              
              // Hande Hockey 2v2 bot substitution
              if (st.gameMode === 'hockey' && st.hockeyState?.is2v2) {
@@ -311,7 +331,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                  });
              }
           }
-       }, 10000); // 10 seconds grace period
+       }, 30000); // 30 seconds grace period
     }
   };
 
