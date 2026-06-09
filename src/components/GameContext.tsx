@@ -397,10 +397,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     switch (message.type) {
       case 'STATE_UPDATE':
         if (stateRef.current?.status === 'waiting' && message.state.status === 'playing') {
-          console.log(`[GameContext] STATE_UPDATE_RECEIVED: Transitioning from waiting to playing`);
+          console.log(`[GameContext] CLIENT_RECEIVED_STATE: Transitioning from waiting to playing! Players:`, Object.keys(message.state.players));
           audio.startGame();
         } else {
-          console.log(`[GameContext] STATE_UPDATE_RECEIVED: updating game state. (Status: ${message.state.status})`);
+          console.log(`[GameContext] CLIENT_RECEIVED_STATE: updating game state. Status: ${message.state.status}, Players:`, Object.keys(message.state.players));
         }
         setState(message.state);
         break;
@@ -419,8 +419,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'JOIN':
         if (isHostRef.current && stateRef.current) {
-          console.log(`[DEBUG] PLAYER JOIN EVENT: ${message.player.username} (${message.player.id})`);
-          console.log(`[DEBUG] HOST PLAYERS BEFORE UPDATE:`, Object.keys(stateRef.current.players));
+          console.log(`[GameContext] HOST_RECEIVED_JOIN_REQUEST: ${message.player.username} (${message.player.id})`);
+          console.log(`[GameContext] HOST PLAYERS BEFORE UPDATE:`, Object.keys(stateRef.current.players));
           lastPingTimes.current[message.player.id] = Date.now();
           const conn = senderId ? connectionsRef.current.get(senderId) : null;
           
@@ -440,6 +440,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (reconnectingOldId) {
              const oldId = reconnectingOldId;
              const newId = message.player.id;
+             console.log(`[GameContext] HOST_RECONNECTING_PLAYER: Old ID ${oldId} -> New ID ${newId}`);
              
              if (disconnectDelays.current[oldId]) {
                 clearTimeout(disconnectDelays.current[oldId]);
@@ -488,6 +489,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
              }
              
              setState(newState);
+             console.log(`[GameContext] HOST_BROADCASTED_STATE after reconnect. Players:`, Object.keys(newState.players));
              broadcast({ type: 'STATE_UPDATE', state: newState });
              
              // System message
@@ -547,9 +549,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }
           };
+          
+          console.log(`[GameContext] HOST_ADDED_PLAYER: ${message.player.username} (${message.player.id})`);
           setState(newState);
+          console.log(`[GameContext] HOST_BROADCASTED_STATE after join`);
           broadcast({ type: 'STATE_UPDATE', state: newState });
-          console.log(`[DEBUG] HOST PLAYERS AFTER UPDATE:`, Object.keys(newState.players));
+          console.log(`[GameContext] HOST PLAYERS AFTER UPDATE:`, Object.keys(newState.players));
           
           updatePublicRoom(newState.roomId, {
             playerCount: Object.keys(newState.players).length
@@ -1646,6 +1651,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       hostConnectionRef.current = conn;
       
       conn.on('open', () => {
+        lastHostPingTime.current = Date.now(); // Reset ping timeout so we don't migrate instantly
         conn.send({
           type: 'JOIN',
           player: { id: myId, userId: storage.getPlayerId(), username, avatarUrl: storage.getPlayerAvatar(), isReady: false, isHost: false, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false },
@@ -1660,10 +1666,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (msg.type === 'STATE_UPDATE') {
           if (stateRef.current?.status === 'waiting' && msg.state.status === 'playing') {
-            console.log(`[GameContext] STATE_UPDATE_RECEIVED: Transitioning from waiting to playing`);
+            console.log(`[GameContext] CLIENT_RECEIVED_STATE: Transitioning from waiting to playing! Players:`, Object.keys(msg.state.players));
             audio.startGame();
           } else {
-            console.log(`[GameContext] STATE_UPDATE_RECEIVED: updating game state. (Status: ${msg.state.status})`);
+            console.log(`[GameContext] CLIENT_RECEIVED_STATE: updating game state. (Status: ${msg.state.status}), Players:`, Object.keys(msg.state.players));
+          }
+          if (!msg.state.players[myId]) {
+            console.warn(`[GameContext] PLAYER_CONNECTED_BUT_NOT_IN_STATE: I am connected but my ID (${myId}) is missing from players array!`);
           }
           setState(msg.state);
         } else if (msg.type === 'NEW_QUESTION') {
