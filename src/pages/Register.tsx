@@ -35,13 +35,14 @@ export default function Register() {
       if (data.user) {
         const defaultAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${data.user.id}`;
         // Best effort insert in case they didn't get inserted yet
-        await supabase.from('players').insert({
+        const { error: insertError } = await supabase.from('players').insert({
           id: data.user.id,
           username: name,
           avatar_url: defaultAvatar,
           is_online: true,
           last_active_at: new Date().toISOString()
-        }).select().single().catch(e => console.error(e));
+        }).select().single();
+        if (insertError) console.error(insertError);
       }
 
       // Handle unconfirmed email scenario (requires user to check their email)
