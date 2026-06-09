@@ -19,6 +19,16 @@ export default function Register() {
     setLoading(true);
 
     try {
+      console.log('--- Register Attempt ---');
+      console.log(`Email value: "${email}" (Length: ${email.length})`);
+      console.log('Char codes:', email.split('').map(c => c.charCodeAt(0)).join(', '));
+      
+      // Manual simple validation to print rejection reason if any
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+         console.warn("Custom Validation Failed! Email doesn't match standard regex. Reason: Contains spaces, missing @, or invalid domain.");
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -116,7 +126,10 @@ export default function Register() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  console.log(`[Email Input] Value changed: "${e.target.value}"`, 'Char codes:', e.target.value.split('').map(c => c.charCodeAt(0)).join(', '));
+                  setEmail(e.target.value);
+                }}
                 placeholder="البريد الإلكتروني"
                 className="w-full bg-slate-950 border border-slate-700/50 rounded-xl py-4 pr-12 pl-4 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-left text-white"
                 required
