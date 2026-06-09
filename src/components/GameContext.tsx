@@ -129,9 +129,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!isHostRef.current && hostConnectionRef.current?.open) {
          hostConnectionRef.current.send({ type: 'PING', playerId });
          
-         // Timeout recovery
-         if (now - lastHostPingTime.current > 7000) {
-             console.warn("Host timeout detected! Triggering migration.");
+         // Timeout recovery: 25 seconds instead of 7 to avoid background tab throttling
+         if (now - lastHostPingTime.current > 25000) {
+             console.warn(`[GameContext] Host timeout detected! Marking host disconnected. Last ping: ${lastHostPingTime.current}, now: ${now}, diff: ${now - lastHostPingTime.current}`);
              hostConnectionRef.current.close();
          }
       }
@@ -143,8 +143,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
          Object.keys(players).forEach(pId => {
            if (pId !== playerId) {
               const lastPing = lastPingTimes.current[pId];
-              if (lastPing && (now - lastPing > 30000)) {
-                 console.log(`[GameContext.tsx] [pingInterval] PLAYER REMOVED: ${players[pId]?.username} (${pId}) - Reason: Ping timeout > 30s. Before:`, Object.keys(players));
+              // 60 seconds timeout instead of 30 for players to prevent extreme false positives
+              if (lastPing && (now - lastPing > 60000)) {
+                 console.warn(`[GameContext] [pingInterval] PLAYER REMOVED: ${players[pId]?.username} (${pId}) - Reason: Ping timeout > 60s. Before:`, Object.keys(players));
                  const conn = connectionsRef.current.get(pId);
                  if (conn) {
                    conn.close();
@@ -165,7 +166,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handlePlayerDisconnect = (pId: string) => {
     if (!stateRef.current) return;
     const playerToRemove = stateRef.current.players[pId];
-    console.log(`[GameContext.tsx] [handlePlayerDisconnect] PLAYER REMOVED: ${playerToRemove?.username || 'Unknown'} (${pId}) - Reason: PeerJS disconnect / Left room. Before:`, Object.keys(stateRef.current.players));
+    console.warn(`[GameContext.tsx] [handlePlayerDisconnect] CONNECTION_MARKED_DISCONNECTED: ${playerToRemove?.username || 'Unknown'} (${pId})`);
     
     // Clear ping time
     delete lastPingTimes.current[pId];
@@ -370,6 +371,53 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleMessage = (message: PeerMessage, senderId?: string) => {
+    // Treat ANY message from sender as a heartbeat to prevent false disconnects
+    if (senderId) {
+      if (isHostRef.current) {
+        lastPingTimes.current[senderId] = Date.now();
+        if (message.type === 'PING') {
+            // console.log(`[GameContext] PING_RECEIVED from ${senderId}`);
+        }
+        
+        // CONNECTION_RESTORED: If we receive any message from a player marked as disconnected, restore them automatically!
+        if (stateRef.current && stateRef.current.players[senderId]?.disconnectedAt) {
+            console.warn(`[GameContext] CONNECTION_RESTORED for ${senderId} due to incoming message of type ${message.type}`);
+            if (disconnectDelays.current[senderId]) {
+                clearTimeout(disconnectDelays.current[senderId]);
+                delete disconnectDelays.current[senderId];
+            }
+            const newState = {
+                ...stateRef.current,
+                players: {
+                    ...stateRef.current.players,
+                    [senderId]: {
+                        ...stateRef.current.players[senderId],
+                        disconnectedAt: undefined
+                    }
+                }
+            };
+            delete newState.players[senderId].disconnectedAt; // Ensure it's removed
+            setState(newState);
+            broadcast({ type: 'STATE_UPDATE', state: newState });
+        }
+
+      } else if (stateRef.current && stateRef.current.players[senderId]?.isHost) {
+        lastHostPingTime.current = Date.now();
+      }
+    } else if (!isHostRef.current && message.type === 'PING_HOST') {
+        const hostId = stateRef.current ? Object.values(stateRef.current.players).find(p => p.isHost)?.id : null;
+        if (hostId) {
+            lastHostPingTime.current = Date.now();
+        }
+    }
+
+    if (message.type === 'PING_HOST') {
+        if (!isHostRef.current) {
+           console.log(`[GameContext] PING_HOST_RECEIVED. Marking host active.`);
+           lastHostPingTime.current = Date.now();
+        }
+    }
+
     // 1. Permissions (Host Authority)
     const hostOnlyActions = [
       'START_GAME',
@@ -1603,6 +1651,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       conn.on('close', () => {
+        console.warn(`[GameContext] CONNECTION_MARKED_DISCONNECTED for peer ${conn.peer}. Triggered by PeerJS conn.on('close').`);
         connectionsRef.current.delete(conn.peer);
         if (stateRef.current) {
            handlePlayerDisconnect(conn.peer);
@@ -1706,6 +1755,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       conn.on('close', () => {
+        console.warn(`[GameContext] CONNECTION_MARKED_DISCONNECTED for peer ${conn.peer}. Triggered by PeerJS conn.on('close') on client side.`);
         if (intentionalLeaveRef.current) return;
 
         const oldState = stateRef.current;
