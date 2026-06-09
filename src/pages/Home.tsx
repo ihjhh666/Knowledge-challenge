@@ -199,46 +199,7 @@ export default function Home() {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950 text-white">
-        <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl max-w-sm w-full shadow-2xl">
-          <div className="text-center mb-8">
-            <div className="bg-indigo-500/10 w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4">
-              <Users className="w-8 h-8 text-indigo-400" />
-            </div>
-            <h1 className="text-2xl font-bold font-heading">تحدي المعرفة</h1>
-            <p className="text-slate-400 text-sm mt-2">أدخل اسمك للبدء باللعب</p>
-          </div>
-          
-          <div className="space-y-4">
-            {loginError && (
-               <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-center text-sm font-bold">
-                 {loginError}
-               </div>
-            )}
-            
-            <form onSubmit={handleGuestLogin} className="space-y-3">
-              <input
-                type="text"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="أدخل اسمك للدخول كزائر"
-                className="w-full bg-slate-950 border border-slate-700/50 rounded-xl p-4 text-center focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-slate-500 text-white"
-                minLength={2}
-                maxLength={20}
-              />
-              <button
-                type="submit"
-                disabled={!guestName.trim() || isLoggingIn}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
-              >
-                الدخول كزائر
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
+    return null; // Will be redirected by ProtectedRoute
   }
 
   if (showCreateModal) {

@@ -30,6 +30,10 @@ import Settings from './pages/Settings';
 import { GameInvitesListener } from './components/GameInvitesListener';
 
 import { GlobalProfileModal } from './components/GlobalProfileModal';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 
 export default function App() {
   return (
@@ -76,19 +80,26 @@ function AppContent() {
       <GlobalProfileModal />
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/room/:roomId" element={<Room />} />
-          <Route path="/solo" element={<SoloPlay />} />
-          <Route path="/fishing" element={<FishingSolo />} />
-          <Route path="/penalty" element={<PenaltySolo />} />
-          <Route path="/domino" element={<DominoSolo />} />
-          <Route path="/hockey-solo" element={<HockeySolo />} />
-          <Route path="/chicken-solo" element={<ChickenSolo />} />
-          <Route path="/king-mode" element={<KingMode />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/achievements" element={<Achievements />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/room/:roomId" element={<Room />} />
+            <Route path="/solo" element={<SoloPlay />} />
+            <Route path="/fishing" element={<FishingSolo />} />
+            <Route path="/penalty" element={<PenaltySolo />} />
+            <Route path="/domino" element={<DominoSolo />} />
+            <Route path="/hockey-solo" element={<HockeySolo />} />
+            <Route path="/chicken-solo" element={<ChickenSolo />} />
+            <Route path="/king-mode" element={<KingMode />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
