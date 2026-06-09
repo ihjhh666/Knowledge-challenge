@@ -43,15 +43,25 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
+      console.log('--- تتبع عملية تسجيل الدخول بواسطة Google ---');
+      const currentOrigin = window.location.origin;
+      const explicitRedirectTo = currentOrigin; // window.location.origin
+      
+      console.log('القيمة الممررة كـ redirectTo يدوياً هي:', explicitRedirectTo);
+
+      // We will skip browser redirect to extract the URL first
+      const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-           redirectTo: window.location.origin
+           redirectTo: explicitRedirectTo,
+           skipBrowserRedirect: false
         }
       });
+      
       if (signInError) throw signInError;
-      // It redirects to Google, so we don't need to do anything else here
+      
     } catch (err: any) {
+      console.error('Google Auth Error:', err);
       setError('فشل تسجيل الدخول بواسطة Google: ' + err.message);
       setLoading(false);
     }
