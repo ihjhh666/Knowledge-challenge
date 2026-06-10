@@ -190,12 +190,12 @@ export default function DominoRoom() {
 
   useEffect(() => {
     if (ds?.winnerId && !statsSaved) {
-       import('../lib/firebase').then(({ updatePlayerStats }) => {
+       import('../services/supabaseService').then(({ supabaseService }) => {
            const isWin = ds.winnerId === playerId;
            const pName = storage.getPlayerName() || 'أنت';
            let pScore = 0;
            if (ds.pointsMatch) pScore = ds.pointsMatch[playerId] || 10;
-           updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, pScore, '🎲 الدومينو');
+           supabaseService.updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, pScore, '🎲 الدومينو');
        });
        setStatsSaved(true);
     }

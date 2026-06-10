@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Settings2, RotateCcw, HomeIcon, Trophy, Target, LogOut } from 'lucide-react';
 import { useGame } from '../components/GameContext';
 import { storage } from '../lib/storage';
-import { updateHockeyStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 
 const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
 
@@ -372,7 +372,7 @@ export default function Hockey2v2Room() {
     const pId = storage.getPlayerId();
     const pName = storage.getPlayerName() || 'لاعب مجهول';
     const pointsAwarded = isWin ? 10 : 2;
-    updateHockeyStats(pId, pName, isWin, pScore, oScore, pointsAwarded);
+    supabaseService.updatePlayerStats(pId, pName, isWin, 0, 0, pointsAwarded, '🏒 هوكي 2v2');
   };
 
   const onGoalHost = (scorerIsTeam1: boolean) => {

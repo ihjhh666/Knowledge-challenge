@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Home as HomeIcon, RotateCcw, Trophy, Target, Clock } from 'lucide-react';
 import { chickenAudio } from '../lib/chickenAudio';
 import { storage } from '../lib/storage';
-import { updatePlayerStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 import { useGame } from '../components/GameContext';
 import { RoomPlayer } from '../lib/types';
 import confetti from 'canvas-confetti';
@@ -34,7 +34,7 @@ export default function ChickenRoom() {
         if (localPlayer) {
              const isWin = winnerRef.current.id === localPlayer.id && localPlayer.score > 0;
              const pName = storage.getPlayerName() || 'أنت';
-             updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, localPlayer.score, '🐔 جمع الدجاج');
+             supabaseService.updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, localPlayer.score, '🐔 جمع الدجاج');
              setStatsSaved(true);
         }
     }

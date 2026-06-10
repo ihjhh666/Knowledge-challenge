@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Home as HomeIcon, RotateCcw, Volume2, VolumeX, Grid2X2, Trophy, BrainCircuit, Target, Settings2, Play } from 'lucide-react';
-import { updatePlayerStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 
@@ -509,7 +509,7 @@ export default function DominoSolo() {
   const updateStats = (isWin: boolean, score: number) => {
     const pId = storage.getPlayerId();
     const pName = storage.getPlayerName() || 'لاعب مجهول';
-    updatePlayerStats(pId, pName, isWin, 0, 0, score, '🎲 دومينو');
+    supabaseService.updatePlayerStats(pId, pName, isWin, 0, 0, score, '🎲 دومينو');
   };
 
   const visualTiles: VisualTile[] = [];

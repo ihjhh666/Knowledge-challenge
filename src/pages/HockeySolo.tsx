@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Settings2, RotateCcw, HomeIcon, Trophy, Target } from 'lucide-react';
 import { storage } from '../lib/storage';
-import { updateHockeyStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 
 // Audio Context for sound effects
 const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -391,7 +391,7 @@ export default function HockeySolo() {
     const pId = storage.getPlayerId();
     const pName = storage.getPlayerName() || 'لاعب مجهول';
     const pointsAwarded = isWin ? 10 : 2;
-    updateHockeyStats(pId, pName, isWin, pScore, bScore, pointsAwarded);
+    supabaseService.updatePlayerStats(pId, pName, isWin, 0, 0, pointsAwarded, '🏒 هوكي');
   };
 
   const onGoal = (scorer: 'player' | 'bot') => {

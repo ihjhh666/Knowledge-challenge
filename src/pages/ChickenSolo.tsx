@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Home as HomeIcon, RotateCcw, Trophy, Target, Clock } from 'lucide-react';
 import { chickenAudio } from '../lib/chickenAudio';
 import { storage } from '../lib/storage';
-import { updatePlayerStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 
 const WORLD_W = 1300;
 const WORLD_H = 950;
@@ -453,7 +453,7 @@ export default function ChickenSolo() {
       if (won) chickenAudio.playWin(); else chickenAudio.playLose();
       const pId = storage.getPlayerId();
       const pName = storage.getPlayerName() || 'أنت';
-      updatePlayerStats(pId, pName, won, 0, 0, playersRef.current[0].score, '🐔 جمع الدجاج');
+      supabaseService.updatePlayerStats(pId, pName, won, 0, 0, playersRef.current[0].score, '🐔 جمع الدجاج');
   }, []);
 
   useEffect(() => {

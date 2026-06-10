@@ -3,7 +3,7 @@ import { useGame } from '../components/GameContext';
 import { RoomPlayer } from '../lib/types';
 import { Check, X, Clock, Brain, Trophy, Crown, Mic, MicOff, UserMinus } from 'lucide-react';
 import { audio } from '../lib/audio';
-import { updatePlayerStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 import { storage } from '../lib/storage';
 
 import { MatchEndScreen } from '../components/MatchEndScreen';
@@ -72,7 +72,7 @@ export default function PlayingField() {
         // We'll estimate based on score or just say correct = round / 2 (just for now) or let's not add correct counts if we don't know.
         // Actually, we can just save it with what we have. It will update the score!
         
-        updatePlayerStats(
+        supabaseService.updatePlayerStats(
           storage.getPlayerId(),
           storage.getPlayerName() || me.username,
           isWin,

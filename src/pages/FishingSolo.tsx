@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Target, Trophy, Clock, Fish as FishIcon, Medal, User, Waves, Volume2, VolumeX } from 'lucide-react';
-import { updateFishingStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 import { storage } from '../lib/storage';
 import { fishingAudio } from '../lib/fishingAudio';
 
@@ -190,7 +190,7 @@ export default function FishingSolo() {
           const pId = storage.getPlayerId();
           const pName = storage.getPlayerName() || 'لاعب مجهول';
           
-          updateFishingStats(pId, pName, isWin, scoreRef.current, fishCountRef.current);
+          supabaseService.updatePlayerStats(pId, pName, isWin, 0, 0, scoreRef.current, '🎣 صيد السمك');
       }
   }, [gameState]); // Note: Bots array is fixed inside results because results is only set once
 

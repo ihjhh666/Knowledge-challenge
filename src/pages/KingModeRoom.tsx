@@ -43,10 +43,10 @@ export default function KingModeRoom() {
 
   useEffect(() => {
      if ((gameState === 'won' || gameState === 'lost') && !statsSaved && winner) {
-         import('../lib/firebase').then(({ updatePlayerStats }) => {
+         import('../services/supabaseService').then(({ supabaseService }) => {
              const isWin = gameState === 'won';
              const pName = storage.getPlayerName() || 'أنت';
-             updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, winner.score || 10, '👑 طور الملك');
+             supabaseService.updatePlayerStats(storage.getPlayerId(), pName, isWin, 0, 0, winner.score || 10, '👑 طور الملك');
          });
          setStatsSaved(true);
      }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RoomPlayer } from '../lib/types';
 import { useGame } from '../components/GameContext';
 import { ChevronRight, ChevronLeft, Trophy, Goal, Shield, Save, XOctagon, RotateCcw, Volume2, VolumeX, Home as HomeIcon, Activity, Clock, Star, Medal } from 'lucide-react';
-import { updatePenaltyStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 import { MatchEndScreen } from '../components/MatchEndScreen';
@@ -88,12 +88,14 @@ export default function PenaltyRoom() {
       const willWin = isPlayerWin || (playerScore === botScore); // if draw, count as whatever
       const playerSaves = history.filter(h => h.goalieId === playerId && !h.isGoal).length;
       const playerName = storage.getPlayerName() || 'لاعب مجهول';
-      updatePenaltyStats(
+      supabaseService.updatePlayerStats(
          storage.getPlayerId(),
          playerName,
          isPlayerWin,
-         playerScore,
-         playerSaves
+         0,
+         0,
+         playerScore * 10,
+         '⚽ ضربات جزاء'
       );
     }
   }, [isFinished]);

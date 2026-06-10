@@ -4,7 +4,7 @@ import { Brain, Trophy, ChevronRight, X, Clock, Target } from 'lucide-react';
 import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC, MATH_EXPANDED as MATH } from '../lib/dynamicQuestions';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
-import { updatePlayerStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 
 export const CATEGORIES = [
   { id: 'general', name: 'معلومات عامة', icon: '🌍', data: GENERAL_KNOWLEDGE, color: 'from-blue-500 to-blue-700' },
@@ -123,7 +123,7 @@ export default function SoloPlay() {
     const playerName = storage.getPlayerName() || 'لاعب مجهول';
     const isWin = finalCorrect > finalWrong && finalScore > 0;
     
-    updatePlayerStats(
+    supabaseService.updatePlayerStats(
       playerId,
       playerName,
       isWin,

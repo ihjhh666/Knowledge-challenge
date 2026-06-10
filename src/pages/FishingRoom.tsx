@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Target, Trophy, Clock, Fish as FishIcon, Medal, User, Crown, Volume2, VolumeX } from 'lucide-react';
 import { useGame } from '../components/GameContext';
 import { fishingAudio } from '../lib/fishingAudio';
-import { updateFishingStats } from '../lib/firebase';
+import { supabaseService } from '../services/supabaseService';
 import { storage } from '../lib/storage';
 import { RoomPlayer } from '../lib/types';
 import { MatchEndScreen } from '../components/MatchEndScreen';
@@ -96,12 +96,14 @@ export default function FishingRoom() {
           fishingAudio.playGameOver();
         }
 
-        updateFishingStats(
+        supabaseService.updatePlayerStats(
           storage.getPlayerId(),
           storage.getPlayerName() || me.username,
           isWin,
+          0,
+          0,
           me.score,
-          Math.max(1, Math.floor(me.score / 25))
+          '🎣 صيد السمك'
         );
         setStatsSaved(true);
       }
