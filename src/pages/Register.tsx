@@ -51,7 +51,6 @@ export default function Register() {
           username: name,
           avatar_url: defaultAvatar,
           is_online: true,
-          account_type: 'registered',
           last_active_at: new Date().toISOString()
         }).select().single();
         if (insertError) console.error(insertError);

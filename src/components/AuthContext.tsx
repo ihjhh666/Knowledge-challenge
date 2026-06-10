@@ -72,7 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: sessionUser.email || null,
               avatar_url: sessionUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`,
               is_online: true,
-              account_type: 'registered',
               last_active_at: new Date().toISOString()
            });
            
@@ -160,7 +159,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: user.email || null,
         avatar_url: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`,
         is_online: true,
-        account_type: 'registered',
         last_active_at: new Date().toISOString()
       }, { onConflict: 'id' });
       
