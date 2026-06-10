@@ -49,7 +49,6 @@ export default function Register() {
         const { error: insertError } = await supabase.from('players').insert({
           id: data.user.id,
           username: name,
-          avatar_url: defaultAvatar,
           is_online: true,
           last_active_at: new Date().toISOString()
         }).select().single();

@@ -100,7 +100,6 @@ https://knowledge-challenge.vercel.app
         await supabase.from('players').insert({
           id: data.user.id,
           username: guestName,
-          avatar_url: defaultAvatar,
           is_online: true,
           last_active_at: new Date().toISOString()
         }).select().single().then(() => {

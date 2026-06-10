@@ -69,8 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
            await supabase.from('players').upsert({
               id: sessionUser.id,
               username: googleUsername,
-              email: sessionUser.email || null,
-              avatar_url: sessionUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`,
               is_online: true,
               last_active_at: new Date().toISOString()
            });
@@ -156,8 +154,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.from('players').upsert({
         id: user.id,
         username: username,
-        email: user.email || null,
-        avatar_url: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`,
         is_online: true,
         last_active_at: new Date().toISOString()
       }, { onConflict: 'id' });
