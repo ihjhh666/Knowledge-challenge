@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 import { storage } from '../lib/storage';
@@ -30,6 +31,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [needsUsernamePrompt, setNeedsUsernamePrompt] = useState(false);
 
+  const navigate = useNavigate();
+
   const syncProfile = async (sessionUser: User) => {
     try {
       const { data: player, error } = await supabase
@@ -39,10 +42,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
         
       if (player && player.username) {
+        console.log('USER_AUTHENTICATED: Existing profile found');
         storage.setPlayerName(player.username);
         storage.setPlayerAvatar(player.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`);
         setNeedsUsernamePrompt(false);
       } else {
+        console.log('USER_AUTHENTICATED: No profile, checking metadata');
         // Player doesn't exist or doesn't have a username yet
         if (sessionUser.user_metadata?.username) {
            // Has metadata but maybe database record is missing, try to upsert as fallback
@@ -68,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (sessionUser.user_metadata?.username) {
            setNeedsUsernamePrompt(false);
         } else {
+           console.log('USER_AUTHENTICATED: Needs username prompt');
            setNeedsUsernamePrompt(true);
         }
       } else {
@@ -77,18 +83,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    const handleSession = (session: Session | null) => {
+      if (session) {
+        console.log('OAUTH_SESSION_FOUND');
+        if (window.location.hash.includes('access_token=')) {
+          console.log('REDIRECTING_TO_HOME and cleaning URL');
+          // Clean the URL from the OAuth fragment
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          navigate('/', { replace: true });
+        }
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
+        handleSession(session);
         syncProfile(session.user).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event);
       setUser(session?.user ?? null);
       if (session?.user) {
+        if (event === 'SIGNED_IN') {
+           handleSession(session);
+        }
         await syncProfile(session.user);
         setLoading(false);
       } else {
@@ -99,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
   
   const loginAsGuest = async (name: string) => {}; // No-op now
 
