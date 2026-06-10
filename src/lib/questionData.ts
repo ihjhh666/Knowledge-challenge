@@ -20,6 +20,17 @@ import { MASSIVE_ISLAMIC } from './massive/islamic';
 import { BULK_GENERAL, BULK_FOOTBALL, BULK_MATH, BULK_MOVIES, BULK_ANIME, BULK_SCIENCE, BULK_HISTORY, BULK_ISLAMIC } from './massive/bulkData1';
 import { GENERAL_BULK_2, FOOTBALL_BULK_2, MOVIES_BULK_2, HISTORY_BULK_2 } from './massive/bulkData2';
 
+import { GENERAL_ADDITIONS_1 } from './questions/general_additions_1';
+import { GENERAL_ADDITIONS_2 } from './questions/general_additions_2';
+import { GENERAL_ADDITIONS_3 } from './questions/general_additions_3';
+import { GENERAL_ADDITIONS_4 } from './questions/general_additions_4';
+import { GENERAL_ADDITIONS_5 } from './questions/general_additions_5';
+import { GENERAL_ADDITIONS_6 } from './questions/general_additions_6';
+import { GENERAL_ADDITIONS_7 } from './questions/general_additions_7';
+import { GENERAL_ADDITIONS_8 } from './questions/general_additions_8';
+import { GENERAL_ADDITIONS_9 } from './questions/general_additions_9';
+import { GENERAL_ADDITIONS_10 } from './questions/general_additions_10';
+
 import { 
   getDynamicGeneral, 
   getDynamicFootball, 
@@ -47,7 +58,24 @@ const deduplicateQs = (qs: { text: string; correctAnswer: string; wrongOptions: 
   });
 }
 
-export const GENERAL_KNOWLEDGE = deduplicateQs([...NEW_GENERAL, ...MEGA_GENERAL, ...MASSIVE_GENERAL, ...BULK_GENERAL, ...GENERAL_BULK_2, ...getDynamicGeneral(1800)]);
+export const GENERAL_KNOWLEDGE = deduplicateQs([
+  ...NEW_GENERAL, 
+  ...MEGA_GENERAL, 
+  ...MASSIVE_GENERAL, 
+  ...BULK_GENERAL, 
+  ...GENERAL_BULK_2, 
+  ...GENERAL_ADDITIONS_1,
+  ...GENERAL_ADDITIONS_2,
+  ...GENERAL_ADDITIONS_3,
+  ...GENERAL_ADDITIONS_4,
+  ...GENERAL_ADDITIONS_5,
+  ...GENERAL_ADDITIONS_6,
+  ...GENERAL_ADDITIONS_7,
+  ...GENERAL_ADDITIONS_8,
+  ...GENERAL_ADDITIONS_9,
+  ...GENERAL_ADDITIONS_10,
+  ...getDynamicGeneral(1800)
+]);
 export const FOOTBALL = deduplicateQs([...NEW_FOOTBALL, ...MEGA_FOOTBALL, ...MASSIVE_FOOTBALL, ...BULK_FOOTBALL, ...FOOTBALL_BULK_2, ...getDynamicFootball(1800)]);
 export const MOVIES = deduplicateQs([...NEW_MOVIES, ...MEGA_MOVIES, ...MASSIVE_MOVIES, ...BULK_MOVIES, ...MOVIES_BULK_2, ...getDynamicMovies(1800)]);
 export const ANIME = deduplicateQs([...NEW_ANIME, ...MEGA_ANIME, ...MASSIVE_ANIME, ...BULK_ANIME, ...getDynamicAnime(1800)]);
