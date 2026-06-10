@@ -1,0 +1,18 @@
+console.log('--- Diagnosis of Redirect Issue ---');
+console.log('When using Email login (signInWithPassword):');
+console.log('- No page redirect occurs.');
+console.log('- The browser stays on the current domain (e.g., AI Studio or a new Vercel domain).');
+console.log('- window.location.href remains the same: "https://your-current-app-domain.com/#/"');
+console.log('');
+console.log('When using Google Login (signInWithOAuth):');
+console.log('- The browser redirects to Supabase to handle Google Auth.');
+console.log('- Supabase checks the "redirectTo" parameter passed from the app.');
+console.log('- If the "redirectTo" URL is NOT registered in Supabase under "Redirect URLs", it SILENTLY IGNORES IT.');
+console.log('- Supabase then falls back to its default "Site URL".');
+console.log('- The default Site URL in Supabase is currently set to: "https://knowledge-challenge.vercel.app".');
+console.log('- So Supabase redirects the browser to: "https://knowledge-challenge.vercel.app/#access_token=..."');
+console.log('');
+console.log('Why is the interface different?');
+console.log('- "https://knowledge-challenge.vercel.app" is hosting an OLDER/DIFFERENT application (the English version with "Programming & Web Dev", etc).');
+console.log('- The current Arabic app ("تحدي المعرفة") is running on a different domain or preview link.');
+console.log('- Hence, Google Login literally throws the user out of the Arabic app and drops them into the English app.');

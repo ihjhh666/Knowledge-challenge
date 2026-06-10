@@ -35,32 +35,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const syncProfile = async (sessionUser: User) => {
     try {
+      console.log('--- تتبع بيانات المستخدم ---');
+      console.log('user.id:', sessionUser.id);
+      console.log('user.email:', sessionUser.email);
+      
+      const isGoogleUser = sessionUser.app_metadata?.provider === 'google';
+      if (isGoogleUser) {
+        console.log('GOOGLE_USER_FOUND');
+      }
+
+      console.log('نتيجة البحث في جدول players ...');
       const { data: player, error } = await supabase
         .from('players')
         .select('*')
         .eq('id', sessionUser.id)
         .single();
         
+      console.log('Supabase Query Result:', { player, error: error?.message || null });
+        
       if (player && player.username) {
-        console.log('USER_AUTHENTICATED: Existing profile found');
+        console.log('PLAYER_RECORD_FOUND');
         storage.setPlayerName(player.username);
         storage.setPlayerAvatar(player.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`);
         setNeedsUsernamePrompt(false);
       } else {
-        console.log('USER_AUTHENTICATED: No profile, checking metadata');
-        // Player doesn't exist or doesn't have a username yet
-        if (sessionUser.user_metadata?.username) {
-           // Has metadata but maybe database record is missing, try to upsert as fallback
+        console.log('لم يتم العثور على سجل في جدول players (أو لا يوجد username).');
+        
+        // Ensure Google users get automatically created using their Google name/profile
+        const googleUsername = sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || sessionUser.email?.split('@')[0];
+        
+        if (googleUsername) {
+           console.log('جاري إنشاء سجل جديد للاعب...');
            await supabase.from('players').upsert({
               id: sessionUser.id,
-              username: sessionUser.user_metadata.username,
-              avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`,
+              username: googleUsername,
+              email: sessionUser.email || null,
+              avatar_url: sessionUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`,
               is_online: true,
-              account_type: sessionUser.user_metadata.account_type || 'registered',
+              account_type: 'registered',
               last_active_at: new Date().toISOString()
            });
-           storage.setPlayerName(sessionUser.user_metadata.username);
-           storage.setPlayerAvatar(`https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`);
+           
+           console.log('PLAYER_RECORD_CREATED');
+           
+           // Update auth metadata to avoid prompting again
+           await supabase.auth.updateUser({
+             data: { username: googleUsername, account_type: 'registered' }
+           });
+
+           storage.setPlayerName(googleUsername);
+           storage.setPlayerAvatar(sessionUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`);
            setNeedsUsernamePrompt(false);
         } else {
            // OAuth user without a username! We need to prompt them
@@ -68,26 +92,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch (e: any) {
-      if (e?.code === 'PGRST116') {
-        // Not found, check metadata
-        if (sessionUser.user_metadata?.username) {
-           setNeedsUsernamePrompt(false);
-        } else {
-           console.log('USER_AUTHENTICATED: Needs username prompt');
-           setNeedsUsernamePrompt(true);
-        }
-      } else {
-         console.error("Error syncing profile:", e);
-      }
+       console.error("Error syncing profile:", e);
     }
   };
 
   useEffect(() => {
     const handleSession = (session: Session | null) => {
       if (session) {
-        console.log('OAUTH_SESSION_FOUND');
         if (window.location.hash.includes('access_token=')) {
-          console.log('REDIRECTING_TO_HOME and cleaning URL');
+          console.log('REDIRECT_TO_GAME');
           // Clean the URL from the OAuth fragment
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
           navigate('/', { replace: true });

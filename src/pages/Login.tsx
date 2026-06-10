@@ -46,6 +46,18 @@ export default function Login() {
       console.log('--- تتبع عملية تسجيل الدخول بواسطة Google ---');
       const currentOrigin = window.location.origin;
       console.log('سيتم التحويل إلى:', currentOrigin);
+      console.warn(`
+[تشخيص المشكلة النهائي]
+عند التسجيل بالإيميل: لا يحدث أي انتقال (Redirect) من الصفحة، فتظل في اللعبة الصحيحة.
+عند التسجيل بـ Google: نرسل الرابط الحالي (${currentOrigin}) إلى Supabase.
+لكن بما أن الرابط الحالي غير مسجل في قائمة "Redirect URLs" داخل إعدادات Supabase، 
+فإن Supabase تتجاهل الرابط الحالي وتقوم بالتحويل الإجباري إلى الـ Site URL الافتراضي وهو:
+https://knowledge-challenge.vercel.app
+
+وهذا الرابط الأخير يستضيف النسخة الإنجليزية القديمة من التطبيق (كما ظهر في الصورة)، 
+وليس النسخة العربية الحالية!
+لذلك تظهر لك واجهة التطبيق القديم وليس اللعبة العربية الحالية.
+`);
 
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
