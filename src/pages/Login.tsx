@@ -45,16 +45,12 @@ export default function Login() {
     try {
       console.log('--- تتبع عملية تسجيل الدخول بواسطة Google ---');
       const currentOrigin = window.location.origin;
-      const explicitRedirectTo = currentOrigin; // window.location.origin
-      
-      console.log('القيمة الممررة كـ redirectTo يدوياً هي:', explicitRedirectTo);
+      console.log('سيتم التحويل إلى:', currentOrigin);
 
-      // We will skip browser redirect to extract the URL first
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-           redirectTo: explicitRedirectTo,
-           skipBrowserRedirect: false
+          redirectTo: currentOrigin // نمرر الدومين الفعلي للتطبيق لكي لا يعود إلى localhost
         }
       });
       
