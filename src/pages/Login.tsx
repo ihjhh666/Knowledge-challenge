@@ -97,14 +97,17 @@ https://knowledge-challenge.vercel.app
       if (data.user) {
         console.log('GUEST_LOGIN_STARTED');
         const defaultAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${data.user.id}`;
-        await supabase.from('players').insert({
-          id: data.user.id,
-          username: guestName,
-          is_online: true,
-          last_active_at: new Date().toISOString()
-        }).select().single().then(() => {
-           console.log('GUEST_PLAYER_CREATED');
-        }).catch(e => console.error(e));
+        try {
+          await supabase.from('players').insert({
+            id: data.user.id,
+            username: guestName,
+            is_online: true,
+            last_active_at: new Date().toISOString()
+          });
+          console.log('GUEST_PLAYER_CREATED');
+        } catch (e) {
+          console.error(e);
+        }
         console.log('GUEST_LOGIN_SUCCESS');
       }
 

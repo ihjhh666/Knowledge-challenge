@@ -74,15 +74,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const measurePing = () => {
+    const measurePing = async () => {
        const start = Date.now();
-       import('../lib/firebase').then(({ db, subscribeToOnlineCount }) => {
-          if (db) {
-            // Fake a read or just use a small delay to simulate ping for report
-            const elapsed = Date.now() - start;
-            setPing(Math.max(15 + Math.floor(Math.random()*40), elapsed));
-          }
-       });
+       try {
+         await supabase.from('test_connection').select('*').limit(1);
+         const elapsed = Date.now() - start;
+         setPing(elapsed);
+       } catch (e) {
+         setPing(999);
+       }
     };
     const interval = setInterval(measurePing, 5000);
     measurePing();
@@ -111,6 +111,12 @@ export default function Home() {
   }, [state?.roomId, navigate]);
 
   useEffect(() => {
+    // Run cleanup immediately on mount and then every minute
+    supabaseService.cleanupStaleRooms();
+    const cleanupInterval = setInterval(() => {
+      supabaseService.cleanupStaleRooms();
+    }, 60000);
+
     const unsubscribeRooms = supabaseService.subscribeToRooms((rooms) => {
       // Map SupabaseRoom to PublicRoom for UI compatibility
       const mappedRooms = rooms.map(r => ({
@@ -132,6 +138,7 @@ export default function Home() {
       setOnlineCount(count);
     });
     return () => {
+      clearInterval(cleanupInterval);
       unsubscribeRooms();
       unsubscribeOnline();
     };

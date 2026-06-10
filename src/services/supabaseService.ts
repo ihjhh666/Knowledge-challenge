@@ -84,33 +84,46 @@ export const supabaseService = {
     if (error) console.error('Failed to delete room:', error);
   },
 
+  async cleanupStaleRooms() {
+    try {
+      const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { error: err1 } = await supabase.from('rooms').delete().lt('last_active_at', tenMinsAgo);
+      if (err1) console.error('[Supabase] Failed to cleanup old rooms:', err1);
+
+      const { error: err2 } = await supabase.from('rooms').delete().lte('player_count', 0);
+      if (err2) console.error('[Supabase] Failed to cleanup empty rooms:', err2);
+    } catch (e) {
+      console.error('[Supabase] Error during room cleanup:', e);
+    }
+  },
 
   subscribeToRooms(callback: (rooms: SupabaseRoom[]) => void) {
     const channelId = `rooms_${Math.random().toString(36).substring(7)}`;
     console.log(`[Supabase] Subscribing to rooms... Channel: ${channelId}`);
     
+    const fetchRooms = () => {
+      supabase.from('rooms').select('*')
+        .neq('room_visibility', 'private')
+        .eq('status', 'waiting')
+        .gt('player_count', 0)
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (error) console.error('[Supabase] Initial rooms fetch error:', error);
+          if (data) {
+            console.log(`[Supabase] Rooms fetched: ${data.length} rooms`);
+            callback(data);
+          }
+        });
+    };
+
     // Initial fetch
-    supabase.from('rooms').select('*')
-      .neq('room_visibility', 'private')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) console.error('[Supabase] Initial rooms fetch error:', error);
-        if (data) {
-          console.log(`[Supabase] Initial rooms fetched: ${data.length} rooms`);
-          callback(data);
-        }
-      });
+    fetchRooms();
 
     // Realtime subscription
     const subscription = supabase.channel(channelId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
         console.log('[Supabase] Room realtime event received:', payload.eventType, payload.new);
-        supabase.from('rooms').select('*')
-          .neq('room_visibility', 'private')
-          .order('created_at', { ascending: false })
-          .then(({ data }) => {
-            if (data) callback(data);
-          });
+        fetchRooms();
       })
       .subscribe((status) => {
         console.log(`[Supabase] Room channel status: ${status}`);
@@ -186,39 +199,61 @@ export const supabaseService = {
   },
 
   // Players / Presence
-  async setPlayerOnline(username: string) {
-    if (!username) return;
-    console.log(`[Supabase_Presence] Heartbeat/Online for: ${username}`);
-    const { data } = await supabase.from('players').select('*').eq('username', username).single();
-    if (data) {
-      await supabase.from('players').update({ is_online: true, last_active_at: new Date().toISOString() }).eq('id', data.id);
-    } else {
-      await supabase.from('players').insert({ username, is_online: true, last_active_at: new Date().toISOString() });
+  async setPlayerOnline(playerId: string, username: string) {
+    if (!playerId) return;
+    console.log(`[Supabase_Presence] Heartbeat/Online for: ${username} (${playerId})`);
+    
+    // Efficient upsert using ID
+    try {
+      await supabase.from('players').upsert({ 
+        id: playerId,
+        username,
+        is_online: true,
+        last_active_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    } catch (err) {
+      console.error('[Supabase_Presence] Heartbeat failed:', err);
     }
   },
 
-  async setPlayerOffline(username: string) {
-    if (!username) return;
-    console.log(`[Supabase_Presence] Setting offline manually (unload): ${username}`);
-    await supabase.from('players').update({ is_online: false }).eq('username', username);
+  async setPlayerOffline(playerId: string) {
+    if (!playerId) return;
+    console.log(`[Supabase_Presence] Setting offline manually (unload): ${playerId}`);
+    try {
+      await supabase.from('players').update({ is_online: false }).eq('id', playerId);
+    } catch (err) {
+      console.error('[Supabase_Presence] Offline mark failed:', err);
+    }
+  },
+
+  async getOnlinePlayersCount(): Promise<number> {
+    try {
+      // 90 seconds grace period for offline status (to account for minor networking delays around the 30s heartbeat)
+      const ninetySecondsAgo = new Date(Date.now() - 90 * 1000).toISOString();
+      const { count, error } = await supabase.from('players')
+        .select('*', { count: 'exact', head: true })
+        .or(`is_online.eq.true,last_active_at.gte.${ninetySecondsAgo}`);
+
+      if (error) {
+        console.error('[Supabase] getOnlinePlayersCount error:', error);
+        return 0;
+      }
+      return count || 0;
+    } catch (e) {
+      console.error('[Supabase] getOnlinePlayersCount exception:', e);
+      return 0;
+    }
   },
 
   subscribeToOnlineCount(callback: (count: number) => void) {
     const channelId = `players_${Math.random().toString(36).substring(7)}`;
     console.log(`[Supabase] Subscribing to online count... Channel: ${channelId}`);
-    const updateCount = () => {
-       // Do not consider player offline unless 60 seconds have passed since last activity
-       const sixtySecondsAgo = new Date(Date.now() - 60 * 1000).toISOString();
-       supabase.from('players')
-         .select('*', { count: 'exact', head: true })
-         .or(`is_online.eq.true,last_active_at.gte.${sixtySecondsAgo}`)
-         .then(({ count, error }) => {
-           if (error) console.error('[Supabase] Online count error:', error);
-           if (count !== null) {
-              console.log(`[Supabase] Online count updated: ${count}`);
-              callback(count);
-           }
-         });
+    
+    // We update using our new method
+    const updateCount = async () => {
+       const count = await this.getOnlinePlayersCount();
+       console.log(`[Supabase] Online count updated: ${count}`);
+       callback(count);
     };
     
     updateCount();

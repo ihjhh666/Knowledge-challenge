@@ -98,10 +98,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const handleBeforeUnload = () => {
        if (isHostRef.current && stateRef.current?.roomId) {
-         // Only delete if I am the last player
-         if (Object.keys(stateRef.current.players).length <= 1) {
-           deletePublicRoom(stateRef.current.roomId);
-         }
+         deletePublicRoom(stateRef.current.roomId);
        } else if (hostConnectionRef.current?.open) {
          // Tell host we are leaving explicitly so they don't wait 7 seconds
          hostConnectionRef.current.send({ type: 'LEAVE', playerId });
@@ -163,16 +160,192 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Added disconnect delays tracking
   const disconnectDelays = useRef<Record<string, NodeJS.Timeout>>({});
 
-  const handlePlayerDisconnect = (pId: string) => {
+  const handlePlayerDisconnect = (pId: string, intentional: boolean = false) => {
     if (!stateRef.current) return;
     const playerToRemove = stateRef.current.players[pId];
-    console.warn(`[GameContext.tsx] [handlePlayerDisconnect] CONNECTION_MARKED_DISCONNECTED: ${playerToRemove?.username || 'Unknown'} (${pId})`);
+    console.warn(`[GameContext.tsx] [handlePlayerDisconnect] CONNECTION_MARKED_DISCONNECTED: ${playerToRemove?.username || 'Unknown'} (${pId}) intentional: ${intentional}`);
     
     // Clear ping time
     delete lastPingTimes.current[pId];
     
     const currentState = stateRef.current;
     
+    const doRemove = () => {
+        if (!stateRef.current || !stateRef.current.players[pId]) return;
+        const st = stateRef.current;
+        
+        if (st.status === 'waiting') {
+            const updatedPlayers = { ...st.players };
+            delete updatedPlayers[pId];
+            
+            let newHockeyState = st.hockeyState;
+            if (newHockeyState) {
+                newHockeyState = {
+                    ...newHockeyState,
+                    team1: (newHockeyState.team1 || []).filter(id => id !== pId),
+                    team2: (newHockeyState.team2 || []).filter(id => id !== pId)
+                };
+            }
+            const newSt = { ...st, players: updatedPlayers, hockeyState: newHockeyState };
+            setState(newSt);
+            broadcast({ type: 'STATE_UPDATE', state: newSt });
+            
+            const pCount = Object.keys(newSt.players).length;
+            if (pCount === 0) {
+              deletePublicRoom(newSt.roomId);
+            } else {
+              updatePublicRoom(newSt.roomId, {
+                playerCount: pCount
+              });
+            }
+            return;
+        }
+        
+        // Hande Hockey 2v2 bot substitution
+        if (st.gameMode === 'hockey' && st.hockeyState?.is2v2) {
+            const updatedPlayers = { ...st.players };
+            const pData = updatedPlayers[pId];
+            delete updatedPlayers[pId];
+            
+            let newHockeyState = { ...st.hockeyState };
+            let botTeam: 1|2 = 1;
+            
+            if (newHockeyState.team1?.includes(pId)) {
+                newHockeyState.team1 = newHockeyState.team1.filter(id => id !== pId);
+                const botId = `bot-${Math.random().toString(36).substr(2, 5)}`;
+                newHockeyState.team1.push(botId);
+                botTeam = 1;
+                updatedPlayers[botId] = {
+                    id: botId,
+                    username: `بوت (${pData?.username || ''})`, // Add old player's name as indicator
+                    isHost: false,
+                    isReady: true,
+                    score: pData?.score || 0,
+                    hasAnsweredCurrentRound: true,
+                    lastAnswerSucceeded: false
+                };
+            } else if (newHockeyState.team2?.includes(pId)) {
+                newHockeyState.team2 = newHockeyState.team2.filter(id => id !== pId);
+                const botId = `bot-${Math.random().toString(36).substr(2, 5)}`;
+                newHockeyState.team2.push(botId);
+                botTeam = 2;
+                updatedPlayers[botId] = {
+                    id: botId,
+                    username: `بوت (${pData?.username || ''})`, // Add old player's name as indicator
+                    isHost: false,
+                    isReady: true,
+                    score: pData?.score || 0,
+                    hasAnsweredCurrentRound: true,
+                    lastAnswerSucceeded: false
+                };
+            }
+            
+            const newSt = { ...st, players: updatedPlayers, hockeyState: newHockeyState };
+            setState(newSt);
+            broadcast({ type: 'STATE_UPDATE', state: newSt });
+            
+            const pCount = Object.keys(updatedPlayers).length;
+            if (pCount === 0) {
+               deletePublicRoom(newSt.roomId);
+            } else {
+               updatePublicRoom(newSt.roomId, {
+                  playerCount: pCount
+               });
+            }
+            
+            // System message
+            handleMessage({
+                type: 'CHAT',
+                message: {
+                    id: Math.random().toString(),
+                    senderId: 'SYSTEM',
+                    senderName: 'النظام',
+                    text: `لم يعد اللاعب ${pData?.username}، تم استبداله ببوت.`,
+                    timestamp: Date.now()
+                }
+            });
+            return;
+        }
+        
+        // Standard forfeit logic
+        const playingPlayers = Object.keys(st.players).filter(key => key !== pId && !st.players[key].disconnectedAt);
+        const remainingId = playingPlayers[0];
+        
+        const updatedPlayers = { ...st.players };
+        if (remainingId && updatedPlayers[remainingId]) {
+           if (st.gameMode === 'penalty' || st.gameMode === 'domino' || st.gameMode === 'hockey') {
+              // Add a forfeit identifier or score
+              updatedPlayers[remainingId].score += 10;
+           }
+        }
+        const pData = updatedPlayers[pId];
+        delete updatedPlayers[pId];
+        
+        // Check if less than 2 players remain in 2-player/1v1 modes
+        const needsTwo = st.gameMode === 'penalty' || st.gameMode === 'domino' || st.gameMode === 'hockey';
+        if (needsTwo && Object.keys(updatedPlayers).length < 2) {
+            const finSt = { ...st, players: updatedPlayers, status: 'finished' as const };
+            setState(finSt);
+            broadcast({ type: 'STATE_UPDATE', state: finSt });
+            
+            const pCount = Object.keys(updatedPlayers).length;
+            if (pCount === 0) {
+               deletePublicRoom(finSt.roomId);
+            } else {
+               updatePublicRoom(finSt.roomId, {
+                  status: 'finished',
+                  playerCount: pCount
+               });
+            }
+            
+            // System message for forfeit
+            handleMessage({
+                type: 'CHAT',
+                message: {
+                    id: Math.random().toString(),
+                    senderId: 'SYSTEM',
+                    senderName: 'النظام',
+                    text: `لم يعد اللاعب ${pData?.username}، تم احتساب الفوز للطرف الآخر.`,
+                    timestamp: Date.now()
+                }
+            });
+        } else {
+            const newSt = { ...st, players: updatedPlayers };
+            setState(newSt);
+            broadcast({ type: 'STATE_UPDATE', state: newSt });
+            
+            const pCount = Object.keys(updatedPlayers).length;
+            if (pCount === 0) {
+                deletePublicRoom(newSt.roomId);
+            } else {
+                updatePublicRoom(newSt.roomId, {
+                   playerCount: pCount
+                });
+            }
+            checkAllAnswered(newSt);
+            // System message for forfeit
+            handleMessage({
+                type: 'CHAT',
+                message: {
+                    id: Math.random().toString(),
+                    senderId: 'SYSTEM',
+                    senderName: 'النظام',
+                    text: `لم يعُد اللاعب ${pData?.username}، تم استبعاده.`,
+                    timestamp: Date.now()
+                }
+            });
+        }
+    };
+
+    if (intentional) {
+      if (disconnectDelays.current[pId]) {
+         clearTimeout(disconnectDelays.current[pId]);
+         delete disconnectDelays.current[pId];
+      }
+      doRemove();
+      return;
+    }
+
     // If status is waiting, add disconnectedAt and remove after 30s just like in-game
     // Only difference is what happens to the state afterwards
     const player = currentState.players[pId];
@@ -194,143 +367,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
        disconnectDelays.current[pId] = setTimeout(() => {
           if (stateRef.current && stateRef.current.players[pId]?.disconnectedAt) {
              console.log(`[GameContext] [disconnectDelays] Removing player ${pId} after 30s timeout`);
-             const st = stateRef.current;
-             
-             if (st.status === 'waiting') {
-                 const updatedPlayers = { ...st.players };
-                 delete updatedPlayers[pId];
-                 
-                 let newHockeyState = st.hockeyState;
-                 if (newHockeyState) {
-                     newHockeyState = {
-                         ...newHockeyState,
-                         team1: (newHockeyState.team1 || []).filter(id => id !== pId),
-                         team2: (newHockeyState.team2 || []).filter(id => id !== pId)
-                     };
-                 }
-                 const newSt = { ...st, players: updatedPlayers, hockeyState: newHockeyState };
-                 setState(newSt);
-                 broadcast({ type: 'STATE_UPDATE', state: newSt });
-                 updatePublicRoom(newSt.roomId, {
-                   playerCount: Object.keys(newSt.players).length
-                 });
-                 return;
-             }
-             
-             // Hande Hockey 2v2 bot substitution
-             if (st.gameMode === 'hockey' && st.hockeyState?.is2v2) {
-                 const updatedPlayers = { ...st.players };
-                 const pData = updatedPlayers[pId];
-                 delete updatedPlayers[pId];
-                 
-                 let newHockeyState = { ...st.hockeyState };
-                 let botTeam: 1|2 = 1;
-                 
-                 if (newHockeyState.team1?.includes(pId)) {
-                     newHockeyState.team1 = newHockeyState.team1.filter(id => id !== pId);
-                     const botId = `bot-${Math.random().toString(36).substr(2, 5)}`;
-                     newHockeyState.team1.push(botId);
-                     botTeam = 1;
-                     updatedPlayers[botId] = {
-                         id: botId,
-                         username: `بوت (${pData.username})`, // Add old player's name as indicator
-                         isHost: false,
-                         isReady: true,
-                         score: pData.score,
-                         hasAnsweredCurrentRound: true,
-                         lastAnswerSucceeded: false
-                     };
-                 } else if (newHockeyState.team2?.includes(pId)) {
-                     newHockeyState.team2 = newHockeyState.team2.filter(id => id !== pId);
-                     const botId = `bot-${Math.random().toString(36).substr(2, 5)}`;
-                     newHockeyState.team2.push(botId);
-                     botTeam = 2;
-                     updatedPlayers[botId] = {
-                         id: botId,
-                         username: `بوت (${pData.username})`, // Add old player's name as indicator
-                         isHost: false,
-                         isReady: true,
-                         score: pData.score,
-                         hasAnsweredCurrentRound: true,
-                         lastAnswerSucceeded: false
-                     };
-                 }
-                 
-                 const newSt = { ...st, players: updatedPlayers, hockeyState: newHockeyState };
-                 setState(newSt);
-                 broadcast({ type: 'STATE_UPDATE', state: newSt });
-                 updatePublicRoom(newSt.roomId, {
-                    playerCount: Object.keys(updatedPlayers).length
-                 });
-                 // System message
-                 handleMessage({
-                     type: 'CHAT',
-                     message: {
-                         id: Math.random().toString(),
-                         senderId: 'SYSTEM',
-                         senderName: 'النظام',
-                         text: `لم يعد اللاعب ${pData?.username}، تم استبداله ببوت.`,
-                         timestamp: Date.now()
-                     }
-                 });
-                 return;
-             }
-             
-             // Standard forfeit logic
-             const playingPlayers = Object.keys(st.players).filter(key => key !== pId && !st.players[key].disconnectedAt);
-             const remainingId = playingPlayers[0];
-             
-             const updatedPlayers = { ...st.players };
-             if (remainingId && updatedPlayers[remainingId]) {
-                if (st.gameMode === 'penalty' || st.gameMode === 'domino' || st.gameMode === 'hockey') {
-                   // Add a forfeit identifier or score
-                   updatedPlayers[remainingId].score += 10;
-                }
-             }
-             const pData = updatedPlayers[pId];
-             delete updatedPlayers[pId];
-             
-             // Check if less than 2 players remain in 2-player/1v1 modes
-             const needsTwo = st.gameMode === 'penalty' || st.gameMode === 'domino' || st.gameMode === 'hockey';
-             if (needsTwo && Object.keys(updatedPlayers).length < 2) {
-                 const finSt = { ...st, players: updatedPlayers, status: 'finished' as const };
-                 setState(finSt);
-                 broadcast({ type: 'STATE_UPDATE', state: finSt });
-                 updatePublicRoom(finSt.roomId, {
-                    status: 'finished',
-                    playerCount: Object.keys(updatedPlayers).length
-                 });
-                 // System message for forfeit
-                 handleMessage({
-                     type: 'CHAT',
-                     message: {
-                         id: Math.random().toString(),
-                         senderId: 'SYSTEM',
-                         senderName: 'النظام',
-                         text: `لم يعد اللاعب ${pData?.username}، تم احتساب الفوز للطرف الآخر.`,
-                         timestamp: Date.now()
-                     }
-                 });
-             } else {
-                 const newSt = { ...st, players: updatedPlayers };
-                 setState(newSt);
-                 broadcast({ type: 'STATE_UPDATE', state: newSt });
-                 updatePublicRoom(newSt.roomId, {
-                    playerCount: Object.keys(updatedPlayers).length
-                 });
-                 checkAllAnswered(newSt);
-                 // System message for forfeit
-                 handleMessage({
-                     type: 'CHAT',
-                     message: {
-                         id: Math.random().toString(),
-                         senderId: 'SYSTEM',
-                         senderName: 'النظام',
-                         text: `لم يعُد اللاعب ${pData?.username}، تم استبعاده.`,
-                         timestamp: Date.now()
-                     }
-                 });
-             }
+             doRemove();
           }
        }, 30000); // 30 seconds grace period
     }
@@ -405,7 +442,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lastHostPingTime.current = Date.now();
       }
     } else if (!isHostRef.current && message.type === 'PING_HOST') {
-        const hostId = stateRef.current ? Object.values(stateRef.current.players).find(p => p.isHost)?.id : null;
+        const hostId = stateRef.current ? (Object.values(stateRef.current.players) as RoomPlayer[]).find(p => p.isHost)?.id : null;
         if (hostId) {
             lastHostPingTime.current = Date.now();
         }
@@ -1012,7 +1049,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'LEAVE':
         if (isHostRef.current && stateRef.current) {
-           handlePlayerDisconnect(message.playerId);
+           handlePlayerDisconnect(message.playerId, true);
         }
         break;
       case 'TRANSFER_HOST':
@@ -1949,9 +1986,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     if (isHostRef.current && stateRef.current?.roomId) {
-      if (Object.keys(stateRef.current.players).length <= 1) {
-        deletePublicRoom(stateRef.current.roomId);
-      }
+      // If host leaves, the room is effectively destroyed. Delete it from Supabase.
+      deletePublicRoom(stateRef.current.roomId);
     }
     
     // Clear state synchronously so that Home component doesn't try to redirect back
