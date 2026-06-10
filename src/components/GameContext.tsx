@@ -519,7 +519,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           // Check if reconnecting
           const reconnectingOldId = Object.keys(stateRef.current.players).find(
-            k => stateRef.current.players[k].userId === message.player.userId && stateRef.current.players[k].disconnectedAt
+            k => stateRef.current.players[k].userId === message.player.userId
           );
 
           if (reconnectingOldId) {
@@ -1104,9 +1104,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                  c.on('close', () => {
                     if (connectionsRef.current.get(c.peer) === c) {
                         connectionsRef.current.delete(c.peer);
-                        if (stateRef.current) {
-                           handlePlayerDisconnect(c.peer);
-                        }
+                        setTimeout(() => {
+                           if (stateRef.current && stateRef.current.players[c.peer] && !connectionsRef.current.has(c.peer)) {
+                              handlePlayerDisconnect(c.peer);
+                           }
+                        }, 5000);
                     } else {
                         console.warn(`[GameContext] IGNORING 'close' for peer ${c.peer} because we have a newer active connection for them.`);
                     }
@@ -1695,9 +1697,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn(`[GameContext] CONNECTION_MARKED_DISCONNECTED for peer ${conn.peer}. Triggered by PeerJS conn.on('close').`);
         if (connectionsRef.current.get(conn.peer) === conn) {
             connectionsRef.current.delete(conn.peer);
-            if (stateRef.current) {
-               handlePlayerDisconnect(conn.peer);
-            }
+            
+            // Give 5 seconds grace period for auto-reconnect before triggering UI popup
+            setTimeout(() => {
+                if (stateRef.current && stateRef.current.players[conn.peer] && !connectionsRef.current.has(conn.peer)) {
+                   console.log(`[GameContext] Peer ${conn.peer} did not reconnect in 5s, triggering disconnect.`);
+                   handlePlayerDisconnect(conn.peer);
+                }
+            }, 5000);
         } else {
             console.warn(`[GameContext] IGNORING 'close' for peer ${conn.peer} because we have a newer active connection for them.`);
         }
@@ -1810,6 +1817,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const oldState = stateRef.current;
         if (oldState && !rejectedReason) {
+           if (oldState.status === 'playing' || oldState.status === 'revealing') {
+               console.log('Host connection dropped during game. Trying to reconnect...');
+               setTimeout(() => {
+                   if (intentionalLeaveRef.current) return;
+                   joinRoom(roomId, password, onError);
+               }, 2000);
+               return; // Prevent normal close handling (migrating or failing instantly)
+           }
+
            const players = Object.values(oldState.players) as RoomPlayer[];
            const remaining = players.filter(p => !p.isHost);
            if (remaining.length > 0) {
@@ -1862,9 +1878,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     c.on('close', () => {
                        if (connectionsRef.current.get(c.peer) === c) {
                            connectionsRef.current.delete(c.peer);
-                           if (stateRef.current) {
-                              handlePlayerDisconnect(c.peer);
-                           }
+                           setTimeout(() => {
+                               if (stateRef.current && stateRef.current.players[c.peer] && !connectionsRef.current.has(c.peer)) {
+                                  handlePlayerDisconnect(c.peer);
+                               }
+                           }, 5000);
                        } else {
                            console.warn(`[GameContext] IGNORING 'close' for peer ${c.peer} because we have a newer active connection for them.`);
                        }
