@@ -126,8 +126,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!isHostRef.current && hostConnectionRef.current?.open) {
          hostConnectionRef.current.send({ type: 'PING', playerId });
          
-         // Timeout recovery: 25 seconds instead of 7 to avoid background tab throttling
-         if (now - lastHostPingTime.current > 25000) {
+         if (now - lastHostPingTime.current > 12000) {
              console.warn(`[GameContext] Host timeout detected! Marking host disconnected. Last ping: ${lastHostPingTime.current}, now: ${now}, diff: ${now - lastHostPingTime.current}`);
              hostConnectionRef.current.close();
          }
@@ -140,9 +139,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
          Object.keys(players).forEach(pId => {
            if (pId !== playerId) {
               const lastPing = lastPingTimes.current[pId];
-              // 60 seconds timeout instead of 30 for players to prevent extreme false positives
-              if (lastPing && (now - lastPing > 60000)) {
-                 console.warn(`[GameContext] [pingInterval] PLAYER REMOVED: ${players[pId]?.username} (${pId}) - Reason: Ping timeout > 60s. Before:`, Object.keys(players));
+              if (lastPing && (now - lastPing > 12000)) {
+                 console.warn(`[GameContext] [pingInterval] PLAYER REMOVED: ${players[pId]?.username} (${pId}) - Reason: Ping timeout > 12s. Before:`, Object.keys(players));
                  const conn = connectionsRef.current.get(pId);
                  if (conn) {
                    conn.close();
@@ -1819,6 +1817,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (oldState && !rejectedReason) {
            if (oldState.status === 'playing' || oldState.status === 'revealing') {
                console.log('Host connection dropped during game. Trying to reconnect...');
+               const hostId = Object.keys(oldState.players).find(k => oldState.players[k].isHost);
+               if (hostId) {
+                   const newState = {
+                       ...oldState,
+                       players: {
+                           ...oldState.players,
+                           [hostId]: { ...oldState.players[hostId], disconnectedAt: Date.now() }
+                       }
+                   };
+                   setState(newState);
+                   stateRef.current = newState;
+               }
+
                setTimeout(() => {
                    if (intentionalLeaveRef.current) return;
                    joinRoom(roomId, password, onError);
@@ -2128,18 +2139,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [playerId]);
 
-  const disconnectedPlayer = state && state.status === 'playing' 
+  const disconnectedPlayer = state && (state.status === 'playing' || state.status === 'revealing' || state.status === 'waiting') 
     ? (Object.values(state.players) as RoomPlayer[]).find(p => p.disconnectedAt) 
     : undefined;
     
-  const [disconnectCountdown, setDisconnectCountdown] = useState(45);
+  const [disconnectCountdown, setDisconnectCountdown] = useState(30);
   
   useEffect(() => {
      let interval: any;
      if (disconnectedPlayer && disconnectedPlayer.disconnectedAt) {
          interval = setInterval(() => {
              const elapsed = Date.now() - disconnectedPlayer.disconnectedAt!;
-             const rem = Math.max(0, 45 - Math.floor(elapsed / 1000));
+             const rem = Math.max(0, 30 - Math.floor(elapsed / 1000));
              setDisconnectCountdown(rem);
              
              if (rem === 0 && isHostRef.current && stateRef.current && stateRef.current.status === 'playing') {
