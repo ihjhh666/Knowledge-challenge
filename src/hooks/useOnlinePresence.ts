@@ -9,6 +9,7 @@ export function useOnlinePresence() {
     const playerName = storage.getPlayerName() || `لاعب مجهول`;
     
     const syncProfile = async () => {
+        console.log('[Supabase_Presence] ONLINE_SESSION_STARTED');
         // Initial heartbeat
         updateOnlinePresence(playerId);
         supabaseService.setPlayerOnline(playerId, playerName);

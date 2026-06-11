@@ -201,9 +201,8 @@ export const supabaseService = {
   // Players / Presence
   async setPlayerOnline(playerId: string, username: string) {
     if (!playerId) return;
-    console.log(`[Supabase_Presence] Heartbeat/Online for: ${username} (${playerId})`);
+    console.log(`[Supabase_Presence] ONLINE_HEARTBEAT_SENT for: ${username} (${playerId})`);
     
-    // Efficient upsert using ID
     try {
       await supabase.from('players').upsert({ 
         id: playerId,
@@ -211,6 +210,7 @@ export const supabaseService = {
         is_online: true,
         last_active_at: new Date().toISOString()
       }, { onConflict: 'id' });
+      console.log(`[Supabase_Presence] PLAYER_STATUS_UPDATED to online`);
     } catch (err) {
       console.error('[Supabase_Presence] Heartbeat failed:', err);
     }
@@ -218,9 +218,9 @@ export const supabaseService = {
 
   async setPlayerOffline(playerId: string) {
     if (!playerId) return;
-    console.log(`[Supabase_Presence] Setting offline manually (unload): ${playerId}`);
     try {
       await supabase.from('players').update({ is_online: false }).eq('id', playerId);
+      console.log(`[Supabase_Presence] PLAYER_STATUS_UPDATED to offline`);
     } catch (err) {
       console.error('[Supabase_Presence] Offline mark failed:', err);
     }
@@ -228,16 +228,17 @@ export const supabaseService = {
 
   async getOnlinePlayersCount(): Promise<number> {
     try {
-      // 90 seconds grace period for offline status (to account for minor networking delays around the 30s heartbeat)
       const ninetySecondsAgo = new Date(Date.now() - 90 * 1000).toISOString();
       const { count, error } = await supabase.from('players')
         .select('*', { count: 'exact', head: true })
-        .gte('last_active_at', ninetySecondsAgo);
+        .or(`is_online.eq.true,last_active_at.gte.${ninetySecondsAgo}`);
 
       if (error) {
         console.error('[Supabase] getOnlinePlayersCount error:', error);
         return 0;
       }
+      
+      console.log(`[Supabase_Presence] ONLINE_COUNT_FETCHED: ${count || 0}`);
       return count || 0;
     } catch (e) {
       console.error('[Supabase] getOnlinePlayersCount exception:', e);
