@@ -453,13 +453,19 @@ export default function FishingRoom() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {(Object.values(state.players) as RoomPlayer[]).sort((a,b) => b.score - a.score).map((p, i) => (
               <div key={p.id} className="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-800">
-                <div className="flex items-center gap-3">
+                <div 
+                   className="flex items-center gap-3 cursor-pointer hover:opacity-80"
+                   onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: p.userId || p.id }))}
+                >
                   <span className="text-slate-500 text-sm font-bold">{i + 1}</span>
                   <div className={`w-8 h-8 rounded-full ${p.id === playerId ? 'bg-indigo-500' : 'bg-slate-700'} flex items-center justify-center text-xs font-bold text-white`}>
                     {p.username.charAt(0)}
                   </div>
                   <div>
-                    <span className="block text-sm font-bold text-slate-200">{p.username}</span>
+                    <span className="flex items-center gap-2 text-sm font-bold text-slate-200">
+                       {p.username}
+                       {p.level && <span className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-[9px] px-1 py-0.5 rounded font-mono">Lvl {p.level}</span>}
+                    </span>
                   </div>
                 </div>
                 <span className="font-bold text-indigo-400">{p.score} <span className="text-xs text-slate-500">نقطة</span></span>

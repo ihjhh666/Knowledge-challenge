@@ -189,7 +189,10 @@ export default function PlayingField() {
           <div className="space-y-3">
             {(Object.values(players) as RoomPlayer[]).sort((a,b) => b.score - a.score).map((p, i) => (
               <div key={p.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div 
+                  className="flex items-center gap-3 cursor-pointer hover:opacity-80"
+                  onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: p.userId || p.id }))}
+                >
                   <span className="text-slate-500 text-sm font-bold w-4">{i + 1}</span>
                   <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs">
                     {p.username.charAt(0)}

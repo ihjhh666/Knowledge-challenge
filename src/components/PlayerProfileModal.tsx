@@ -4,6 +4,7 @@ import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'fire
 import { X, User, Trophy, Star, Target, CheckCircle, XCircle, Gamepad2, Users, UserPlus, FileArchive, UserCheck, Clock } from 'lucide-react';
 import { ACHIEVEMENTS, Rarity } from '../lib/achievements';
 import { storage } from '../lib/storage';
+import { calculateLevel } from '../lib/level';
 
 interface Props {
   targetPlayerId: string;
@@ -100,8 +101,11 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
            </div>
         ) : !stats ? (
            <div className="p-12 text-center text-slate-400 h-full flex flex-col justify-center items-center">
-             <User className="w-12 h-12 mb-4 opacity-50" />
-             <p>المستخدم غير موجود</p>
+             <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mb-6 shadow-inner border border-slate-700">
+                <User className="w-10 h-10 text-slate-500" />
+             </div>
+             <h3 className="text-xl font-bold font-heading text-white mb-2">اللاعب غير موجود</h3>
+             <p className="text-sm text-slate-500">عذراً، لم نتمكن من العثور على بيانات هذا اللاعب. قد يكون الحساب محذوفاً أو المعرف غير صحيح.</p>
            </div>
         ) : (
            <div className="px-6 pb-6 pt-0 relative flex flex-col flex-1 overflow-y-auto">
@@ -114,12 +118,12 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
                        {isFriend ? (
                           <button onClick={unfriend} className="flex flex-col items-center gap-1 text-emerald-400 hover:text-emerald-500 transition-colors text-xs font-bold">
                              <div className="bg-emerald-500/20 p-2 rounded-xl"><UserCheck className="w-5 h-5" /></div>
-                             صديقك
+                             صديق
                           </button>
                        ) : isPendingSent ? (
                           <button onClick={cancelRequest} className="flex flex-col items-center gap-1 text-amber-400 hover:text-amber-500 transition-colors text-xs font-bold">
                              <div className="bg-amber-500/20 p-2 rounded-xl"><Clock className="w-5 h-5" /></div>
-                             إلغاء الطلب
+                             تم إرسال الطلب
                           </button>
                        ) : isPendingReceived ? (
                           <button onClick={() => {
@@ -132,7 +136,7 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
                        ) : (
                           <button onClick={sendRequest} className="flex flex-col items-center gap-1 text-indigo-400 hover:text-indigo-500 transition-colors text-xs font-bold">
                              <div className="bg-indigo-500/20 p-2 rounded-xl"><UserPlus className="w-5 h-5" /></div>
-                             إضافة كصديق
+                             إرسال طلب صداقة
                           </button>
                        )}
                     </div>
@@ -142,14 +146,32 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
               <div>
                  <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
                     {stats.playerName}
+                     {(() => {
+                        const { level } = calculateLevel(stats.totalXp || 0);
+                        const isHighLevel = level >= 10;
+                        return (
+                           <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold border ${isHighLevel ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-[0_0_10px_rgba(251,191,36,0.3)]' : 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'}`}>
+                              Lvl {level}
+                           </span>
+                        );
+                     })()}
                  </h2>
                  <p className="text-slate-500 font-mono text-xs">{targetPlayerId}</p>
-                 {stats.createdAt && (
-                    <p className="text-slate-500 text-xs mt-1 drop-shadow-sm">انضم في {new Date(stats.createdAt).toLocaleDateString()}</p>
-                 )}
+                 <div className="flex items-center gap-4 mt-2 border-t border-slate-800/50 pt-2 w-max">
+                   {stats.createdAt && (
+                      <p className="text-slate-400 text-[10px] sm:text-xs flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> انضم في {new Date(stats.createdAt).toLocaleDateString('ar-EG')}
+                      </p>
+                   )}
+                   {stats.lastUpdated && (
+                      <p className="text-slate-400 text-[10px] sm:text-xs flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> آخر نشاط: {new Date(stats.lastUpdated).toLocaleDateString('ar-EG')}
+                      </p>
+                   )}
+                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mt-6">
+              <div className="grid grid-cols-4 gap-2 mt-6">
                  <div className="bg-slate-800/50 border border-slate-800 rounded-xl p-3 text-center">
                     <Trophy className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
                     <p className="text-[10px] text-slate-400 mb-0.5">الانتصارات</p>
@@ -159,6 +181,11 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
                     <Gamepad2 className="w-5 h-5 text-blue-400 mx-auto mb-1" />
                     <p className="text-[10px] text-slate-400 mb-0.5">المباريات</p>
                     <p className="font-bold text-slate-200">{stats.gamesPlayed || 0}</p>
+                 </div>
+                 <div className="bg-slate-800/50 border border-slate-800 rounded-xl p-3 text-center flex flex-col justify-center">
+                    <Target className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+                    <p className="text-[10px] text-slate-400 mb-0.5">نسبة الفوز</p>
+                    <p className="font-bold text-slate-200">{stats.gamesPlayed ? Math.round(((stats.wins || 0) / stats.gamesPlayed) * 100) : 0}%</p>
                  </div>
                  <div className="bg-slate-800/50 border border-slate-800 rounded-xl p-3 text-center">
                     <Star className="w-5 h-5 text-amber-400 mx-auto mb-1" />

@@ -717,10 +717,12 @@ export const sendFriendRequest = async (fromId: string, fromName: string, toId: 
     // Prevent self-request
     if (fromId === toId) return;
 
-    // Check if already friends or if request already exists
-    const q = query(collection(db, 'friend_requests'), where('fromId', '==', fromId), where('toId', '==', toId));
-    const docs = await (await import('firebase/firestore')).getDocs(q);
-    if (!docs.empty) return; // already sent
+    // Check if already friends or if request already exists in either direction
+    const q1 = query(collection(db, 'friend_requests'), where('fromId', '==', fromId), where('toId', '==', toId));
+    const q2 = query(collection(db, 'friend_requests'), where('fromId', '==', toId), where('toId', '==', fromId));
+    const { getDocs } = await import('firebase/firestore');
+    const [docs1, docs2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+    if (!docs1.empty || !docs2.empty) return; // already sent or already friends
 
     const reqId = `${fromId}_${toId}`;
     const reqRef = doc(db, 'friend_requests', reqId);

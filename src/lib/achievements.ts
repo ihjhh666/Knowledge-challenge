@@ -22,6 +22,7 @@ export interface PlayerStats {
   totalGoals: number;
   friendsCount: number;
   playTimeMinutes: number;
+  sentencesCorrect: number;
   reachedFirstPlace: boolean;
   totalXp?: number;
 }
@@ -34,6 +35,7 @@ export const DEFAULT_STATS: PlayerStats = {
   totalGoals: 0,
   friendsCount: 0,
   playTimeMinutes: 0,
+  sentencesCorrect: 0,
   reachedFirstPlace: false,
 };
 
@@ -334,6 +336,46 @@ export const ACHIEVEMENTS: Achievement[] = [
     targetMax: 50,
     condition: (s) => s.friendsCount >= 50,
     getProgress: (s) => s.friendsCount,
+  },
+  {
+    id: 'first_sentence',
+    title: 'كاتب مبتدئ',
+    description: 'أكمل أول جملة صحيحة في رتب الجملة',
+    rarity: 'common',
+    icon: Star,
+    targetMax: 1,
+    condition: (s) => (s.sentencesCorrect || 0) >= 1,
+    getProgress: (s) => s.sentencesCorrect || 0,
+  },
+  {
+    id: 'sentences_50',
+    title: 'بليغ',
+    description: 'رتب 50 جملة صحيحة',
+    rarity: 'rare',
+    icon: Flame,
+    targetMax: 50,
+    condition: (s) => (s.sentencesCorrect || 0) >= 50,
+    getProgress: (s) => s.sentencesCorrect || 0,
+  },
+  {
+    id: 'sentences_200',
+    title: 'سيبويه',
+    description: 'رتب 200 جملة صحيحة',
+    rarity: 'epic',
+    icon: Zap,
+    targetMax: 200,
+    condition: (s) => (s.sentencesCorrect || 0) >= 200,
+    getProgress: (s) => s.sentencesCorrect || 0,
+  },
+  {
+    id: 'sentences_1000',
+    title: 'سيد الحروف',
+    description: 'رتب 1000 جملة صحيحة',
+    rarity: 'legendary',
+    icon: Crown,
+    targetMax: 1000,
+    condition: (s) => (s.sentencesCorrect || 0) >= 1000,
+    getProgress: (s) => s.sentencesCorrect || 0,
   },
 ];
 

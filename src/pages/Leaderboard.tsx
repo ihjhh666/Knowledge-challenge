@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Trophy, Medal, Star, Target } from 'lucide-react';
-import { syncLocalStatsToFirebase, PlayerStats } from '../lib/firebase';
+import { syncLocalStatsToFirebase, PlayerStats, subscribeToLeaderboard as subscribeToLeaderboardFirebase } from '../lib/firebase';
 import { supabaseService } from '../services/supabaseService';
 import { storage } from '../lib/storage';
 
@@ -22,31 +22,9 @@ export default function Leaderboard() {
     
     // Sync local stats to firebase first (legacy)
     syncLocalStatsToFirebase(myPlayerId, myPlayerName).finally(() => {
-        unsubscribe = supabaseService.subscribeToLeaderboard((data) => {
-          const mapped: PlayerStats[] = data.map(d => ({
-             playerId: d.id,
-             playerName: d.username,
-             gamesPlayed: d.games_played,
-             wins: d.games_won,
-             correctAnswers: d.games_won * 5, // approximation
-             wrongAnswers: 0,
-             totalPoints: d.total_points,
-             successRate: d.games_played > 0 ? Math.round((d.games_won / d.games_played) * 100) : 0,
-             categoryCounts: {},
-             mostPlayedCategory: 'عام',
-             lastUpdated: new Date(d.updated_at).getTime()
-          }));
-          
-          if (sortMethod === 'wins') {
-             mapped.sort((a,b) => b.wins - a.wins);
-          } else if (sortMethod === 'successRate') {
-             mapped.sort((a,b) => b.successRate - a.successRate);
-          } else {
-             mapped.sort((a,b) => b.totalPoints - a.totalPoints);
-          }
-          
-          setLeaders(mapped);
-          setDbStats({ fetched: mapped.length });
+        unsubscribe = subscribeToLeaderboardFirebase(sortMethod, (data: PlayerStats[]) => {
+          setLeaders(data);
+          setDbStats({ fetched: data.length });
           setLoading(false);
         });
     });

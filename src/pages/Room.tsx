@@ -14,6 +14,8 @@ import ChickenRoom from './ChickenRoom';
 import Chat from './Chat';
 import { LogOut, Users, Lock, UserPlus, Settings } from 'lucide-react';
 import { FriendsSidebar } from '../components/FriendsSidebar';
+import { subscribeToFriends } from '../lib/firebase';
+import { storage } from '../lib/storage';
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -25,11 +27,22 @@ export default function Room() {
   const [joinPassword, setJoinPassword] = useState('');
   const [needsPassword, setNeedsPassword] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [guestName, setGuestName] = useState('');
   
   const joiningRef = useRef(false);
+
+  useEffect(() => {
+    const pid = storage.getPlayerId();
+    if (!pid) return;
+    const unsub = subscribeToFriends(pid, (friends, pending) => {
+        const received = pending.filter(req => req.toId === pid);
+        setPendingCount(received.length);
+    });
+    return unsub;
+  }, []);
   const leavingRef = useRef(false);
 
   const attemptJoin = (password?: string) => {
@@ -165,10 +178,15 @@ export default function Room() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowFriends(true)}
-            className="flex items-center gap-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-4 py-2 rounded-xl transition-colors font-bold"
+            className="flex relative items-center gap-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-4 py-2 rounded-xl transition-colors font-bold"
           >
             <UserPlus className="w-4 h-4" />
             <span className="hidden sm:inline">دعوة صديق</span>
+            {pendingCount > 0 && (
+               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full animate-bounce shadow-lg">
+                  {pendingCount}
+               </span>
+            )}
           </button>
           <button
             onClick={handleLeave}
