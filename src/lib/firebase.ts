@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment } from 'firebase/firestore';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import appletConfig from '../../firebase-applet-config.json';
 
 const cleanValue = (val: string | undefined) => {
   if (!val) return '';
@@ -29,6 +30,12 @@ const getFirebaseConfig = () => {
     console.error("Error parsing custom firebase config", e);
   }
   
+  // Try applet config first
+  if (appletConfig && appletConfig.projectId && appletConfig.apiKey) {
+    console.log("Firebase config loaded from firebase-applet-config.json");
+    return appletConfig;
+  }
+
   console.log("Firebase config loaded from env variables");
   return {
     apiKey: cleanValue(import.meta.env.VITE_FIREBASE_API_KEY),

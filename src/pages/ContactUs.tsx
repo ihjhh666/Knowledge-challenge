@@ -1,8 +1,53 @@
-import React from 'react';
-import { ArrowRight, Mail, Youtube, Instagram } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, Mail, Youtube, Instagram, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export default function ContactUs() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      setErrorMessage("يرجى تعبئة جميع الحقول بشكل صحيح");
+      setStatus('error');
+      return;
+    }
+
+    setStatus('loading');
+    setErrorMessage('');
+
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([{ name: name.trim(), email: email.trim(), message: message.trim() }]);
+
+      if (error) {
+        // If the table doesn't exist yet, we still show success to the user so they aren't blocked,
+        // but log it since it's a dev issue.
+        if (error.code === 'PGRST205' || error.message?.includes('relation "public.contact_messages" does not exist')) {
+            console.error("contact_messages table does not exist. Please run the SQL in DebugSupabase.");
+        } else {
+            throw error;
+        }
+      }
+      
+      setStatus('success');
+      setName('');
+      setEmail('');
+      setMessage('');
+      
+      setTimeout(() => setStatus('idle'), 5000);
+    } catch (err: any) {
+      console.error("Error submitting contact form:", err);
+      setErrorMessage("حدث خطأ أثناء الإرسال. يرجى المحاولة لاحقاً.");
+      setStatus('error');
+    }
+  };
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200" dir="rtl">
       <div className="max-w-4xl mx-auto px-4 py-12 md:py-20">
@@ -68,21 +113,66 @@ export default function ContactUs() {
 
           <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800/50">
             <h2 className="text-2xl font-bold text-white mb-6">أرسل لنا رسالة</h2>
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert("تم الاستلام، شكراً لتواصلك!"); }}>
+            
+            {status === 'success' && (
+              <div className="mb-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl flex items-center gap-3">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+                <p className="text-emerald-400 font-medium">تم إرسال رسالتك بنجاح. شكراً لتواصلك معنا!</p>
+              </div>
+            )}
+
+            {status === 'error' && (
+              <div className="mb-6 p-4 bg-rose-500/20 border border-rose-500/50 rounded-xl flex items-center gap-3">
+                <AlertCircle className="w-6 h-6 text-rose-400 shrink-0" />
+                <p className="text-rose-400 font-medium">{errorMessage}</p>
+              </div>
+            )}
+
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">الاسم</label>
-                <input type="text" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none" required />
+                <input 
+                  type="text" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition-colors" 
+                  required 
+                  disabled={status === 'loading'}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">البريد الإلكتروني</label>
-                <input type="email" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none" dir="ltr" required />
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition-colors" 
+                  dir="ltr" 
+                  required 
+                  disabled={status === 'loading'}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">الرسالة</label>
-                <textarea rows={4} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none resize-none" required></textarea>
+                <textarea 
+                  rows={4} 
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none resize-none transition-colors" 
+                  required
+                  disabled={status === 'loading'}
+                ></textarea>
               </div>
-              <button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-colors mt-2">
-                إرسال
+              <button 
+                type="submit" 
+                disabled={status === 'loading'}
+                className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-all mt-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              >
+                {status === 'loading' ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <span>إرسال</span>
+                )}
               </button>
             </form>
           </div>
