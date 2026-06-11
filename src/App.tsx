@@ -4,7 +4,6 @@ import { AuthProvider } from './components/AuthContext';
 import { GameProvider } from './components/GameContext';
 import Home from './pages/Home';
 import Room from './pages/Room';
-import Debug from './pages/Debug';
 import SoloPlay from './pages/SoloPlay';
 import FishingSolo from './pages/FishingSolo';
 import PenaltySolo from './pages/PenaltySolo';
@@ -17,8 +16,6 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import TermsOfService from './pages/TermsOfService';
-import DebugRooms from './pages/DebugRooms';
-import DebugSupabase from './pages/DebugSupabase';
 import { AdBanner } from './components/AdBanner';
 import { useOnlinePresence } from './hooks/useOnlinePresence';
 import { Footer } from './components/Footer';
@@ -58,6 +55,14 @@ function AppContent() {
   useOnlinePresence();
 
   React.useEffect(() => {
+    // Apply theme on mount
+    const settings = storage.getSettings();
+    if (settings.theme === 'light') {
+       document.documentElement.classList.add('light');
+    } else {
+       document.documentElement.classList.remove('light');
+    }
+
     const checkMigration = async () => {
       let id = localStorage.getItem('know_player_id');
       if (id && id.startsWith('user_')) {
@@ -109,9 +114,6 @@ function AppContent() {
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/debug" element={<DebugRooms />} />
-          <Route path="/debug-supabase" element={<DebugSupabase />} />
-          <Route path="/debug-tables" element={<Debug />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

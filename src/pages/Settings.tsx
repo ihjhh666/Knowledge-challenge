@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Save, User as UserIcon, MonitorSmartphone, Volume2, PaintBucket, Gamepad2, Settings as SettingsIcon, Copy, Upload } from 'lucide-react';
+import { ChevronRight, Save, User as UserIcon, Settings as SettingsIcon, Copy, Upload, LogOut, Shield, Bell, Info, ShieldAlert, FileText, Mail, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { storage, UserSettings as SettingsType } from '../lib/storage';
 import { updateUserProfile } from '../lib/firebase';
+import { useAuth } from '../components/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [settings, setSettings] = useState<SettingsType>(storage.getSettings());
   const [username, setUsername] = useState(storage.getPlayerName() || '');
   const [avatar, setAvatar] = useState(storage.getPlayerAvatar());
@@ -14,54 +17,77 @@ export default function Settings() {
   
   const playerId = storage.getPlayerId();
 
+  // Get shortId from localStorage or default
+  // Actually shortId is loaded from Profile stats normally, but playerId is fallback
+  const [shortId, setShortId] = useState(playerId.substring(0, 8));
+
   useEffect(() => {
-    // Sync local state when mounted
     setSettings(storage.getSettings());
     setUsername(storage.getPlayerName() || '');
     setAvatar(storage.getPlayerAvatar());
-  }, []);
+    
+    // Attempt to grab shortId from Firestore if possible, but fallback is local UUID segment
+    import('../lib/firebase').then(({ searchUserById }) => {
+        searchUserById(playerId).then(u => {
+           if (u && (u as any).shortId) setShortId((u as any).shortId);
+        });
+    });
+  }, [playerId]);
 
   const handleSave = async () => {
+    console.log("SAVE_USERNAME_STARTED");
     setIsSaving(true);
-    
-    // Save locally
     storage.setSettings(settings);
     
     const newName = username.trim();
+    let updatedName = storage.getPlayerName() || 'لاعب مجهول';
     if (newName.length >= 2) {
        storage.setPlayerName(newName);
+       updatedName = newName;
     }
     storage.setPlayerAvatar(avatar);
 
-    // Save to firebase
-    await updateUserProfile(playerId, {
-       username: newName.length >= 2 ? newName : (storage.getPlayerName() || 'لاعب مجهول'),
-       avatarUrl: avatar
-    });
+    try {
+      await updateUserProfile(playerId, {
+         username: updatedName,
+         playerName: updatedName,
+         avatarUrl: avatar
+      });
 
-    // We can also apply global dark mode here if we have it
-    if (settings.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    setTimeout(() => {
-        setIsSaving(false);
-    }, 500);
-  };
-
-  const handleThemeChange = (theme: 'light' | 'dark') => {
-      setSettings({ ...settings, theme });
-      if (theme === 'dark') {
-         document.documentElement.classList.add('dark');
-      } else {
-         document.documentElement.classList.remove('dark');
+      // Update Supabase Database records
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.user) {
+         await supabase.from('players').update({
+            username: updatedName,
+            avatar_url: avatar
+         }).eq('id', sessionData.session.user.id);
+         
+         await supabase.auth.updateUser({
+            data: { username: updatedName, avatar_url: avatar }
+         });
       }
+
+      console.log("SAVE_USERNAME_SUCCESS");
+      
+      if (settings.theme === 'light') {
+        document.documentElement.classList.add('light');
+      } else {
+        document.documentElement.classList.remove('light');
+      }
+
+      setTimeout(() => {
+          setIsSaving(false);
+          alert('تم الحفظ بنجاح');
+      }, 500);
+    } catch (err) {
+      console.error("SAVE_USERNAME_ERROR", err);
+      setIsSaving(false);
+      alert('حدث خطأ أثناء الحفظ');
+    }
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(playerId);
+    navigator.clipboard.writeText(shortId);
     alert('تم نسخ المعرف بنجاح!');
   };
 
@@ -109,48 +135,80 @@ export default function Settings() {
     reader.readAsDataURL(file);
   };
 
+  const handleLogout = async () => {
+      console.log("LOGOUT_STARTED");
+      if (confirm('هل تريد تسجيل الخروج؟\n\nلن يتم حذف حسابك أو إنجازاتك أو أصدقائك. يمكنك تسجيل الدخول مرة أخرى في أي وقت.')) {
+         try {
+           await logout();
+           console.log("LOGOUT_SUCCESS");
+           navigate('/login');
+         } catch (err) {
+           console.error("LOGOUT_ERROR", err);
+           alert('حدث خطأ أثناء تسجيل الخروج');
+         }
+      } else {
+         console.log("LOGOUT_CANCELED");
+      }
+  };
+
+  const Toggle = ({ label, checked, onChange, desc }: any) => (
+      <label className="flex items-center justify-between cursor-pointer group py-2">
+          <div>
+             <span className="font-bold text-slate-300 group-hover:text-white transition-colors">{label}</span>
+             {desc && <span className="block text-xs text-slate-500 mt-1">{desc}</span>}
+          </div>
+          <div className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${checked ? 'bg-indigo-500' : 'bg-slate-700'}`}>
+              <div className={`absolute top-1 bottom-1 w-4 bg-white rounded-full transition-transform ${checked ? 'right-1' : 'right-7'}`} />
+          </div>
+          <input type="checkbox" className="hidden" checked={checked} onChange={e => onChange(e.target.checked)} />
+      </label>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-12" dir="rtl">
-      <div className="max-w-3xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 overflow-y-auto" dir="rtl">
+      <div className="max-w-4xl mx-auto space-y-6 lg:space-y-8 pb-12">
         
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-             <button 
-               onClick={() => navigate('/')}
-               className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white"
-             >
-               <ChevronRight className="w-5 h-5" />
-             </button>
-             <div className="flex items-center gap-2">
-                 <SettingsIcon className="w-6 h-6 text-indigo-400" />
-                 <h1 className="text-2xl font-bold font-heading">الإعدادات</h1>
-             </div>
-          </div>
-          <button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-bold transition-colors flex flex-row items-center gap-2 shadow-lg hover:shadow-indigo-500/20"
-          >
-            {isSaving ? (
-                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            ) : <Save className="w-5 h-5" />}
-            حفظ
-          </button>
+           <div className="flex items-center gap-3">
+              <button 
+                onClick={() => navigate(-1)}
+                className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                  <SettingsIcon className="w-6 h-6 text-indigo-400" />
+                  <h1 className="text-2xl font-bold font-heading">الإعدادات</h1>
+              </div>
+           </div>
+           <button 
+             onClick={handleSave}
+             disabled={isSaving}
+             className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-bold transition-colors flex flex-row items-center gap-2 shadow-lg hover:shadow-indigo-500/20"
+           >
+             {isSaving ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+             ) : <Save className="w-5 h-5" />}
+             <span className="hidden sm:inline">حفظ الإعدادات</span>
+           </button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 items-start">
             
             {/* Account Settings */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
-                <div className="flex items-center gap-2 text-sky-400 mb-4 border-b border-slate-800 pb-4">
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 pointer-events-none opacity-5">
+                   <UserIcon className="w-48 h-48 -mr-12 -mt-12" />
+                </div>
+                <div className="flex items-center gap-2 text-sky-400 mb-4 border-b border-slate-800 pb-4 relative">
                    <UserIcon className="w-5 h-5" />
-                   <h2 className="text-lg font-bold">إعدادات الحساب</h2>
+                   <h2 className="text-lg font-bold">الحساب</h2>
                 </div>
                 
-                <div className="flex flex-col items-center gap-4">
-                   <img src={avatar} alt="Avatar" className="w-24 h-24 rounded-2xl bg-slate-950 object-cover border-2 border-slate-700" />
-                   <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row items-center gap-6 relative">
+                   <img src={avatar} alt="Avatar" className="w-24 h-24 rounded-2xl bg-slate-950 object-cover border-2 border-slate-700 shrink-0 shadow-lg" />
+                   <div className="flex flex-col gap-3 w-full">
                        <input 
                          type="file" 
                          accept="image/*" 
@@ -160,142 +218,147 @@ export default function Settings() {
                        />
                        <button 
                          onClick={() => fileInputRef.current?.click()}
-                         className="text-xs bg-indigo-500/20 hover:bg-indigo-500 text-indigo-400 hover:text-white px-4 py-2 rounded-lg transition-colors border border-indigo-500/30 flex items-center gap-2"
+                         className="w-full justify-center text-sm bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 px-4 py-3 rounded-xl transition-colors border border-indigo-500/20 flex items-center gap-2 font-bold"
                        >
                            <Upload className="w-4 h-4" />
-                           رفع صورة
-                       </button>
-                       <button 
-                         onClick={() => setAvatar(`https://api.dicebear.com/7.x/bottts/svg?seed=${Math.random().toString(36).substring(7)}`)}
-                         className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg transition-colors border border-slate-700"
-                       >
-                           صورة عشوائية
+                           تعديل الصورة
                        </button>
                    </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                     <label className="text-sm font-bold text-slate-400">اسم المستخدم</label>
                     <input 
                       type="text" 
                       value={username}
                       onChange={e => setUsername(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors" 
+                      className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors" 
                     />
                 </div>
 
-                <div className="space-y-2 pt-4">
+                <div className="space-y-2 pt-2 relative">
                     <label className="text-sm font-bold text-slate-400">معرف اللاعب (Player ID)</label>
                     <div className="flex gap-2">
-                        <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-300 font-mono text-center tracking-widest font-bold text-lg">
-                           {playerId}
+                        <div className="flex-1 bg-slate-950/50 border border-slate-800 rounded-xl p-3 text-slate-300 font-mono text-center tracking-widest font-bold text-lg cursor-not-allowed">
+                           {shortId}
                         </div>
                         <button 
                           onClick={copyToClipboard}
-                          className="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white p-3 rounded-xl transition-colors border border-slate-700 flex items-center justify-center shrink-0"
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-4 rounded-xl transition-colors border border-slate-700 flex items-center justify-center shrink-0"
                           title="نسخ المعرف"
                         >
                            <Copy className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
-            </div>
-
-            {/* Sound Settings */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
-                <div className="flex flex-col space-y-6">
-                    <div className="flex items-center gap-2 text-rose-400 mb-2 border-b border-slate-800 pb-4">
-                       <Volume2 className="w-5 h-5" />
-                       <h2 className="text-lg font-bold">إعدادات الصوت</h2>
-                    </div>
-                    
-                    <label className="flex items-center justify-between cursor-pointer group">
-                        <span className="font-bold text-slate-300 group-hover:text-white transition-colors">الموسيقى المحيطية</span>
-                        <div className={`w-12 h-6 rounded-full transition-colors relative ${settings.soundEnabled ? 'bg-emerald-500' : 'bg-slate-700'}`}>
-                            <div className={`absolute top-1 bottom-1 w-4 bg-white rounded-full transition-transform ${settings.soundEnabled ? 'right-1' : 'right-7'}`} />
-                        </div>
-                        <input type="checkbox" className="hidden" checked={settings.soundEnabled} onChange={e => setSettings({...settings, soundEnabled: e.target.checked})} />
-                    </label>
-
-                    <label className="flex items-center justify-between cursor-pointer group">
-                        <span className="font-bold text-slate-300 group-hover:text-white transition-colors">التأثيرات الصوتية (SFX)</span>
-                        <div className={`w-12 h-6 rounded-full transition-colors relative ${settings.sfxEnabled ? 'bg-emerald-500' : 'bg-slate-700'}`}>
-                            <div className={`absolute top-1 bottom-1 w-4 bg-white rounded-full transition-transform ${settings.sfxEnabled ? 'right-1' : 'right-7'}`} />
-                        </div>
-                        <input type="checkbox" className="hidden" checked={settings.sfxEnabled} onChange={e => setSettings({...settings, sfxEnabled: e.target.checked})} />
-                    </label>
+                
+                <div className="pt-4 border-t border-slate-800/50 relative">
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full justify-center text-sm bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 px-4 py-3 rounded-xl transition-colors flex items-center gap-2 font-bold"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        تسجيل الخروج
+                    </button>
                 </div>
             </div>
 
-            {/* Graphics & Appearance */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
-                <div className="flex items-center gap-2 text-amber-400 mb-4 border-b border-slate-800 pb-4">
-                   <PaintBucket className="w-5 h-5" />
-                   <h2 className="text-lg font-bold">الرسوم والواجهة</h2>
+            <div className="space-y-6">
+                
+                {/* Privacy */}
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
+                    <div className="flex items-center gap-2 text-emerald-400 mb-2 border-b border-slate-800 pb-4">
+                       <Shield className="w-5 h-5" />
+                       <h2 className="text-lg font-bold">الخصوصية</h2>
+                    </div>
+                    
+                    <Toggle 
+                       label="إظهار الملف الشخصي للعامة" 
+                       checked={settings.privacyShowProfile} 
+                       onChange={(v: boolean) => setSettings({...settings, privacyShowProfile: v})} 
+                    />
+                    <Toggle 
+                       label="إظهار إنجازاتي" 
+                       checked={settings.privacyShowAchievements} 
+                       onChange={(v: boolean) => setSettings({...settings, privacyShowAchievements: v})} 
+                    />
+                    <Toggle 
+                       label="السماح بطلبات الصداقة" 
+                       checked={settings.privacyAllowFriendRequests} 
+                       onChange={(v: boolean) => setSettings({...settings, privacyAllowFriendRequests: v})} 
+                    />
+                    <Toggle 
+                       label="إظهار حالة السكوت (آخر ظهور)" 
+                       checked={settings.privacyShowLastSeen} 
+                       onChange={(v: boolean) => setSettings({...settings, privacyShowLastSeen: v})} 
+                    />
+                </div>
+
+                {/* Notifications */}
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
+                    <div className="flex items-center gap-2 text-amber-400 mb-2 border-b border-slate-800 pb-4">
+                       <Bell className="w-5 h-5" />
+                       <h2 className="text-lg font-bold">الإشعارات</h2>
+                    </div>
+                    
+                    <Toggle 
+                       label="تنبيهات طلبات الصداقة" 
+                       checked={settings.notifyFriendRequests} 
+                       onChange={(v: boolean) => setSettings({...settings, notifyFriendRequests: v})} 
+                    />
+                    <Toggle 
+                       label="تنبيهات الإنجازات" 
+                       checked={settings.notifyAchievements} 
+                       onChange={(v: boolean) => setSettings({...settings, notifyAchievements: v})} 
+                    />
+                    <Toggle 
+                       label="إشعارات المكافآت اليومية" 
+                       checked={settings.notifyDailyRewards} 
+                       onChange={(v: boolean) => setSettings({...settings, notifyDailyRewards: v})} 
+                    />
                 </div>
                 
-                <div className="space-y-3">
-                    <label className="text-sm font-bold text-slate-400 block mb-2">جودة الرسوم</label>
-                    <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
-                        {['low', 'medium', 'high'].map(q => (
-                            <button
-                               key={q}
-                               className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${settings.graphicsQuality === q ? 'bg-slate-800 text-amber-400' : 'text-slate-500 hover:text-slate-300'}`}
-                               onClick={() => setSettings({...settings, graphicsQuality: q as any})}
-                            >
-                               {q === 'low' ? 'منخفضة' : q === 'medium' ? 'متوسطة' : 'عالية'}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="space-y-3 pt-4">
-                    <label className="text-sm font-bold text-slate-400 block mb-2">المظهر</label>
-                    <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
-                        <button
-                           className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${settings.theme === 'dark' ? 'bg-slate-800 text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
-                           onClick={() => handleThemeChange('dark')}
-                        >
-                           داكن 🌙
-                        </button>
-                        <button
-                           className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${settings.theme === 'light' ? 'bg-slate-800 text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
-                           onClick={() => handleThemeChange('light')}
-                        >
-                           فاتح ☀️
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Game Settings */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
-                <div className="flex flex-col space-y-6">
-                    <div className="flex items-center gap-2 text-emerald-400 mb-2 border-b border-slate-800 pb-4">
-                       <Gamepad2 className="w-5 h-5" />
-                       <h2 className="text-lg font-bold">إعدادات الألعاب</h2>
+                {/* About */}
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
+                    <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-4">
+                       <Info className="w-5 h-5" />
+                       <h2 className="text-lg font-bold">حول التطبيق</h2>
                     </div>
                     
-                    <label className="flex items-center justify-between cursor-pointer group">
-                        <span className="font-bold text-slate-300 group-hover:text-white transition-colors">إظهار المؤثرات البصرية (VFX)</span>
-                        <div className={`w-12 h-6 rounded-full transition-colors relative ${settings.showVFX ? 'bg-emerald-500' : 'bg-slate-700'}`}>
-                            <div className={`absolute top-1 bottom-1 w-4 bg-white rounded-full transition-transform ${settings.showVFX ? 'right-1' : 'right-7'}`} />
+                    <div className="flex items-center justify-between text-sm font-bold text-slate-300 py-2">
+                        <span>إصدار التطبيق</span>
+                        <span className="text-slate-500 font-mono bg-slate-950 px-2 py-0.5 rounded-md">v1.0.0</span>
+                    </div>
+                    
+                    <button onClick={() => navigate('/privacy')} className="w-full flex items-center justify-between py-2.5 text-slate-300 hover:text-white transition-colors group">
+                        <div className="flex items-center gap-3 font-bold text-sm">
+                           <ShieldAlert className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors" /> سياسة الخصوصية
                         </div>
-                        <input type="checkbox" className="hidden" checked={settings.showVFX} onChange={e => setSettings({...settings, showVFX: e.target.checked})} />
-                    </label>
-
-                    <label className="flex items-center justify-between cursor-pointer group opacity-50 cursor-not-allowed">
-                        <div>
-                           <div className="font-bold text-slate-300">الاهتزاز (Haptics)</div>
-                           <div className="text-[10px] text-slate-500 mt-1">يأتي قريباً...</div>
+                        <div className="bg-slate-800 p-1.5 rounded-lg group-hover:bg-indigo-500/20 transition-colors">
+                          <ChevronRight className="w-4 h-4 text-slate-500 rotate-180 group-hover:text-indigo-400" />
                         </div>
-                        <div className={`w-12 h-6 rounded-full transition-colors relative bg-slate-800 border border-slate-700`}>
-                            <div className={`absolute top-1 bottom-1 w-4 bg-slate-600 rounded-full transition-transform right-7`} />
+                    </button>
+                    
+                    <button onClick={() => navigate('/terms')} className="w-full flex items-center justify-between py-2.5 text-slate-300 hover:text-white transition-colors group border-t border-slate-800/50">
+                        <div className="flex items-center gap-3 font-bold text-sm">
+                           <FileText className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors" /> شروط الاستخدام
                         </div>
-                    </label>
+                        <div className="bg-slate-800 p-1.5 rounded-lg group-hover:bg-indigo-500/20 transition-colors">
+                          <ChevronRight className="w-4 h-4 text-slate-500 rotate-180 group-hover:text-indigo-400" />
+                        </div>
+                    </button>
+                    
+                    <button onClick={() => navigate('/contact')} className="w-full flex items-center justify-between py-2.5 text-slate-300 hover:text-white transition-colors group border-t border-slate-800/50">
+                        <div className="flex items-center gap-3 font-bold text-sm">
+                           <Mail className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors" /> اتصل بنا
+                        </div>
+                        <div className="bg-slate-800 p-1.5 rounded-lg group-hover:bg-indigo-500/20 transition-colors">
+                          <ChevronRight className="w-4 h-4 text-slate-500 rotate-180 group-hover:text-indigo-400" />
+                        </div>
+                    </button>
                 </div>
-            </div>
 
+            </div>
         </div>
 
       </div>

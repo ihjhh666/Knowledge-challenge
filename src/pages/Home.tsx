@@ -26,7 +26,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { createRoom, state, joinRoom } = useGame();
   const { user, loading: authLoading, loginAsGuest, logout } = useAuth();
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(storage.getPlayerName() || '');
   const [guestName, setGuestName] = useState('');
   const [joinId, setJoinId] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
@@ -49,49 +49,10 @@ export default function Home() {
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [showFriends, setShowFriends] = useState(false);
   const [pendingFriendsCount, setPendingFriendsCount] = useState(0);
-  const [ping, setPing] = useState(0);
-  const [supabaseStatus, setSupabaseStatus] = useState<'pending' | 'connected' | 'error'>('pending');
-
-  useEffect(() => {
-    const checkSupabase = async () => {
-      try {
-        const { error } = await supabase.from('test_connection').select('*').limit(1);
-        if (error && (error.code === 'PGRST205' || error.message.includes('relation') || error.message.includes('Could not find the table'))) {
-           // This means we connected successfully but the table doesn't exist yet!
-           setSupabaseStatus('connected');
-        } else if (error && (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network'))) {
-           setSupabaseStatus('error');
-        } else if (!error) {
-           setSupabaseStatus('connected');
-        } else {
-           setSupabaseStatus('error');
-        }
-      } catch (e) {
-        setSupabaseStatus('error');
-      }
-    };
-    checkSupabase();
-  }, []);
-
-  useEffect(() => {
-    const measurePing = async () => {
-       const start = Date.now();
-       try {
-         await supabase.from('test_connection').select('*').limit(1);
-         const elapsed = Date.now() - start;
-         setPing(elapsed);
-       } catch (e) {
-         setPing(999);
-       }
-    };
-    const interval = setInterval(measurePing, 5000);
-    measurePing();
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     if (user) {
-      setUsername(user.displayName || 'لاعب جوجل');
+      setUsername(storage.getPlayerName() || user?.user_metadata?.username || user?.user_metadata?.full_name || 'لاعب جوجل');
     }
   }, [user]);
 
@@ -462,13 +423,6 @@ export default function Home() {
           >
              <Settings className="w-5 h-5" />
           </Link>
-          <button 
-            onClick={() => { logout(); setUsername(''); }}
-            className="border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-xl transition-colors text-rose-400 shrink-0"
-            title="تسجيل الخروج"
-          >
-            <KeyRound className="w-5 h-5" />
-          </button>
         </div>
       </header>
 
@@ -633,12 +587,6 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <Globe className="w-6 h-6 text-sky-400" />
               <h3 className="text-xl font-bold font-heading text-white">الغرف العامة المتاحة</h3>
-            </div>
-            <div className="flex flex-wrap items-center justify-end text-xs text-slate-500 bg-slate-900 border border-slate-800 p-2 rounded-lg gap-2">
-               <div className="flex items-center gap-1.5 font-mono" dir="ltr">
-                 <span className={`font-bold ${ping < 100 ? 'text-emerald-400' : ping < 300 ? 'text-amber-400' : 'text-rose-400'}`}>{ping} ms</span>
-                 <span className="text-slate-500 font-sans" dir="rtl">زمن الاستجابة:</span>
-               </div>
             </div>
             
             {publicRooms.length === 0 ? (

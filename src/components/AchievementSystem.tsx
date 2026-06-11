@@ -37,7 +37,7 @@ export function AchievementSystem() {
 
   return (
     <>
-      <div className="fixed z-[100] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed bottom-4 right-4 z-[100] flex flex-col-reverse justify-end gap-3 pointer-events-none">
         {activeToasts.map(ach => (
           <div key={ach.id} className="pointer-events-auto">
             <AchievementToast 

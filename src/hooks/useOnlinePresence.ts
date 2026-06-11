@@ -12,7 +12,6 @@ export function useOnlinePresence() {
     const syncProfile = async () => {
         console.log('[Supabase_Presence] ONLINE_SESSION_STARTED');
         // Initial heartbeat
-        updateOnlinePresence(playerId);
         supabaseService.setPlayerOnline(playerId, playerName);
         
         // Also sync profile info to ensure they are searchable
@@ -28,12 +27,10 @@ export function useOnlinePresence() {
     
     // Heartbeat every 30 seconds
     const interval = setInterval(() => {
-      updateOnlinePresence(playerId);
       supabaseService.setPlayerOnline(playerId, storage.getPlayerName() || `لاعب مجهول`);
     }, 30000);
     
     const handleUnload = () => {
-      removeOnlinePresence(playerId);
       supabaseService.setPlayerOffline(playerId);
     };
 
@@ -45,7 +42,7 @@ export function useOnlinePresence() {
       window.removeEventListener('beforeunload', handleUnload);
       window.removeEventListener('pagehide', handleUnload);
       // Also remove presence when component unmounts
-      removeOnlinePresence(playerId);
+      supabaseService.setPlayerOffline(playerId);
     };
   }, []);
 }

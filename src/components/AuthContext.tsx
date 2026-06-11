@@ -155,14 +155,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginAsGuest = async (name: string) => {}; // No-op now
 
   const logout = async () => {
+    console.log("LOGOUT_STARTED_INNER");
     try {
       if (user?.id) {
           await supabaseService.setPlayerOffline(user.id);
       }
+      
+      try {
+         const { getAuth, signOut: fbSignOut } = await import('firebase/auth');
+         const auth = getAuth();
+         if (auth.currentUser) {
+            await fbSignOut(auth);
+            console.log("Firebase signed out");
+         }
+      } catch (fbErr) {
+         console.warn("Firebase logout issue:", fbErr);
+      }
+
       await supabase.auth.signOut();
-      storage.clearPlayerName();
+      
+      // Clear ONLY session-related data to allow clean re-login
+      // Do not use localStorage.clear() entirely to preserve stats/achievements/friends
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+      
       setUser(null);
       setNeedsUsernamePrompt(false);
+      console.log("LOGOUT_SUCCESS_INNER");
     } catch (error) {
       console.error('Logout failed:', error);
       throw error;

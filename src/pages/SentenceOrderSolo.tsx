@@ -5,7 +5,7 @@ import { SENTENCES } from '../lib/sentencesData';
 import { audio } from '../lib/audio';
 import { storage } from '../lib/storage';
 import { updateStats, getPlayerStats } from '../lib/achievements';
-import { calculateLevel, calculateEarnedXp, getLevelData } from '../lib/level';
+import { calculateLevel, calculateEarnedXp } from '../lib/level';
 
 export default function SentenceOrderSolo() {
   const navigate = useNavigate();

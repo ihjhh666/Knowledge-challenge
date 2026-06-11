@@ -25,6 +25,11 @@ export interface PlayerStats {
   sentencesCorrect: number;
   reachedFirstPlace: boolean;
   totalXp?: number;
+  playerId?: string;
+  playerName?: string;
+  shortId?: string;
+  correctAnswers?: number;
+  wrongAnswers?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -361,7 +366,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     id: 'sentences_200',
     title: 'سيبويه',
     description: 'رتب 200 جملة صحيحة',
-    rarity: 'epic',
+    rarity: 'legendary',
     icon: Zap,
     targetMax: 200,
     condition: (s) => (s.sentencesCorrect || 0) >= 200,
@@ -392,7 +397,7 @@ export function getPlayerStats(): PlayerStats {
   return DEFAULT_STATS;
 }
 
-function savePlayerStats(stats: PlayerStats) {
+export function savePlayerStats(stats: PlayerStats) {
   localStorage.setItem(LOCAL_KEY_STATS, JSON.stringify(stats));
 }
 

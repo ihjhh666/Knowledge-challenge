@@ -58,7 +58,7 @@ export function AchievementToast({ achievement, onClose }: Props) {
   const Icon = achievement.icon;
 
   return (
-    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 transform ${visible ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-10 opacity-0 scale-95'}`}>
+    <div className={`transition-all duration-300 transform ${visible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'}`}>
       <div className={`relative flex items-center gap-4 p-4 rounded-2xl border-2 shadow-xl w-80 md:w-96 overflow-hidden ${config.border} ${config.bg} ${config.glow}`}>
         {/* Glow effect for legendary */}
         {achievement.rarity === 'legendary' && (

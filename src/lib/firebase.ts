@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, initializeFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment, getCountFromServer } from 'firebase/firestore';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import appletConfig from '../../firebase-applet-config.json';
 
@@ -77,6 +77,7 @@ export interface PublicRoom {
 export interface PlayerStats {
   playerId: string;
   playerName: string;
+  shortId?: string;
   avatarUrl?: string;
   gamesPlayed: number;
   wins: number;
@@ -341,7 +342,7 @@ export const updatePlayerStats = async (
   points: number,
   category: string
 ) => {
-  notifyAchievements(playerId, isWin, 0);
+  notifyAchievements(playerId, isWin, points);
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
@@ -376,6 +377,7 @@ export const updatePlayerStats = async (
         categoryCounts: newCategoryCounts,
         mostPlayedCategory,
         successRate,
+        ...(category === 'sentence_order' ? { sentencesCorrect: increment(correct) } : {}),
         lastUpdated: Date.now()
       }, { merge: true });
     } else {
@@ -530,40 +532,99 @@ export const updateHockeyStats = async (
 
 import { getPlayerStats } from './achievements';
 
-export const syncLocalStatsToFirebase = async (playerId: string, playerName: string) => {
+   export const syncLocalStatsToFirebase = async (playerId: string, playerName: string) => {
   if (!db) return;
   try {
     const playerRef = doc(db, 'users', playerId);
     const snap = await getDoc(playerRef);
     
     const localStats = getPlayerStats();
-    if (!localStats || (localStats.gamesPlayed === 0 && localStats.wins === 0)) return;
     
     if (snap.exists()) {
-       const data = snap.data() as PlayerStats;
-       if (localStats.gamesPlayed > (data.gamesPlayed || 0)) {
-           await setDoc(playerRef, {
-             playerName,
-             gamesPlayed: localStats.gamesPlayed,
-             wins: localStats.wins,
-             totalPoints: (localStats.wins * 10) + ((localStats.gamesPlayed - localStats.wins) * 2),
-             lastUpdated: Date.now()
-           }, { merge: true });
-           console.log("Synced local stats to Firebase successfully.");
+       const data = snap.data();
+       let needsUpdate = false;
+       const updateData: any = {};
+       
+       if (!data.shortId) {
+          updateData.shortId = String(Math.floor(1000000 + Math.random() * 9000000));
+          needsUpdate = true;
+       }
+
+       // True Bi-Directional Merge
+       const mergedStats: any = { ...localStats };
+
+       const keysToMerge = ['gamesPlayed', 'wins', 'totalGoals', 'winStreak', 'maxWinStreak', 'totalXp', 'sentencesCorrect', 'playTimeMinutes'] as const;
+
+       // 1. We consider data.totalGoals as a fallback to penalty+hockey
+       const fbTotalGoals = data.totalGoals || ((data.penaltyGoals || 0) + (data.hockeyGoalsScored || 0));
+       const fbMaxWinStreak = data.maxWinStreak || Math.max(data.penaltyWinStreak || 0, data.hockeyWinStreak || 0);
+
+       const firebaseValues: any = {
+           gamesPlayed: data.gamesPlayed || 0,
+           wins: data.wins || 0,
+           totalGoals: fbTotalGoals,
+           winStreak: data.penaltyWinStreak || data.hockeyWinStreak || data.winStreak || 0,
+           maxWinStreak: fbMaxWinStreak,
+           totalXp: data.totalXp || 0,
+           sentencesCorrect: data.sentencesCorrect || 0,
+           playTimeMinutes: data.playTimeMinutes || 0
+       };
+
+       for (const key of keysToMerge) {
+           const localVal = localStats[key] || 0;
+           const fbVal = firebaseValues[key] || 0;
+
+           if (localVal > fbVal) {
+               // Local is newer
+               updateData[key] = localVal;
+               mergedStats[key] = localVal;
+               needsUpdate = true;
+           } else if (fbVal > localVal) {
+               // Firebase is newer
+               mergedStats[key] = fbVal;
+           }
+       }
+
+       // Ensure name matches if doing updates
+       if (needsUpdate) {
+           updateData.playerName = playerName;
+           updateData.lastUpdated = Date.now();
+           await setDoc(playerRef, updateData, { merge: true });
+           console.log("Synced local stats UP to Firebase successfully.");
+       }
+
+       // Always save the best merged representation downward
+       const { savePlayerStats } = await import('./achievements');
+       savePlayerStats(mergedStats);
+       
+       // Sync unlocked achievements down
+       if (data.unlockedAchievements) {
+           const currentLocalUnl = JSON.parse(localStorage.getItem('know_unlocked_achievements') || '[]');
+           const fbUnlIds = data.unlockedAchievements.map((a: any) => a.id);
+           const mergedAch = Array.from(new Set([...currentLocalUnl, ...fbUnlIds]));
+           localStorage.setItem('know_unlocked_achievements', JSON.stringify(mergedAch));
+           
+           // Notify UI listeners safely
+           if (mergedAch.length > currentLocalUnl.length) {
+               window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: [] }));
+           }
        }
     } else {
+       if (!localStats) return;
        const newStats: PlayerStats = {
          playerId,
+         shortId: String(Math.floor(1000000 + Math.random() * 9000000)),
          playerName,
-         gamesPlayed: localStats.gamesPlayed,
-         wins: localStats.wins,
-         correctAnswers: localStats.wins * 5, 
+         gamesPlayed: localStats.gamesPlayed || 0,
+         wins: localStats.wins || 0,
+         correctAnswers: (localStats.wins || 0) * 5, 
          wrongAnswers: 0,
-         totalPoints: (localStats.wins * 10) + ((localStats.gamesPlayed - localStats.wins) * 2),
+         totalPoints: ((localStats.wins || 0) * 10) + (((localStats.gamesPlayed || 0) - (localStats.wins || 0)) * 2),
          categoryCounts: {},
          mostPlayedCategory: 'عام',
          successRate: 50,
-         lastUpdated: Date.now()
+         lastUpdated: Date.now(),
+         createdAt: Date.now()
        };
        await setDoc(playerRef, newStats, { merge: true });
        console.log("Created Firebase profile from local stats.");
@@ -634,20 +695,26 @@ export const removeOnlinePresence = async (playerId: string) => {
 
 export const subscribeToOnlineCount = (callback: (count: number) => void) => {
   if (!db) return () => {};
-  const activeRef = collection(db, 'online_players');
-  const unsubscribe = onSnapshot(activeRef, (snapshot) => {
-    const now = Date.now();
-    let count = 0;
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      // Increased threshold to 60 seconds to tolerate clock skew and network delays
-      if (data.lastActive && (now - data.lastActive) < 60000) {
-        count++;
-      }
-    });
-    callback(count);
-  });
-  return unsubscribe;
+  
+  const fetchCount = async () => {
+    try {
+      const activeRef = collection(db, 'online_players');
+      // Count players active within the last 60 seconds
+      const q = query(activeRef, where('lastActive', '>=', Date.now() - 60000));
+      const snapshot = await getCountFromServer(q);
+      callback(snapshot.data().count);
+    } catch (err) {
+      console.warn('Could not fetch online count', err);
+    }
+  };
+
+  // Fetch immediately
+  fetchCount();
+  
+  // Then poll every 30 seconds
+  const interval = setInterval(fetchCount, 30000);
+  
+  return () => clearInterval(interval);
 };
 
 // ------------------------------------------------------------------
@@ -681,12 +748,18 @@ export const migrateUserData = async (oldId: string, newId: string) => {
   }
 };
 
-export const updateUserProfile = async (playerId: string, profileData: { username?: string; avatarUrl?: string; playerId?: string }) => {
+export const updateUserProfile = async (playerId: string, profileData: { username?: string; playerName?: string; avatarUrl?: string; playerId?: string }) => {
 
   if (!db) return;
   try {
     const userRef = doc(db, 'users', playerId);
-    await setDoc(userRef, { ...profileData, lastActive: Date.now() }, { merge: true });
+    
+    const updatePayload: any = { lastActive: Date.now() };
+    if (profileData.playerName) updatePayload.playerName = profileData.playerName;
+    if (profileData.username) updatePayload.playerName = profileData.username; // fallback mapping
+    if (profileData.avatarUrl) updatePayload.avatarUrl = profileData.avatarUrl;
+
+    await setDoc(userRef, updatePayload, { merge: true });
   } catch (err) {
     console.error('Error updating profile:', err);
   }

@@ -4,6 +4,17 @@ export interface UserSettings {
   graphicsQuality: 'low' | 'medium' | 'high';
   theme: 'light' | 'dark';
   showVFX: boolean;
+  
+  // Privacy
+  privacyShowProfile: boolean;
+  privacyShowAchievements: boolean;
+  privacyAllowFriendRequests: boolean;
+  privacyShowLastSeen: boolean;
+  
+  // Notifications
+  notifyFriendRequests: boolean;
+  notifyAchievements: boolean;
+  notifyDailyRewards: boolean;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -11,7 +22,14 @@ const DEFAULT_SETTINGS: UserSettings = {
   sfxEnabled: true,
   graphicsQuality: 'high',
   theme: 'dark',
-  showVFX: true
+  showVFX: true,
+  privacyShowProfile: true,
+  privacyShowAchievements: true,
+  privacyAllowFriendRequests: true,
+  privacyShowLastSeen: true,
+  notifyFriendRequests: true,
+  notifyAchievements: true,
+  notifyDailyRewards: true
 };
 
 export const storage = {

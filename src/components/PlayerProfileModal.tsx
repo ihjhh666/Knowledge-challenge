@@ -111,7 +111,7 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
            <div className="px-6 pb-6 pt-0 relative flex flex-col flex-1 overflow-y-auto">
               <div className="flex justify-between items-start">
                  <div className="relative -mt-12 mb-4">
-                   <img src={stats.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${targetPlayerId}`} className="w-24 h-24 rounded-2xl border-4 border-slate-900 bg-slate-900 object-cover" />
+                   <img src={stats.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${stats.shortId || targetPlayerId}`} className="w-24 h-24 rounded-2xl border-4 border-slate-900 bg-slate-900 object-cover" />
                  </div>
                  {!isMe && (
                     <div className="mt-4">
@@ -156,8 +156,10 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
                         );
                      })()}
                  </h2>
-                 <p className="text-slate-500 font-mono text-xs">{targetPlayerId}</p>
-                 <div className="flex items-center gap-4 mt-2 border-t border-slate-800/50 pt-2 w-max">
+                 <p className="text-slate-500 font-mono text-xs flex items-center gap-2 mt-1">
+                   <span className="bg-slate-800/80 px-2 py-0.5 rounded-md text-slate-400 font-bold tracking-widest">{stats.shortId || targetPlayerId.substring(0,8)}</span>
+                 </p>
+                 <div className="flex items-center gap-4 mt-3 border-t border-slate-800/50 pt-3 w-max">
                    {stats.createdAt && (
                       <p className="text-slate-400 text-[10px] sm:text-xs flex items-center gap-1">
                         <Clock className="w-3 h-3" /> انضم في {new Date(stats.createdAt).toLocaleDateString('ar-EG')}
