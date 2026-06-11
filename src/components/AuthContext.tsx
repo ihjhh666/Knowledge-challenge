@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 import { storage } from '../lib/storage';
+import { supabaseService } from '../services/supabaseService';
 
 export type AppUser = User;
 
@@ -59,6 +60,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         storage.setPlayerName(player.username);
         storage.setPlayerAvatar(player.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`);
         setNeedsUsernamePrompt(false);
+
+        // Recover stats from leaderboard
+        try {
+          const { data: lbData } = await supabase.from('leaderboard').select('*').eq('username', player.username).single();
+          if (lbData) {
+            import('../lib/achievements').then(({ updateStats }) => {
+              updateStats({
+                gamesPlayed: lbData.games_played || 0,
+                wins: lbData.games_won || 0,
+                totalGoals: lbData.total_points || 0
+              });
+            });
+          }
+        } catch (e) {
+          console.error("Error fetching leaderboard stats:", e);
+        }
       } else {
         console.log('لم يتم العثور على سجل في جدول players (أو لا يوجد username).');
         

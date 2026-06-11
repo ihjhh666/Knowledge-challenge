@@ -6,6 +6,8 @@ import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBAL
 import { audio } from '../lib/audio';
 import { supabaseService } from '../services/supabaseService';
 const { createPublicRoom, updatePublicRoom, deletePublicRoom, updatePlayerStats } = supabaseService;
+import { getPlayerStats } from '../lib/achievements';
+import { calculateLevel } from '../lib/level';
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 
@@ -1675,7 +1677,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         round: 0,
         totalRounds: 10,
         players: {
-          [myId]: { id: myId, userId: storage.getPlayerId(), username, avatarUrl: storage.getPlayerAvatar(), isReady: true, isHost: true, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false }
+          [myId]: { 
+            id: myId, 
+            userId: storage.getPlayerId(), 
+            username, 
+            avatarUrl: storage.getPlayerAvatar(), 
+            level: calculateLevel(getPlayerStats().totalXp || 0).level,
+            isReady: true, 
+            isHost: true, 
+            score: 0, 
+            hasAnsweredCurrentRound: false, 
+            lastAnswerSucceeded: false 
+          }
         },
         messages: [],
         askedQuestions: [],
@@ -1773,7 +1786,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lastHostPingTime.current = Date.now(); // Reset ping timeout so we don't migrate instantly
         conn.send({
           type: 'JOIN',
-          player: { id: myId, userId: storage.getPlayerId(), username, avatarUrl: storage.getPlayerAvatar(), isReady: false, isHost: false, score: 0, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false },
+          player: { 
+            id: myId, 
+            userId: storage.getPlayerId(), 
+            username, 
+            avatarUrl: storage.getPlayerAvatar(), 
+            level: calculateLevel(getPlayerStats().totalXp || 0).level,
+            isReady: false, 
+            isHost: false, 
+            score: 0, 
+            hasAnsweredCurrentRound: false, 
+            lastAnswerSucceeded: false 
+          },
           password
         });
         audio.joinLobby();

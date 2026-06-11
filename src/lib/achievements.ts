@@ -1,4 +1,4 @@
-import { Trophy, Medal, Crown, Star, Target, Zap, Clock, Users, Flame } from 'lucide-react';
+import { Trophy, Medal, Crown, Star, Target, Zap, Clock, Users, Flame, Swords, Shield, Award, Sparkles, Ghost, Rocket, Heart, Diamond } from 'lucide-react';
 import React from 'react';
 
 export type Rarity = 'common' | 'medium' | 'rare' | 'legendary';
@@ -23,6 +23,7 @@ export interface PlayerStats {
   friendsCount: number;
   playTimeMinutes: number;
   reachedFirstPlace: boolean;
+  totalXp?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -37,7 +38,7 @@ export const DEFAULT_STATS: PlayerStats = {
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
-  // العادية (Common)
+  // --- العادية (Common) ---
   {
     id: 'first_win',
     title: 'أول فوز',
@@ -49,9 +50,19 @@ export const ACHIEVEMENTS: Achievement[] = [
     getProgress: (s) => s.wins,
   },
   {
+    id: 'win_5_games',
+    title: 'خطوة واثقة',
+    description: 'فز في 5 مباريات',
+    rarity: 'common',
+    icon: Star,
+    targetMax: 5,
+    condition: (s) => s.wins >= 5,
+    getProgress: (s) => s.wins,
+  },
+  {
     id: 'first_goal',
-    title: 'أول هدف',
-    description: 'سجل هدفك الأول',
+    title: 'أول إجابة',
+    description: 'سجل نقطتك الأولى في المباراة',
     rarity: 'common',
     icon: Target,
     targetMax: 1,
@@ -59,11 +70,31 @@ export const ACHIEVEMENTS: Achievement[] = [
     getProgress: (s) => s.totalGoals,
   },
   {
+    id: 'score_50_goals',
+    title: 'مشارك نشط',
+    description: 'اربح 50 نقطة/إجابة',
+    rarity: 'common',
+    icon: Zap,
+    targetMax: 50,
+    condition: (s) => s.totalGoals >= 50,
+    getProgress: (s) => s.totalGoals,
+  },
+  {
+    id: 'play_5_games',
+    title: 'بداية الرحلة',
+    description: 'العب 5 مباريات',
+    rarity: 'common',
+    icon: Rocket,
+    targetMax: 5,
+    condition: (s) => s.gamesPlayed >= 5,
+    getProgress: (s) => s.gamesPlayed,
+  },
+  {
     id: 'play_10_games',
-    title: 'مبتدئ ساحات اللعب',
+    title: 'مبتدئ المعارك',
     description: 'العب 10 مباريات',
     rarity: 'common',
-    icon: Star,
+    icon: Swords,
     targetMax: 10,
     condition: (s) => s.gamesPlayed >= 10,
     getProgress: (s) => s.gamesPlayed,
@@ -73,22 +104,52 @@ export const ACHIEVEMENTS: Achievement[] = [
     title: 'الصديق الوفي',
     description: 'أضف أول صديق لك',
     rarity: 'common',
-    icon: Users,
+    icon: Heart,
     targetMax: 1,
     condition: (s) => s.friendsCount >= 1,
     getProgress: (s) => s.friendsCount,
   },
 
-  // المتوسطة (Medium)
+  // --- المتوسطة (Medium) ---
+  {
+    id: 'win_streak_3',
+    title: 'الشرارة الأولى',
+    description: 'فز في 3 مباريات متتالية',
+    rarity: 'medium',
+    icon: Flame,
+    targetMax: 3,
+    condition: (s) => s.maxWinStreak >= 3,
+    getProgress: (s) => s.maxWinStreak,
+  },
   {
     id: 'win_streak_5',
-    title: 'سلسلة انتصارات',
+    title: 'على نار حامية',
     description: 'فز في 5 مباريات متتالية',
     rarity: 'medium',
     icon: Flame,
     targetMax: 5,
     condition: (s) => s.maxWinStreak >= 5,
     getProgress: (s) => s.maxWinStreak,
+  },
+  {
+    id: 'win_20_matches',
+    title: 'المنتصر الدائم',
+    description: 'فز في 20 مباراة',
+    rarity: 'medium',
+    icon: Trophy,
+    targetMax: 20,
+    condition: (s) => s.wins >= 20,
+    getProgress: (s) => s.wins,
+  },
+  {
+    id: 'play_50_games',
+    title: 'لاعب منتظم',
+    description: 'العب 50 مباراة',
+    rarity: 'medium',
+    icon: Shield,
+    targetMax: 50,
+    condition: (s) => s.gamesPlayed >= 50,
+    getProgress: (s) => s.gamesPlayed,
   },
   {
     id: 'play_100_games',
@@ -102,8 +163,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'score_100_goals',
-    title: 'هداف متمرس',
-    description: 'سجل 100 هدف',
+    title: 'قناص النقاط',
+    description: 'اربح 100 نقطة',
     rarity: 'medium',
     icon: Target,
     targetMax: 100,
@@ -111,40 +172,80 @@ export const ACHIEVEMENTS: Achievement[] = [
     getProgress: (s) => s.totalGoals,
   },
   {
-    id: 'win_20_matches',
-    title: 'المنتصر',
-    description: 'فز في 20 مباراة',
+    id: 'score_250_goals',
+    title: 'جامع المعرفة',
+    description: 'اربح 250 نقطة',
     rarity: 'medium',
-    icon: Trophy,
-    targetMax: 20,
-    condition: (s) => s.wins >= 20,
-    getProgress: (s) => s.wins,
+    icon: Award,
+    targetMax: 250,
+    condition: (s) => s.totalGoals >= 250,
+    getProgress: (s) => s.totalGoals,
+  },
+  {
+    id: 'friends_10',
+    title: 'اجتماعي',
+    description: 'اجمع 10 أصدقاء',
+    rarity: 'medium',
+    icon: Users,
+    targetMax: 10,
+    condition: (s) => s.friendsCount >= 10,
+    getProgress: (s) => s.friendsCount,
   },
 
-  // النادرة (Rare)
+  // --- النادرة (Rare) ---
+  {
+    id: 'win_streak_10',
+    title: 'توهج الانتصارات',
+    description: 'فز في 10 مباريات متتالية',
+    rarity: 'rare',
+    icon: Flame,
+    targetMax: 10,
+    condition: (s) => s.maxWinStreak >= 10,
+    getProgress: (s) => s.maxWinStreak,
+  },
   {
     id: 'win_streak_20',
     title: 'لا يُقهر',
     description: 'فز في 20 مباراة متتالية',
     rarity: 'rare',
-    icon: Flame,
+    icon: Ghost,
     targetMax: 20,
     condition: (s) => s.maxWinStreak >= 20,
     getProgress: (s) => s.maxWinStreak,
   },
   {
-    id: 'score_500_goals',
-    title: 'القناص',
-    description: 'سجل 500 هدف',
+    id: 'win_100_matches',
+    title: 'قاهر الخصوم',
+    description: 'فز في 100 مباراة',
     rarity: 'rare',
-    icon: Zap,
+    icon: Crown,
+    targetMax: 100,
+    condition: (s) => s.wins >= 100,
+    getProgress: (s) => s.wins,
+  },
+  {
+    id: 'score_500_goals',
+    title: 'حاصد النقاط',
+    description: 'احصل على 500 نقطة',
+    rarity: 'rare',
+    icon: Sparkles,
     targetMax: 500,
     condition: (s) => s.totalGoals >= 500,
     getProgress: (s) => s.totalGoals,
   },
   {
+    id: 'play_200_games',
+    title: 'شبح الساحات',
+    description: 'العب 200 مباراة',
+    rarity: 'rare',
+    icon: Swords,
+    targetMax: 200,
+    condition: (s) => s.gamesPlayed >= 200,
+    getProgress: (s) => s.gamesPlayed,
+  },
+  {
     id: 'play_50_hours',
-    title: 'مخضرم',
+    title: 'مخضرم الوقت',
     description: 'العب لمدة 50 ساعة',
     rarity: 'rare',
     icon: Clock,
@@ -155,7 +256,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'friends_25',
     title: 'شخصية محبوبة',
-    description: 'امتلك 25 صديقاً',
+    description: 'اجمع 25 صديقاً',
     rarity: 'rare',
     icon: Users,
     targetMax: 25,
@@ -163,50 +264,60 @@ export const ACHIEVEMENTS: Achievement[] = [
     getProgress: (s) => s.friendsCount,
   },
 
-  // الأسطورية (Legendary)
+  // --- الأسطورية (Legendary) ---
   {
     id: 'win_streak_50',
-    title: 'أسطورة الانتصارات',
+    title: 'نصف إله الانتصارات',
     description: 'فز في 50 مباراة متتالية',
     rarity: 'legendary',
-    icon: Crown,
+    icon: Diamond,
     targetMax: 50,
     condition: (s) => s.maxWinStreak >= 50,
     getProgress: (s) => s.maxWinStreak,
   },
   {
-    id: 'score_1000_goals',
-    title: 'ماكينة أهداف',
-    description: 'سجل 1000 هدف',
+    id: 'win_500_matches',
+    title: 'الإمبراطور الأعظم',
+    description: 'فز في 500 مباراة',
     rarity: 'legendary',
-    icon: Target,
+    icon: Crown,
+    targetMax: 500,
+    condition: (s) => s.wins >= 500,
+    getProgress: (s) => s.wins,
+  },
+  {
+    id: 'score_1000_goals',
+    title: 'الأسطورة الحية',
+    description: 'اجمع 1000 نقطة',
+    rarity: 'legendary',
+    icon: Sparkles,
     targetMax: 1000,
     condition: (s) => s.totalGoals >= 1000,
     getProgress: (s) => s.totalGoals,
   },
   {
     id: 'play_500_games',
-    title: 'مدمن تحديات',
+    title: 'المحارب الأبدي',
     description: 'العب 500 مباراة',
     rarity: 'legendary',
-    icon: Medal,
+    icon: Shield,
     targetMax: 500,
     condition: (s) => s.gamesPlayed >= 500,
     getProgress: (s) => s.gamesPlayed,
   },
   {
     id: 'first_place',
-    title: 'ملك اللعبة',
+    title: 'زعيم الكون',
     description: 'الوصول للمركز الأول في المتصدرين',
     rarity: 'legendary',
-    icon: Crown,
+    icon: Diamond,
     targetMax: 1,
     condition: (s) => s.reachedFirstPlace,
     getProgress: (s) => s.reachedFirstPlace ? 1 : 0,
   },
   {
     id: 'play_100_hours',
-    title: 'عايش في اللعبة',
+    title: 'المختار',
     description: 'العب لمدة 100 ساعة',
     rarity: 'legendary',
     icon: Clock,
@@ -216,8 +327,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'friends_50',
-    title: 'زعيم السيرفر',
-    description: 'امتلك 50 صديقاً',
+    title: 'أيقونة المجتمع',
+    description: 'اجمع 50 صديقاً حقيقياً',
     rarity: 'legendary',
     icon: Users,
     targetMax: 50,
@@ -255,6 +366,22 @@ export function getUnlockedAchievements(): string[] {
 
 function saveUnlockedAchievements(ids: string[]) {
   localStorage.setItem(LOCAL_KEY_UNLOCKED, JSON.stringify(ids));
+}
+
+export function syncFirebaseAchievementsToLocal(fbAchievements: { id: string }[]) {
+  const current = getUnlockedAchievements();
+  let changed = false;
+  fbAchievements.forEach(fba => {
+    if (!current.includes(fba.id)) {
+      current.push(fba.id);
+      changed = true;
+    }
+  });
+  if (changed) {
+    saveUnlockedAchievements(current);
+    // Let listeners update
+    window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: [] }));
+  }
 }
 
 // Update stats, then check for newly unlocked achievements

@@ -24,6 +24,7 @@ export interface RoomPlayer {
   userId?: string;
   username: string;
   avatarUrl?: string;
+  level?: number;
   isReady: boolean;
   isHost: boolean;
   score: number;

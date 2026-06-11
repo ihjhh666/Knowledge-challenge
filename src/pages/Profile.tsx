@@ -5,6 +5,7 @@ import { db, PlayerStats, subscribeToFriends, updateUserProfile } from '../lib/f
 import { doc, getDoc } from 'firebase/firestore';
 import { storage } from '../lib/storage';
 import { ACHIEVEMENTS } from '../lib/achievements';
+import { calculateLevel } from '../lib/level';
 import { useAuth } from '../components/AuthContext';
 
 export default function Profile() {
@@ -233,6 +234,39 @@ export default function Profile() {
                     <Copy className="w-5 h-5" />
                  </button>
               </div>
+
+             {/* Level System */}
+             {(() => {
+               const xp = stats.totalXp || 0;
+               const { level, progress, currentLevelXp, nextLevelXp } = calculateLevel(xp);
+               const isHighLevel = level >= 10;
+               return (
+                 <div className="mt-6 bg-slate-950/50 rounded-2xl p-4 border border-slate-800">
+                   <div className="flex justify-between items-end mb-2">
+                     <div className="flex items-center gap-3">
+                       <div className={`flex items-center justify-center w-10 h-10 rounded-xl font-bold font-mono text-lg border ${isHighLevel ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50'}`}>
+                         {level}
+                       </div>
+                       <div>
+                         <span className="text-xs text-slate-500 block">المستوى الحالي</span>
+                         <span className={`font-bold ${isHighLevel ? 'text-amber-100' : 'text-white'}`}>مستوى {level}</span>
+                       </div>
+                     </div>
+                     <div className="text-right">
+                       <span className="text-xs text-slate-500 block">الخبرة</span>
+                       <span className="text-sm font-mono text-slate-300">{currentLevelXp} / {nextLevelXp}</span>
+                     </div>
+                   </div>
+                   <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden shadow-inner flex">
+                     <div 
+                       className={`h-full transition-all duration-1000 shrink-0 ${isHighLevel ? 'bg-gradient-to-l from-amber-400 to-orange-500 shadow-[0_0_10px_rgba(251,191,36,0.5)]' : 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]'}`} 
+                       style={{ width: `${progress}%` }}
+                     ></div>
+                   </div>
+                 </div>
+               );
+             })()}
+             
             </div>
           </div>
 

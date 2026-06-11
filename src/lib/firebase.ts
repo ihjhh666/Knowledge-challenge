@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, limit, increment } from 'firebase/firestore';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import appletConfig from '../../firebase-applet-config.json';
 
@@ -57,7 +57,7 @@ if (!isFirebaseConfigured) {
 }
 
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
-export const db = app ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : null;
+export const db = app ? initializeFirestore(app, { experimentalForceLongPolling: true }, firebaseConfig.firestoreDatabaseId) : null;
 export const auth = app ? getAuth(app) : null;
 export { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, type User };
 
@@ -87,6 +87,7 @@ export interface PlayerStats {
   categoryCounts: Record<string, number>;
   mostPlayedCategory: string;
   lastUpdated: number;
+  totalXp?: number;
   // Fishing Stats
   fishingGamesPlayed?: number;
   fishingWins?: number;
@@ -112,8 +113,9 @@ export interface PlayerStats {
 }
 
 import { updateStats as doUpdateAchStats, getPlayerStats as getAchStats } from './achievements';
+import { calculateEarnedXp } from './level';
 
-const notifyAchievements = async (playerId: string, isWin: boolean, goals: number = 0) => {
+export const notifyAchievements = async (playerId: string, isWin: boolean, goals: number = 0) => {
   try {
     const current = getAchStats();
     let newStreak = isWin ? current.winStreak + 1 : 0;
@@ -121,28 +123,40 @@ const notifyAchievements = async (playerId: string, isWin: boolean, goals: numbe
     // Check if reaching first place - a bit heavy to do here, but we can evaluate it if we want.
     // For now we omit checking first place strictly here.
 
+    let addedXp = calculateEarnedXp(isWin, goals);
+
     const newUnlocked = doUpdateAchStats({
       gamesPlayed: current.gamesPlayed + 1,
       wins: current.wins + (isWin ? 1 : 0),
       totalGoals: current.totalGoals + goals,
-      winStreak: newStreak
+      winStreak: newStreak,
+      totalXp: (current.totalXp || 0) + addedXp
     });
 
     if (newUnlocked && newUnlocked.length > 0) {
       window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: newUnlocked }));
-      if (playerId && db) {
-        const docRef = doc(db, 'users', playerId);
-        const achievementsToAdd = newUnlocked.map(a => ({ id: a.id, date: Date.now() }));
-        try {
+      addedXp += newUnlocked.length * 100; // Bonus XP for achievements
+      
+      // Update local storage again with bonus XP
+      doUpdateAchStats({ totalXp: (current.totalXp || 0) + addedXp });
+    }
+
+    if (playerId && db) {
+      const docRef = doc(db, 'users', playerId);
+      try {
+        await setDoc(docRef, { totalXp: increment(addedXp) }, { merge: true });
+        
+        if (newUnlocked && newUnlocked.length > 0) {
           const snap = await getDoc(docRef);
           if (snap.exists()) {
             const data = snap.data();
             const existing = data.unlockedAchievements || [];
+            const achievementsToAdd = newUnlocked.map(a => ({ id: a.id, date: Date.now() }));
             await setDoc(docRef, { unlockedAchievements: [...existing, ...achievementsToAdd] }, { merge: true });
           }
-        } catch(e) {
-          console.error("Failed to save achievements to Firestore", e);
         }
+      } catch(e) {
+        console.error("Failed to save achievements to Firestore", e);
       }
     }
   } catch (err) {

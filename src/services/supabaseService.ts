@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
 import { SupabasePlayer, SupabaseRoom, SupabaseLeaderboardEntry } from '../lib/supabaseTypes';
 
+import { notifyAchievements } from '../lib/firebase';
+
 export const supabaseService = {
   // Test functionality for Debug page
   async getTableStats() {
@@ -145,6 +147,9 @@ export const supabaseService = {
     points: number,
     category: string
   ) {
+    if (playerId) {
+      notifyAchievements(playerId, isWin, points);
+    }
     await this.updateLeaderboard(username, points, isWin);
   },
 

@@ -160,7 +160,11 @@ export default function Lobby() {
                                   )}
                                </div>
                                <div>
-                                  <p className="font-bold text-blue-100">{p.username} {p.id === playerId && '(أنت)'}</p>
+                                  <p className="font-bold text-blue-100 flex items-center gap-2">
+                                     {p.username} 
+                                     {p.level && <span className="bg-blue-500/20 text-blue-300 border border-blue-500/50 text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold">Lvl {p.level}</span>}
+                                     {p.id === playerId && '(أنت)'}
+                                  </p>
                                   <p className="text-xs text-blue-400">{p.id.startsWith('bot-') ? 'الجهاز' : 'لاعب'}</p>
                                </div>
                             </div>
@@ -206,7 +210,11 @@ export default function Lobby() {
                                   )}
                                </div>
                                <div>
-                                  <p className="font-bold text-rose-100">{p.username} {p.id === playerId && '(أنت)'}</p>
+                                  <p className="font-bold text-rose-100 flex items-center gap-2">
+                                     {p.username} 
+                                     {p.level && <span className="bg-rose-500/20 text-rose-300 border border-rose-500/50 text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold">Lvl {p.level}</span>}
+                                     {p.id === playerId && '(أنت)'}
+                                  </p>
                                   <p className="text-xs text-rose-400">{p.id.startsWith('bot-') ? 'الجهاز' : 'لاعب'}</p>
                                </div>
                             </div>
@@ -269,6 +277,7 @@ export default function Lobby() {
                 <div>
                   <p className="font-bold text-slate-200 flex items-center gap-2">
                     {p.username} 
+                    {p.level && <span className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold">Lvl {p.level}</span>}
                     {isMe && <span className="text-indigo-400 text-xs">(أنت)</span>}
                   </p>
                   <p className="text-xs text-slate-400">{p.isHost ? 'المضيف' : 'لاعب'}</p>

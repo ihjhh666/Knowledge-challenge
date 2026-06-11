@@ -195,7 +195,10 @@ export default function PlayingField() {
                     {p.username.charAt(0)}
                   </div>
                   <div>
-                    <span className="block text-sm font-bold text-slate-200">{p.username}</span>
+                    <span className="flex items-center gap-2 text-sm font-bold text-slate-200">
+                      {p.username}
+                      {p.level && <span className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-[9px] px-1 py-0.5 rounded font-mono">Lvl {p.level}</span>}
+                    </span>
                     <span className="block text-xs text-indigo-400">{p.score} pt</span>
                     {isHost && playerId !== p.id && (
                       <div className="flex gap-1 mt-1">
