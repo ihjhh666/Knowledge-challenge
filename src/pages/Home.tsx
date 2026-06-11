@@ -629,66 +629,19 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-8 mt-8">
           {/* الغرف العامة */}
           <div className="space-y-4">
-            <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-4 shadow-lg mb-2">
-               <div className="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
-                 <h3 className="text-white font-bold opacity-80 flex items-center gap-2 text-sm">📋 System Test Report</h3>
-                 <div className="flex gap-2 items-center">
-                   <div className="text-xs font-bold px-2 py-1 rounded bg-slate-950 border border-slate-800 flex items-center gap-2">
-                      <span className="text-slate-400">Supabase DB:</span>
-                      {supabaseStatus === 'pending' && <span className="text-slate-500 animate-pulse">⏳ جاري الاتصال...</span>}
-                      {supabaseStatus === 'connected' && <span className="text-emerald-400">✅ متصل بنجاح</span>}
-                      {supabaseStatus === 'error' && <span className="text-rose-400">❌ فشل الاتصال</span>}
-                   </div>
-                   <button onClick={() => navigate('/debug-supabase')} className="text-xs font-bold px-3 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all flex items-center gap-2">
-                      <span>⚡</span> فحص الجداول (المرحلة 1)
-                   </button>
-                 </div>
-               </div>
-               <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-4 lg:grid-cols-5">
-                  <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                     <span className="block text-slate-500 mb-1">المنصلين الآن</span>
-                     <span className="text-emerald-400 font-bold text-lg">{onlineCount}</span>
-                  </div>
-                  <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                     <span className="block text-slate-500 mb-1">الخام (Firebase)</span>
-                     <span className="text-indigo-400 font-bold text-lg">{roomStats.fetched}</span>
-                  </div>
-                  <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                     <span className="block text-slate-500 mb-1">الغرف المعروضة</span>
-                     <span className="text-sky-400 font-bold text-lg">{publicRooms.length}</span>
-                  </div>
-                  <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                     <span className="block text-slate-500 mb-1">زمن الاستجابة</span>
-                     <span className="text-amber-400 font-bold text-lg">{ping} ms</span>
-                  </div>
-                  <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 truncate col-span-2 md:col-span-1">
-                     <span className="block text-slate-500 mb-1">آخر رمز</span>
-                     <span className="text-slate-300 font-mono text-xs">{roomStats.lastRoomId || 'لا يوجد'}</span>
-                  </div>
-               </div>
-               
-               {roomStats.rawRooms && roomStats.rawRooms.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-slate-800">
-                     <p className="text-slate-500 text-[10px] mb-1">Raw Database Dump (First 3):</p>
-                     <div className="flex flex-col gap-1">
-                        {roomStats.rawRooms.slice(0, 3).map((r, i) => (
-                           <div key={i} className="text-[10px] font-mono text-slate-400 bg-black p-1 rounded overflow-hidden truncate">
-                             [{r.roomId}] {r.status} | Vis: {r.roomVisibility} | Players: {r.playerCount}/{r.maxPlayers}
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-               )}
-               <div className="text-[10px] text-slate-600 mt-2 text-center">Firebase Realtime Sync: <span className="text-emerald-500 font-bold">Stable</span> | Auto-Refresh: <span className="text-emerald-500 font-bold">Enabled</span></div>
-            </div>
-
             <div className="flex items-center gap-3">
               <Globe className="w-6 h-6 text-sky-400" />
               <h3 className="text-xl font-bold font-heading text-white">الغرف العامة المتاحة</h3>
             </div>
-            <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-900 border border-slate-800 p-2 rounded-lg">
-               <span>المقروءة من القاعدة: {roomStats.fetched}</span>
-               <span>الصالحة للظهور: {roomStats.filtered}</span>
+            <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 bg-slate-900 border border-slate-800 p-2 rounded-lg gap-2">
+               <div className="flex items-center gap-4">
+                 <span>المقروءة من القاعدة: {roomStats.fetched}</span>
+                 <span>الصالحة للظهور: {roomStats.filtered}</span>
+               </div>
+               <div className="flex items-center gap-1.5 font-mono" dir="ltr">
+                 <span className={`font-bold ${ping < 100 ? 'text-emerald-400' : ping < 300 ? 'text-amber-400' : 'text-rose-400'}`}>{ping} ms</span>
+                 <span className="text-slate-500 font-sans" dir="rtl">زمن الاستجابة:</span>
+               </div>
             </div>
             
             {publicRooms.length === 0 ? (
