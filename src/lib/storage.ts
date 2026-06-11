@@ -26,12 +26,17 @@ export const storage = {
   },
   getPlayerId: (): string => {
     let id = localStorage.getItem('know_player_id');
-    if (!id) {
-      // 8-digit random number
-      id = Math.floor(10000000 + Math.random() * 90000000).toString();
+    if (!id || id.length < 30) {
+      // Generate a valid UUID fallback if missing or it was the old 8-digit format
+      id = "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c: any) =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
       localStorage.setItem('know_player_id', id);
     }
     return id;
+  },
+  setPlayerId: (id: string) => {
+    localStorage.setItem('know_player_id', id);
   },
   getPlayerAvatar: (): string => {
     let avatar = localStorage.getItem('know_player_avatar');

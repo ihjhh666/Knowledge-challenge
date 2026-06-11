@@ -5,6 +5,7 @@ import { supabaseService } from '../services/supabaseService';
 
 export function useOnlinePresence() {
   useEffect(() => {
+    console.log('[Supabase_Presence] ONLINE_INIT_STARTED');
     const playerId = storage.getPlayerId();
     const playerName = storage.getPlayerName() || `لاعب مجهول`;
     

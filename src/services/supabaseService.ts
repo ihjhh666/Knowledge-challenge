@@ -204,12 +204,18 @@ export const supabaseService = {
     console.log(`[Supabase_Presence] ONLINE_HEARTBEAT_SENT for: ${username} (${playerId})`);
     
     try {
-      await supabase.from('players').upsert({ 
+      const payload = { 
         id: playerId,
         username,
         is_online: true,
         last_active_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      };
+      const { error } = await supabase.from('players').upsert(payload, { onConflict: 'id' });
+      if (error) {
+        console.error('[Supabase_Presence] Upsert error:', error);
+      } else {
+        console.log(`[Supabase_Presence] ONLINE_PLAYER_UPSERT_SUCCESS`, payload);
+      }
       console.log(`[Supabase_Presence] PLAYER_STATUS_UPDATED to online`);
     } catch (err) {
       console.error('[Supabase_Presence] Heartbeat failed:', err);

@@ -34,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   const syncProfile = async (sessionUser: User) => {
+    storage.setPlayerId(sessionUser.id);
     try {
       console.log('--- تتبع بيانات المستخدم ---');
       console.log('user.id:', sessionUser.id);
@@ -138,6 +139,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      if (user?.id) {
+          await supabaseService.setPlayerOffline(user.id);
+      }
       await supabase.auth.signOut();
       storage.clearPlayerName();
       setUser(null);
