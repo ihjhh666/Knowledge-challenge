@@ -42,6 +42,22 @@ import {
   getDynamicMath
 } from './massiveDynamic';
 
+import { FOOTBALL_ADDITIONS_1 } from './questions/football_additions_1';
+import { FOOTBALL_ADDITIONS_2 } from './questions/football_additions_2';
+import { FOOTBALL_ADDITIONS_3 } from './questions/football_additions_3';
+import { FOOTBALL_ADDITIONS_4 } from './questions/football_additions_4';
+import { FOOTBALL_ADDITIONS_5 } from './questions/football_additions_5';
+import { FOOTBALL_ADDITIONS_6 } from './questions/football_additions_6';
+import { FOOTBALL_ADDITIONS_7 } from './questions/football_additions_7';
+
+import { HISTORY_ADDITIONS_1 } from './questions/history_additions_1';
+import { HISTORY_ADDITIONS_2 } from './questions/history_additions_2';
+import { HISTORY_ADDITIONS_3 } from './questions/history_additions_3';
+import { HISTORY_ADDITIONS_4 } from './questions/history_additions_4';
+import { HISTORY_ADDITIONS_5 } from './questions/history_additions_5';
+import { HISTORY_ADDITIONS_6 } from './questions/history_additions_6';
+import { HISTORY_ADDITIONS_7 } from './questions/history_additions_7';
+
 export const ALL_COUNTRIES = [
   { code: 'sa', name: 'السعودية' }, { code: 'eg', name: 'مصر' }, { code: 'ae', name: 'الإمارات' }, { code: 'dz', name: 'الجزائر' }, { code: 'ma', name: 'المغرب' }, { code: 'iq', name: 'العراق' }, { code: 'sy', name: 'سوريا' }, { code: 'ye', name: 'اليمن' }, { code: 'tn', name: 'تونس' }, { code: 'jo', name: 'الأردن' }, { code: 'lb', name: 'لبنان' }, { code: 'qa', name: 'قطر' }, { code: 'kw', name: 'الكويت' }, { code: 'bh', name: 'البحرين' }, { code: 'om', name: 'عُمان' }, { code: 'sd', name: 'السودان' }, { code: 'ly', name: 'ليبيا' }, { code: 'ps', name: 'فلسطين' }, { code: 'mr', name: 'موريتانيا' }, { code: 'so', name: 'الصومال' }, { code: 'dj', name: 'جيبوتي' }, { code: 'km', name: 'جزر القمر' },
   { code: 'us', name: 'الولايات المتحدة' }, { code: 'gb', name: 'بريطانيا' }, { code: 'fr', name: 'فرنسا' }, { code: 'de', name: 'ألمانيا' }, { code: 'it', name: 'إيطاليا' }, { code: 'es', name: 'إسبانيا' }, { code: 'cn', name: 'الصين' }, { code: 'jp', name: 'اليابان' }, { code: 'kr', name: 'كوريا الجنوبية' }, { code: 'ru', name: 'روسيا' }, { code: 'in', name: 'الهند' }, { code: 'br', name: 'البرازيل' }, { code: 'ar', name: 'الأرجنتين' }, { code: 'ca', name: 'كندا' }, { code: 'au', name: 'أستراليا' }, { code: 'mx', name: 'المكسيك' }, { code: 'za', name: 'جنوب أفريقيا' }, { code: 'ng', name: 'نيجيريا' }, { code: 'tr', name: 'تركيا' }, { code: 'ir', name: 'إيران' }, { code: 'pk', name: 'باكستان' }, { code: 'id', name: 'إندونيسيا' }, { code: 'my', name: 'ماليزيا' }, { code: 'sg', name: 'سنغافورة' }, { code: 'se', name: 'السويد' }, { code: 'no', name: 'النرويج' }, { code: 'fi', name: 'فنلندا' }, { code: 'dk', name: 'الدنمارك' }, { code: 'nl', name: 'هولندا' }, { code: 'be', name: 'بلجيكا' }, { code: 'ch', name: 'سويسرا' }, { code: 'at', name: 'النمسا' }, { code: 'gr', name: 'اليونان' }, { code: 'pt', name: 'البرتغال' }, { code: 'ie', name: 'أيرلندا' }, { code: 'nz', name: 'نيوزيلندا' },
@@ -76,10 +92,10 @@ export const GENERAL_KNOWLEDGE = deduplicateQs([
   ...GENERAL_ADDITIONS_10,
   ...getDynamicGeneral(1800)
 ]);
-export const FOOTBALL = deduplicateQs([...NEW_FOOTBALL, ...MEGA_FOOTBALL, ...MASSIVE_FOOTBALL, ...BULK_FOOTBALL, ...FOOTBALL_BULK_2, ...getDynamicFootball(1800)]);
+export const FOOTBALL = deduplicateQs([...NEW_FOOTBALL, ...MEGA_FOOTBALL, ...MASSIVE_FOOTBALL, ...BULK_FOOTBALL, ...FOOTBALL_BULK_2, ...FOOTBALL_ADDITIONS_1, ...FOOTBALL_ADDITIONS_2, ...FOOTBALL_ADDITIONS_3, ...FOOTBALL_ADDITIONS_4, ...FOOTBALL_ADDITIONS_5, ...FOOTBALL_ADDITIONS_6, ...FOOTBALL_ADDITIONS_7, ...getDynamicFootball(1800)]);
 export const MOVIES = deduplicateQs([...NEW_MOVIES, ...MEGA_MOVIES, ...MASSIVE_MOVIES, ...BULK_MOVIES, ...MOVIES_BULK_2, ...getDynamicMovies(1800)]);
 export const ANIME = deduplicateQs([...NEW_ANIME, ...MEGA_ANIME, ...MASSIVE_ANIME, ...BULK_ANIME, ...getDynamicAnime(1800)]);
 export const SCIENCE = deduplicateQs([...NEW_SCIENCE, ...MEGA_SCIENCE, ...MASSIVE_SCIENCE, ...BULK_SCIENCE, ...getDynamicScience(1800)]);
-export const HISTORY = deduplicateQs([...NEW_HISTORY, ...MEGA_HISTORY, ...MASSIVE_HISTORY, ...BULK_HISTORY, ...HISTORY_BULK_2, ...getDynamicHistory(1800)]);
+export const HISTORY = deduplicateQs([...NEW_HISTORY, ...MEGA_HISTORY, ...MASSIVE_HISTORY, ...BULK_HISTORY, ...HISTORY_BULK_2, ...HISTORY_ADDITIONS_1, ...HISTORY_ADDITIONS_2, ...HISTORY_ADDITIONS_3, ...HISTORY_ADDITIONS_4, ...HISTORY_ADDITIONS_5, ...HISTORY_ADDITIONS_6, ...HISTORY_ADDITIONS_7, ...getDynamicHistory(1800)]);
 export const ISLAMIC = deduplicateQs([...NEW_ISLAMIC, ...MEGA_ISLAMIC, ...MASSIVE_ISLAMIC, ...BULK_ISLAMIC, ...getDynamicIslamic(1800)]);
 export const MATH = deduplicateQs([...BULK_MATH, ...getDynamicMath(1800)]);

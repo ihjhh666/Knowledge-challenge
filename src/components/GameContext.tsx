@@ -123,12 +123,32 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const pingInterval = setInterval(() => {
       const now = Date.now();
       
-      if (!isHostRef.current && hostConnectionRef.current?.open) {
-         hostConnectionRef.current.send({ type: 'PING', playerId });
+      if (!isHostRef.current && hostConnectionRef.current) {
+         if (hostConnectionRef.current.open) {
+            hostConnectionRef.current.send({ type: 'PING', playerId });
+         }
          
-         if (now - lastHostPingTime.current > 12000) {
+         if (now - lastHostPingTime.current > 6000 && !stateRef.current?.players[hostConnectionRef.current.peer]?.disconnectedAt) {
              console.warn(`[GameContext] Host timeout detected! Marking host disconnected. Last ping: ${lastHostPingTime.current}, now: ${now}, diff: ${now - lastHostPingTime.current}`);
+             // Force close to trigger the close event which handles the rest
              hostConnectionRef.current.close();
+             
+             // Manually trigger the disconnect logic just in case close event doesn't fire
+             const oldState = stateRef.current;
+             if (oldState && (oldState.status === 'playing' || oldState.status === 'revealing' || oldState.status === 'waiting')) {
+                 const hostId = Object.keys(oldState.players).find(k => oldState.players[k].isHost);
+                 if (hostId && !oldState.players[hostId].disconnectedAt) {
+                     const newState = {
+                         ...oldState,
+                         players: {
+                             ...oldState.players,
+                             [hostId]: { ...oldState.players[hostId], disconnectedAt: Date.now() }
+                         }
+                     };
+                     setState(newState);
+                     stateRef.current = newState;
+                 }
+             }
          }
       }
       
@@ -139,8 +159,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
          Object.keys(players).forEach(pId => {
            if (pId !== playerId) {
               const lastPing = lastPingTimes.current[pId];
-              if (lastPing && (now - lastPing > 12000)) {
-                 console.warn(`[GameContext] [pingInterval] PLAYER REMOVED: ${players[pId]?.username} (${pId}) - Reason: Ping timeout > 12s. Before:`, Object.keys(players));
+              if (lastPing && (now - lastPing > 6000) && !players[pId].disconnectedAt) {
+                 console.warn(`[GameContext] [pingInterval] PLAYER REMOVED: ${players[pId]?.username} (${pId}) - Reason: Ping timeout > 6s. Before:`, Object.keys(players));
                  const conn = connectionsRef.current.get(pId);
                  if (conn) {
                    conn.close();
@@ -151,7 +171,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            }
          });
       }
-    }, 2500);
+    }, 1500);
     return () => clearInterval(pingInterval);
   }, [playerId]);
 
@@ -1560,10 +1580,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const q = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
     
-    // Update global history (keep max 200 questions to avoid filling storage)
+    // Update global history (keep max 2000 questions to avoid filling storage)
     globalSeenQuestions.push(q.text);
-    if (globalSeenQuestions.length > 200) {
-      globalSeenQuestions = globalSeenQuestions.slice(globalSeenQuestions.length - 200);
+    if (globalSeenQuestions.length > 2000) {
+      globalSeenQuestions = globalSeenQuestions.slice(globalSeenQuestions.length - 2000);
     }
     try {
       localStorage.setItem('seenQuestionsHistory', JSON.stringify(globalSeenQuestions));

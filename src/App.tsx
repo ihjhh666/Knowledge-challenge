@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './components/AuthContext';
 import { GameProvider } from './components/GameContext';
 import Home from './pages/Home';
@@ -110,6 +110,7 @@ function AppContent() {
           <Route path="/debug" element={<DebugRooms />} />
           <Route path="/debug-supabase" element={<DebugSupabase />} />
           <Route path="/debug-tables" element={<Debug />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       
