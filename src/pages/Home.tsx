@@ -135,6 +135,7 @@ export default function Home() {
       setRoomStats({ fetched: mappedRooms.length, filtered: mappedRooms.length });
     });
     const unsubscribeOnline = supabaseService.subscribeToOnlineCount((count) => {
+      console.log("ONLINE_COUNT_DISPLAY:", count);
       setOnlineCount(count);
     });
     return () => {

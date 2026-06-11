@@ -229,15 +229,17 @@ export const supabaseService = {
   async getOnlinePlayersCount(): Promise<number> {
     try {
       const ninetySecondsAgo = new Date(Date.now() - 90 * 1000).toISOString();
-      const { count, error } = await supabase.from('players')
-        .select('*', { count: 'exact', head: true })
-        .or(`is_online.eq.true,last_active_at.gte.${ninetySecondsAgo}`);
+      const { data, count, error } = await supabase.from('players')
+        .select('*', { count: 'exact' })
+        .eq('is_online', true)
+        .gte('last_active_at', ninetySecondsAgo);
 
       if (error) {
         console.error('[Supabase] getOnlinePlayersCount error:', error);
         return 0;
       }
       
+      console.log(`[Supabase_Presence] ONLINE_PLAYERS_RAW:`, data);
       console.log(`[Supabase_Presence] ONLINE_COUNT_FETCHED: ${count || 0}`);
       return count || 0;
     } catch (e) {
