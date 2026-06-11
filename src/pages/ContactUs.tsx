@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Mail, MessageCircle } from 'lucide-react';
+import { ArrowRight, Mail, Youtube, Instagram } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ContactUs() {
@@ -26,26 +26,41 @@ export default function ContactUs() {
           <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800/50">
             <h2 className="text-2xl font-bold text-white mb-6">يسعدنا تواصلك</h2>
             <p className="text-slate-300 leading-relaxed mb-6">
-              نرحب دائماً باقتراحاتكم، ملاحظاتكم، أو أي إبلاغات عن أخطاء فنية في اللعبة. نحن هنا لضمان تقديم أفضل تجربة ممكنة.
+              يسعدنا تواصلك معنا. إذا كان لديك اقتراح، ملاحظة، أو واجهت مشكلة أثناء اللعب، يمكنك مراسلتنا وسنحاول مساعدتك.
             </p>
             
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center">
+            <div className="flex items-center gap-4 mb-8">
+              <a href="mailto:almhbwbswfy342@gmail.com" className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-700 transition">
                 <Mail className="w-6 h-6 text-slate-400" />
-              </div>
+              </a>
               <div>
                 <p className="text-sm text-slate-500 font-semibold mb-1">البريد الإلكتروني</p>
-                <p className="text-white font-mono" dir="ltr">support@quizchallenge.com</p>
+                <a href="mailto:almhbwbswfy342@gmail.com" className="text-white hover:text-rose-400 transition font-mono" dir="ltr">almhbwbswfy342@gmail.com</a>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center">
-                <MessageCircle className="w-6 h-6 text-slate-400" />
-              </div>
-              <div>
-                 <p className="text-sm text-slate-500 font-semibold mb-1">تواصل آخر</p>
-                 <p className="text-white">قريباً على شبكات التواصل...</p>
+            <div className="pt-6 border-t border-slate-800/50">
+              <h2 className="text-xl font-bold text-white mb-4">تابع تحدي المعرفة</h2>
+              <div className="space-y-4">
+                <a 
+                  href="https://youtube.com/@tahadialmarifa?si=O-nzokiBkZvpAKOw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-slate-950 border border-slate-800 hover:border-red-500/50 hover:bg-slate-900 px-4 py-3 rounded-xl transition-all group"
+                >
+                  <Youtube className="w-6 h-6 text-red-500 group-hover:scale-110 transition-transform" />
+                  <span className="text-white font-medium">قناة YouTube</span>
+                </a>
+                
+                <a 
+                  href="https://www.instagram.com/ug_qz?igsh=MTZhcnVncDg3ZHIyZw=="
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-slate-950 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-900 px-4 py-3 rounded-xl transition-all group"
+                >
+                  <Instagram className="w-6 h-6 text-pink-500 group-hover:scale-110 transition-transform" />
+                  <span className="text-white font-medium">حساب Instagram</span>
+                </a>
               </div>
             </div>
             

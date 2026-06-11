@@ -413,8 +413,8 @@ export default function Home() {
             </p>
             <span className="text-slate-600">•</span>
             <div className="flex items-center gap-1.5 text-emerald-400 text-sm font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-              متصل الآن {onlineCount > 0 ? onlineCount : ''}
+              <span className="text-sm">🟢</span>
+              المتصلون الآن: {onlineCount}
             </div>
           </div>
         </div>
@@ -633,11 +633,7 @@ export default function Home() {
               <Globe className="w-6 h-6 text-sky-400" />
               <h3 className="text-xl font-bold font-heading text-white">الغرف العامة المتاحة</h3>
             </div>
-            <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 bg-slate-900 border border-slate-800 p-2 rounded-lg gap-2">
-               <div className="flex items-center gap-4">
-                 <span>المقروءة من القاعدة: {roomStats.fetched}</span>
-                 <span>الصالحة للظهور: {roomStats.filtered}</span>
-               </div>
+            <div className="flex flex-wrap items-center justify-end text-xs text-slate-500 bg-slate-900 border border-slate-800 p-2 rounded-lg gap-2">
                <div className="flex items-center gap-1.5 font-mono" dir="ltr">
                  <span className={`font-bold ${ping < 100 ? 'text-emerald-400' : ping < 300 ? 'text-amber-400' : 'text-rose-400'}`}>{ping} ms</span>
                  <span className="text-slate-500 font-sans" dir="rtl">زمن الاستجابة:</span>
