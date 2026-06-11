@@ -821,6 +821,103 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent my-12 hidden md:block"></div>
+
+      {/* 4. قسم الشرح وكيفية اللعب */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-pink-500/20 rounded-2xl shadow-lg border border-pink-500/20 text-2xl">
+            🎮
+          </div>
+          <h2 className="text-3xl font-bold font-heading text-white tracking-wide">كيف تلعب؟</h2>
+        </div>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* فكرة اللعبة */}
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-pink-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-start shadow-xl hover:-translate-y-1">
+             <div className="flex items-center gap-3 mb-4">
+                <div className="bg-pink-500/10 w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 group-hover:bg-pink-500/20 transition-all duration-300">
+                   🎯
+                </div>
+                <h3 className="text-xl font-bold font-heading text-white">فكرة اللعبة</h3>
+             </div>
+             <p className="text-slate-400 text-sm leading-relaxed mb-0">
+               "تحدي المعرفة" هي لعبة مسابقات أسئلة عربية تتيح لك اختبار معلوماتك والتنافس مع أصدقائك أو لاعبين آخرين في غرف ممتعة ومثيرة.
+             </p>
+          </div>
+
+          {/* طريقة اللعب */}
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-cyan-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-start shadow-xl hover:-translate-y-1">
+             <div className="flex items-center gap-3 mb-4">
+                <div className="bg-cyan-500/10 w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 group-hover:bg-cyan-500/20 transition-all duration-300">
+                   🕹️
+                </div>
+                <h3 className="text-xl font-bold font-heading text-white">طريقة اللعب</h3>
+             </div>
+             <ul className="text-slate-400 text-sm leading-relaxed space-y-2">
+               <li className="flex items-start gap-2">
+                 <span className="text-cyan-400 font-bold">1-</span>
+                 <span>اختر القسم أو اللعبة التي تريدها.</span>
+               </li>
+               <li className="flex items-start gap-2">
+                 <span className="text-cyan-400 font-bold">2-</span>
+                 <span>أنشئ غرفة خاصة وادعُ أصدقاءك أو انضم متاح.</span>
+               </li>
+               <li className="flex items-start gap-2">
+                 <span className="text-cyan-400 font-bold">3-</span>
+                 <span>أجب عن الأسئلة قبل انتهاء الوقت المخصص.</span>
+               </li>
+               <li className="flex items-start gap-2">
+                 <span className="text-cyan-400 font-bold">4-</span>
+                 <span>اجمع النقاط وحاول الوصول إلى المركز الأول!</span>
+               </li>
+             </ul>
+          </div>
+
+          {/* المميزات */}
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-amber-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-start shadow-xl hover:-translate-y-1">
+             <div className="flex items-center gap-3 mb-4">
+                <div className="bg-amber-500/10 w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
+                   🏆
+                </div>
+                <h3 className="text-xl font-bold font-heading text-white">المميزات</h3>
+             </div>
+             <ul className="text-slate-400 text-sm leading-relaxed space-y-2">
+               <li className="flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                 آلاف الأسئلة المتنوعة والمحدثة.
+               </li>
+               <li className="flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                 منافسة مباشرة ولحظية مع الأصدقاء.
+               </li>
+               <li className="flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                 لوحة وتصنيف لأفضل اللاعبين.
+               </li>
+               <li className="flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                 أطوار لعب مختلفة (مسابقات، صيد، دومينو والمزيد).
+               </li>
+             </ul>
+          </div>
+        </div>
+
+        {/* لماذا تلعب */}
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700/50 p-6 md:p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+           <div className="bg-indigo-500/10 w-16 h-16 rounded-2xl flex flex-shrink-0 items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform duration-300 border border-indigo-500/20 z-10">
+             📌
+           </div>
+           <div className="text-center md:text-right z-10">
+             <h3 className="text-xl font-bold font-heading text-white mb-2">لماذا تلعب تحدي المعرفة؟</h3>
+             <p className="text-slate-300 text-sm md:text-base leading-relaxed">
+               لأنها اللعبة الوحيدة التي تجمع بين <strong>التعلم، المتعة، والمنافسة</strong> في تجربة عربية سلسة ومصممة بأعلى معايير الجودة لتناسب الجميع.
+             </p>
+           </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -232,7 +232,7 @@ export const supabaseService = {
       const ninetySecondsAgo = new Date(Date.now() - 90 * 1000).toISOString();
       const { count, error } = await supabase.from('players')
         .select('*', { count: 'exact', head: true })
-        .or(`is_online.eq.true,last_active_at.gte.${ninetySecondsAgo}`);
+        .gte('last_active_at', ninetySecondsAgo);
 
       if (error) {
         console.error('[Supabase] getOnlinePlayersCount error:', error);
@@ -246,34 +246,18 @@ export const supabaseService = {
   },
 
   subscribeToOnlineCount(callback: (count: number) => void) {
-    const channelId = `players_${Math.random().toString(36).substring(7)}`;
-    console.log(`[Supabase] Subscribing to online count... Channel: ${channelId}`);
-    
-    // We update using our new method
     const updateCount = async () => {
        const count = await this.getOnlinePlayersCount();
-       console.log(`[Supabase] Online count updated: ${count}`);
        callback(count);
     };
     
     updateCount();
     
-    const subscription = supabase.channel(channelId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, (payload) => {
-         console.log('[Supabase] Player realtime event:', payload.eventType);
-         updateCount();
-      })
-      .subscribe((status) => {
-         console.log(`[Supabase] Player channel status: ${status}`);
-      });
-
-    // Also run an interval to check for timeouts independently of postgres events
+    // Poll every 15 seconds instead of massive real-time row events across all users
     const interval = setInterval(updateCount, 15000); 
 
     return () => { 
-      console.log(`[Supabase] Unsubscribing from players... Channel: ${channelId}`);
       clearInterval(interval);
-      supabase.removeChannel(subscription); 
     };
   }
 };
