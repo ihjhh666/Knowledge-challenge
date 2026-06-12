@@ -9,7 +9,7 @@ export default function Leaderboard() {
   const navigate = useNavigate();
   const [leaders, setLeaders] = useState<PlayerStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortMethod, setSortMethod] = useState<'wins' | 'totalPoints' | 'successRate'>('totalPoints');
+  const [sortMethod, setSortMethod] = useState<'wins' | 'totalPoints' | 'successRate' | 'tfCorrectAnswers' | 'tfHighScore'>('totalPoints');
   const [dbStats, setDbStats] = useState({ fetched: 0 });
 
   const myPlayerId = storage.getPlayerId();
@@ -58,10 +58,11 @@ export default function Leaderboard() {
         </div>
       </header>
 
-      <div className="flex gap-2 bg-slate-900 border border-slate-800 p-2 rounded-2xl w-fit">
+      <div className="flex flex-wrap gap-2 bg-slate-900 border border-slate-800 p-2 rounded-2xl w-fit">
         <SortButton active={sortMethod === 'totalPoints'} onClick={() => setSortMethod('totalPoints')} icon={Star} label="النقاط" />
         <SortButton active={sortMethod === 'wins'} onClick={() => setSortMethod('wins')} icon={Medal} label="الانتصارات" />
-        <SortButton active={sortMethod === 'successRate'} onClick={() => setSortMethod('successRate')} icon={Target} label="نسبة الفوز / الإجابات" />
+        <SortButton active={sortMethod === 'successRate'} onClick={() => setSortMethod('successRate')} icon={Target} label="النسبة" />
+        <SortButton active={sortMethod === 'tfHighScore'} onClick={() => setSortMethod('tfHighScore')} icon={Trophy} label="أعلى نتيجة (صح أو خطأ)" />
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
@@ -149,22 +150,37 @@ export default function Leaderboard() {
                     <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">النقاط</span>
                     <span className="sm:inline-block sm:mr-1 font-mono text-indigo-400 font-bold text-base sm:text-sm">{player.totalPoints?.toLocaleString() || 0}</span>
                   </div>
-                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
-                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">الانتصارات</span>
-                    <span className="sm:inline-block sm:mr-1 font-mono text-emerald-400 font-bold text-base sm:text-sm">{player.wins || 0}</span>
-                  </div>
-                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
-                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">مباريات</span>
-                    <span className="sm:inline-block sm:mr-1 font-mono text-slate-300 font-bold text-base sm:text-sm">{player.gamesPlayed || 0}</span>
-                  </div>
-                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
-                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">نسبة الفوز</span>
-                    <span className="sm:inline-block sm:mr-1 font-mono text-amber-400 font-bold text-base sm:text-sm">{winRate}%</span>
-                  </div>
-                  <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block min-w-[70px]">
-                    <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">الإجابات</span>
-                    <span className="sm:inline-block sm:mr-1 font-mono text-sky-400 font-bold text-base sm:text-sm">{player.successRate || 0}%</span>
-                  </div>
+                  {sortMethod === 'tfHighScore' ? (
+                    <>
+                      <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                        <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">أعلى نتيجة (صح أو خطأ)</span>
+                        <span className="sm:inline-block sm:mr-1 font-mono text-emerald-400 font-bold text-base sm:text-sm">{player.tfHighScore || 0}</span>
+                      </div>
+                      <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                        <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">إجابات صح أم خطأ</span>
+                        <span className="sm:inline-block sm:mr-1 font-mono text-sky-400 font-bold text-base sm:text-sm">{player.tfCorrectAnswers || 0}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                        <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">الانتصارات</span>
+                        <span className="sm:inline-block sm:mr-1 font-mono text-emerald-400 font-bold text-base sm:text-sm">{player.wins || 0}</span>
+                      </div>
+                      <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                        <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">مباريات</span>
+                        <span className="sm:inline-block sm:mr-1 font-mono text-slate-300 font-bold text-base sm:text-sm">{player.gamesPlayed || 0}</span>
+                      </div>
+                      <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
+                        <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">نسبة الفوز</span>
+                        <span className="sm:inline-block sm:mr-1 font-mono text-amber-400 font-bold text-base sm:text-sm">{winRate}%</span>
+                      </div>
+                      <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block min-w-[70px]">
+                        <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">الإجابات</span>
+                        <span className="sm:inline-block sm:mr-1 font-mono text-sky-400 font-bold text-base sm:text-sm">{player.successRate || 0}%</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )})}

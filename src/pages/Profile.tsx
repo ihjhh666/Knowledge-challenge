@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, User, Trophy, Star, Target, CheckCircle, XCircle, Gamepad2, BrainCircuit, Users, Copy, Upload, Trash2, LogIn } from 'lucide-react';
+import { ChevronRight, User, Trophy, Star, Target, CheckCircle, XCircle, Gamepad2, BrainCircuit, Users, Copy, Upload, Trash2, LogIn, Flame } from 'lucide-react';
 import { db, PlayerStats, subscribeToFriends, updateUserProfile } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { storage } from '../lib/storage';
@@ -352,6 +352,20 @@ export default function Profile() {
                 <StatCard icon={Target} label="أهداف لك" value={stats.hockeyGoalsScored || 0} color="text-emerald-500" bg="bg-emerald-500/20" />
                 <StatCard icon={CheckCircle} label="أهداف عليك" value={stats.hockeyGoalsConceded || 0} color="text-rose-500" bg="bg-rose-500/20" />
                 <StatCard icon={Star} label="أعلى سلسلة انتصارات" value={stats.hockeyWinStreak || 0} color="text-purple-400" bg="bg-purple-500/20" />
+              </div>
+            </div>
+          )}
+
+          {(stats.tfRoundsPlayed || 0) > 0 && (
+            <div className="mt-8 space-y-4">
+              <h3 className="text-2xl font-bold font-heading text-emerald-400 mb-4 flex items-center gap-2">✅ إحصائيات صح أو خطأ</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <StatCard icon={Gamepad2} label="إجمالي الجولات" value={stats.tfRoundsPlayed || 0} color="text-blue-400" bg="bg-blue-500/20" />
+                <StatCard icon={CheckCircle} label="إجابات صحيحة" value={stats.tfCorrectAnswers || 0} color="text-emerald-400" bg="bg-emerald-500/20" />
+                <StatCard icon={XCircle} label="إجابات خاطئة" value={stats.tfWrongAnswers || 0} color="text-rose-400" bg="bg-rose-500/20" />
+                <StatCard icon={Flame} label="أطول سلسلة" value={stats.tfBestStreak || 0} color="text-orange-400" bg="bg-orange-500/20" />
+                <StatCard icon={Trophy} label="أعلى نتيجة" value={stats.tfHighScore || 0} color="text-amber-400" bg="bg-amber-500/20" />
+                <StatCard icon={Target} label="نسبة النجاح" value={`${Math.round(((stats.tfCorrectAnswers || 0) / ((stats.tfCorrectAnswers || 0) + (stats.tfWrongAnswers || 0) || 1)) * 100)}%`} color="text-indigo-400" bg="bg-indigo-500/20" />
               </div>
             </div>
           )}

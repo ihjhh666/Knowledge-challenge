@@ -447,6 +447,16 @@ export default function Home() {
               <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">{cat.name}</h3>
             </button>
           ))}
+          
+          <button
+            onClick={() => navigate('/true-false')}
+            className={`bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
+          >
+            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
+            <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform">✅</span>
+            <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">صح أم خطأ</h3>
+          </button>
         </div>
       </section>
 
@@ -544,6 +554,8 @@ export default function Home() {
              <p className="text-slate-400 text-sm mb-6 leading-relaxed">اجمع الدجاج وأعده إلى حظيرتك قبل البوتات، الفوز لأول من يجمع 50 دجاجة!</p>
              <span className="mt-auto bg-lime-500/10 text-lime-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-lime-500/20 group-hover:bg-lime-500 group-hover:text-white transition-colors">إلعب الآن</span>
           </div>
+
+
         </div>
       </section>
 

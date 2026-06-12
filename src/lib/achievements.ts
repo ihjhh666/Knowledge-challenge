@@ -30,6 +30,10 @@ export interface PlayerStats {
   shortId?: string;
   correctAnswers?: number;
   wrongAnswers?: number;
+  tfRoundsPlayed?: number;
+  tfCorrectAnswers?: number;
+  tfBestStreak?: number;
+  tfHighScore?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -45,6 +49,127 @@ export const DEFAULT_STATS: PlayerStats = {
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
+  // --- صح أو خطأ (True/False) ---
+  {
+    id: 'tf_first_correct',
+    title: 'أول الغيث',
+    description: 'أجب إجابة صحيحة واحدة في طور صح أو خطأ',
+    rarity: 'common',
+    icon: Target,
+    targetMax: 1,
+    condition: (s) => (s.tfCorrectAnswers || 0) >= 1,
+    getProgress: (s) => s.tfCorrectAnswers || 0,
+  },
+  {
+    id: 'tf_10_correct',
+    title: 'باحث عن الحقيقة',
+    description: 'أجب عن 10 أسئلة بشكل صحيح',
+    rarity: 'common',
+    icon: Sparkles,
+    targetMax: 10,
+    condition: (s) => (s.tfCorrectAnswers || 0) >= 10,
+    getProgress: (s) => s.tfCorrectAnswers || 0,
+  },
+  {
+    id: 'tf_50_correct',
+    title: 'موسوعة متنقلة',
+    description: 'أجب عن 50 سؤال بشكل صحيح',
+    rarity: 'common',
+    icon: Star,
+    targetMax: 50,
+    condition: (s) => (s.tfCorrectAnswers || 0) >= 50,
+    getProgress: (s) => s.tfCorrectAnswers || 0,
+  },
+  {
+    id: 'tf_streak_5',
+    title: 'سلسلة البداية',
+    description: 'حقق سلسلة 5 إجابات صحيحة متتالية',
+    rarity: 'common',
+    icon: Flame,
+    targetMax: 5,
+    condition: (s) => (s.tfBestStreak || 0) >= 5,
+    getProgress: (s) => Math.min(s.tfBestStreak || 0, 5),
+  },
+  {
+    id: 'tf_100_correct',
+    title: 'عالم شامل',
+    description: 'أجب عن 100 سؤال بشكل صحيح',
+    rarity: 'medium',
+    icon: Award,
+    targetMax: 100,
+    condition: (s) => (s.tfCorrectAnswers || 0) >= 100,
+    getProgress: (s) => s.tfCorrectAnswers || 0,
+  },
+  {
+    id: 'tf_streak_15',
+    title: 'لا أخطئ أبداً',
+    description: 'حقق سلسلة 15 إجابة صحيحة متتالية',
+    rarity: 'medium',
+    icon: Flame,
+    targetMax: 15,
+    condition: (s) => (s.tfBestStreak || 0) >= 15,
+    getProgress: (s) => Math.min(s.tfBestStreak || 0, 15),
+  },
+  {
+    id: 'tf_20_rounds',
+    title: 'محب التحدي',
+    description: 'إلعب 20 جولة في طور صح أو خطأ',
+    rarity: 'medium',
+    icon: Clock,
+    targetMax: 20,
+    condition: (s) => (s.tfRoundsPlayed || 0) >= 20,
+    getProgress: (s) => s.tfRoundsPlayed || 0,
+  },
+  {
+    id: 'tf_250_correct',
+    title: 'عقل مدبر',
+    description: 'أجب عن 250 سؤال بشكل صحيح',
+    rarity: 'rare',
+    icon: Crown,
+    targetMax: 250,
+    condition: (s) => (s.tfCorrectAnswers || 0) >= 250,
+    getProgress: (s) => s.tfCorrectAnswers || 0,
+  },
+  {
+    id: 'tf_streak_30',
+    title: 'ذاكرة حديدية',
+    description: 'حقق سلسلة 30 إجابة صحيحة متتالية',
+    rarity: 'rare',
+    icon: Zap,
+    targetMax: 30,
+    condition: (s) => (s.tfBestStreak || 0) >= 30,
+    getProgress: (s) => Math.min(s.tfBestStreak || 0, 30),
+  },
+  {
+    id: 'tf_500_correct',
+    title: 'الأسطورة الحية',
+    description: 'أجب عن 500 سؤال بشكل صحيح',
+    rarity: 'legendary',
+    icon: Diamond,
+    targetMax: 500,
+    condition: (s) => (s.tfCorrectAnswers || 0) >= 500,
+    getProgress: (s) => s.tfCorrectAnswers || 0,
+  },
+  {
+    id: 'tf_streak_50',
+    title: 'لا يمكن إيقافي',
+    description: 'حقق سلسلة 50 إجابة صحيحة متتالية',
+    rarity: 'legendary',
+    icon: Rocket,
+    targetMax: 50,
+    condition: (s) => (s.tfBestStreak || 0) >= 50,
+    getProgress: (s) => Math.min(s.tfBestStreak || 0, 50),
+  },
+  {
+    id: 'tf_100_rounds',
+    title: 'جنون المعرفة',
+    description: 'إلعب 100 جولة في طور صح أو خطأ',
+    rarity: 'legendary',
+    icon: Trophy,
+    targetMax: 100,
+    condition: (s) => (s.tfRoundsPlayed || 0) >= 100,
+    getProgress: (s) => s.tfRoundsPlayed || 0,
+  },
   // --- العادية (Common) ---
   {
     id: 'first_win',

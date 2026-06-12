@@ -109,6 +109,12 @@ export interface PlayerStats {
   hockeyGoalsConceded?: number;
   hockeyWinStreak?: number;
   currentHockeyWinStreak?: number;
+  // True/False Stats
+  tfRoundsPlayed?: number;
+  tfCorrectAnswers?: number;
+  tfWrongAnswers?: number;
+  tfBestStreak?: number;
+  tfHighScore?: number;
   unlockedAchievements?: { id: string; date: number }[];
   createdAt?: number;
 }
@@ -634,7 +640,7 @@ import { getPlayerStats } from './achievements';
   }
 };
 
-export const subscribeToLeaderboard = (sortBy: 'wins' | 'totalPoints' | 'successRate' = 'totalPoints', callback: (players: PlayerStats[], stats?: { fetched: number }) => void) => {
+export const subscribeToLeaderboard = (sortBy: 'wins' | 'totalPoints' | 'successRate' | 'tfCorrectAnswers' | 'tfHighScore' = 'totalPoints', callback: (players: PlayerStats[], stats?: { fetched: number }) => void) => {
   if (!db) {
     callback([], { fetched: 0 });
     return () => {};
@@ -748,6 +754,54 @@ export const migrateUserData = async (oldId: string, newId: string) => {
   }
 };
 
+export const updateTFStats = async (playerId: string, correct: number, wrong: number, streak: number, score: number) => {
+  if (!db) return;
+  try {
+    const userRef = doc(db, 'users', playerId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+
+    const currentStats = userSnap.data() as Partial<PlayerStats>;
+    
+    // Add XP globally
+    let addedXp = score * 10;
+    
+    // Check achievements
+    const achStats = getAchStats();
+    const newUnlocked = doUpdateAchStats({
+      tfRoundsPlayed: (achStats.tfRoundsPlayed || 0) + 1,
+      tfCorrectAnswers: (achStats.tfCorrectAnswers || 0) + correct,
+      tfBestStreak: Math.max(achStats.tfBestStreak || 0, streak),
+      tfHighScore: Math.max(achStats.tfHighScore || 0, score),
+      totalXp: (achStats.totalXp || 0) + addedXp
+    });
+    
+    if (newUnlocked && newUnlocked.length > 0) {
+      window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: newUnlocked }));
+      addedXp += newUnlocked.length * 100;
+      doUpdateAchStats({ totalXp: (achStats.totalXp || 0) + addedXp });
+      
+      const existing = currentStats.unlockedAchievements || [];
+      const toApp = newUnlocked.map(a => ({ id: a.id, date: Date.now() }));
+      await updateDoc(userRef, { unlockedAchievements: [...existing, ...toApp] });
+    }
+
+    const newStats: Partial<PlayerStats> = {
+      tfRoundsPlayed: (currentStats.tfRoundsPlayed || 0) + 1,
+      tfCorrectAnswers: (currentStats.tfCorrectAnswers || 0) + correct,
+      tfWrongAnswers: (currentStats.tfWrongAnswers || 0) + wrong,
+      tfBestStreak: Math.max(currentStats.tfBestStreak || 0, streak),
+      tfHighScore: Math.max(currentStats.tfHighScore || 0, score),
+      totalPoints: (currentStats.totalPoints || 0) + score, // Reward global points
+      totalXp: increment(addedXp) as any
+    };
+
+    await updateDoc(userRef, newStats);
+  } catch (err) {
+    console.error('Error updating player TF stats:', err);
+  }
+};
+
 export const updateUserProfile = async (playerId: string, profileData: { username?: string; playerName?: string; avatarUrl?: string; playerId?: string }) => {
 
   if (!db) return;
@@ -765,7 +819,7 @@ export const updateUserProfile = async (playerId: string, profileData: { usernam
   }
 };
 
-export const searchUserById = async (playerId: string) => {
+export const searchUserById = async (playerId: string): Promise<any> => {
   if (!db) return null;
   try {
     const docRef = doc(db, 'users', playerId);

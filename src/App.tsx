@@ -10,6 +10,7 @@ import PenaltySolo from './pages/PenaltySolo';
 import DominoSolo from './pages/DominoSolo';
 import HockeySolo from './pages/HockeySolo';
 import ChickenSolo from './pages/ChickenSolo';
+import TrueFalseSolo from './pages/TrueFalseSolo';
 import KingMode from './pages/KingMode';
 import SentenceOrderSolo from './pages/SentenceOrderSolo';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -103,6 +104,7 @@ function AppContent() {
             <Route path="/hockey-solo" element={<HockeySolo />} />
             <Route path="/chicken-solo" element={<ChickenSolo />} />
             <Route path="/king-mode" element={<KingMode />} />
+            <Route path="/true-false" element={<TrueFalseSolo />} />
             <Route path="/sentence-order" element={<SentenceOrderSolo />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
