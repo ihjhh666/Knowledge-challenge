@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
 import { useAuth } from '../components/AuthContext';
-import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell, Crown } from 'lucide-react';
+import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell, Crown, Newspaper } from 'lucide-react';
 import { subscribeToFriends } from '../lib/firebase';
 import { supabaseService } from '../services/supabaseService';
 import { RoomVisibility, PublicRoom } from '../lib/types';
@@ -417,6 +417,13 @@ export default function Home() {
             ملفي
           </Link>
           <Link
+            to="/updates"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-xl transition-colors text-emerald-400"
+          >
+            <Newspaper className="w-5 h-5" />
+            التحديثات
+          </Link>
+          <Link
             to="/settings"
             className="flex items-center justify-center p-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors text-slate-300"
             title="الإعدادات العامة"
@@ -435,6 +442,17 @@ export default function Home() {
           <h2 className="text-3xl font-bold font-heading text-white tracking-wide">قسم ألعاب الأسئلة</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <button
+            onClick={() => navigate('/survival')}
+            className={`bg-gradient-to-br from-rose-600 to-rose-900 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
+          >
+            <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
+            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
+            <div className="absolute -left-4 -top-4 w-24 h-24 bg-rose-500/30 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
+            <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform animate-pulse">🔥</span>
+            <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">طور البقاء</h3>
+          </button>
+
           {SOLO_CATEGORIES.map(cat => (
             <button
               key={cat.id}

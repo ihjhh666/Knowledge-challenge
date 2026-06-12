@@ -83,6 +83,13 @@ export const storage = {
     }
     return DEFAULT_SETTINGS;
   },
+  getSurvivalHighScore: (): number => {
+    const score = localStorage.getItem('survival_highscore');
+    return score ? parseInt(score, 10) : 0;
+  },
+  setSurvivalHighScore: (score: number) => {
+    localStorage.setItem('survival_highscore', score.toString());
+  },
   setSettings: (settings: Partial<UserSettings>) => {
     const current = storage.getSettings();
     const updated = { ...current, ...settings };

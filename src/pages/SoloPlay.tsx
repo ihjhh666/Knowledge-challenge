@@ -88,9 +88,51 @@ export default function SoloPlay() {
       unseen = category.data; // fallback if exhausted
     }
 
-    // Select 20 random unseen questions from the pool
-    const shuffled = [...unseen].sort(() => 0.5 - Math.random());
-    const selected20 = shuffled.slice(0, 20);
+    let selected20: any[] = [];
+
+    if (category.id === 'math') {
+      // Custom building logic for math to progression & prevent type repetition
+      const easyBucket = unseen.filter(q => q.difficultyRank === 0).sort(() => 0.5 - Math.random());
+      const medBucket = unseen.filter(q => q.difficultyRank === 1).sort(() => 0.5 - Math.random());
+      const hardBucket = unseen.filter(q => q.difficultyRank === 2).sort(() => 0.5 - Math.random());
+
+      // Try to pick 7 easy, 8 medium, 5 hard
+      const queue = [
+        ...easyBucket.slice(0, 7),
+        ...medBucket.slice(0, 8),
+        ...hardBucket.slice(0, 5)
+      ];
+      
+      // Enforce max 2 in a row of the same 'type' (e.g. addition)
+      for (let i = 0; i < queue.length; i++) {
+        if (i >= 2) {
+          const type1 = queue[i-1].type;
+          const type2 = queue[i-2].type;
+          if (queue[i].type === type1 && type1 === type2) {
+            // Find a swap candidate ahead
+            const swapIdx = queue.findIndex((q, idx) => idx > i && q.type !== type1);
+            if (swapIdx !== -1) {
+              const temp = queue[i];
+              queue[i] = queue[swapIdx];
+              queue[swapIdx] = temp;
+            }
+          }
+        }
+        selected20.push(queue[i]);
+      }
+      
+      // Fallback formatting if slicing failed to reach 20 due to exhaustion somehow
+      while (selected20.length < 20) {
+          const randQ = category.data[Math.floor(Math.random() * category.data.length)];
+          selected20.push(randQ);
+      }
+      // Ensure strictly 20
+      selected20 = selected20.slice(0, 20);
+    } else {
+      // General categories behavior
+      const shuffled = [...unseen].sort(() => 0.5 - Math.random());
+      selected20 = shuffled.slice(0, 20);
+    }
     
     // add them to history
     selected20.forEach(q => globalSeenQuestions.push(q.text));
@@ -203,6 +245,17 @@ export default function SoloPlay() {
         </header>
 
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <button
+            onClick={() => navigate('/survival')}
+            className={`bg-gradient-to-br from-rose-600 to-rose-900 p-6 rounded-3xl text-right relative overflow-hidden group hover:scale-[1.02] transition-transform`}
+          >
+            <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
+            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
+            <span className="text-4xl mb-4 block animate-pulse">🔥</span>
+            <h3 className="text-xl font-bold font-heading text-white">طور البقاء</h3>
+            <p className="text-white/80 text-sm mt-2">التحدي اللانهائي</p>
+          </button>
+
           {CATEGORIES.map(cat => (
             <button
               key={cat.id}
@@ -217,6 +270,16 @@ export default function SoloPlay() {
               </p>
             </button>
           ))}
+          
+          <button
+            onClick={() => navigate('/true-false')}
+            className={`bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 rounded-3xl text-right relative overflow-hidden group hover:scale-[1.02] transition-transform`}
+          >
+            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
+            <span className="text-4xl mb-4 block">✅</span>
+            <h3 className="text-xl font-bold font-heading text-white">صح أم خطأ</h3>
+            <p className="text-white/80 text-sm mt-2">مئات الأسئلة</p>
+          </button>
         </div>
       </div>
     );

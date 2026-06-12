@@ -17,7 +17,7 @@ import { MASSIVE_ANIME } from './massive/anime';
 import { MASSIVE_MOVIES } from './massive/movies';
 import { MASSIVE_ISLAMIC } from './massive/islamic';
 
-import { BULK_GENERAL, BULK_FOOTBALL, BULK_MATH, BULK_MOVIES, BULK_ANIME, BULK_SCIENCE, BULK_HISTORY, BULK_ISLAMIC } from './massive/bulkData1';
+import { BULK_GENERAL, BULK_FOOTBALL, BULK_MOVIES, BULK_ANIME, BULK_SCIENCE, BULK_HISTORY, BULK_ISLAMIC } from './massive/bulkData1';
 import { GENERAL_BULK_2, FOOTBALL_BULK_2, MOVIES_BULK_2, HISTORY_BULK_2 } from './massive/bulkData2';
 
 import { GENERAL_ADDITIONS_1 } from './questions/general_additions_1';
@@ -38,8 +38,7 @@ import {
   getDynamicHistory, 
   getDynamicAnime, 
   getDynamicMovies, 
-  getDynamicIslamic,
-  getDynamicMath
+  getDynamicIslamic
 } from './massiveDynamic';
 
 import { FOOTBALL_ADDITIONS_1 } from './questions/football_additions_1';
@@ -103,4 +102,5 @@ export const ANIME = deduplicateQs([...NEW_ANIME, ...MEGA_ANIME, ...MASSIVE_ANIM
 export const SCIENCE = deduplicateQs([...NEW_SCIENCE, ...MEGA_SCIENCE, ...MASSIVE_SCIENCE, ...BULK_SCIENCE, ...getDynamicScience(5000)]);
 export const HISTORY = deduplicateQs([...NEW_HISTORY, ...MEGA_HISTORY, ...MASSIVE_HISTORY, ...BULK_HISTORY, ...HISTORY_BULK_2, ...HISTORY_ADDITIONS_1, ...HISTORY_ADDITIONS_2, ...HISTORY_ADDITIONS_3, ...HISTORY_ADDITIONS_4, ...HISTORY_ADDITIONS_5, ...HISTORY_ADDITIONS_6, ...HISTORY_ADDITIONS_7, ...getDynamicHistory(5000)]);
 export const ISLAMIC = deduplicateQs([...NEW_ISLAMIC, ...MEGA_ISLAMIC, ...MASSIVE_ISLAMIC, ...BULK_ISLAMIC, ...getDynamicIslamic(5000)]);
-export const MATH = deduplicateQs([...BULK_MATH, ...getDynamicMath(8000)]);
+import { MATH_GENERATED } from './questions/math_generated';
+export const MATH = deduplicateQs([...MATH_GENERATED]);

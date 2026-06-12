@@ -4,6 +4,7 @@ import { AuthProvider } from './components/AuthContext';
 import { GameProvider } from './components/GameContext';
 import Home from './pages/Home';
 import Room from './pages/Room';
+import Updates from './pages/Updates';
 import SoloPlay from './pages/SoloPlay';
 import FishingSolo from './pages/FishingSolo';
 import PenaltySolo from './pages/PenaltySolo';
@@ -11,6 +12,7 @@ import DominoSolo from './pages/DominoSolo';
 import HockeySolo from './pages/HockeySolo';
 import ChickenSolo from './pages/ChickenSolo';
 import TrueFalseSolo from './pages/TrueFalseSolo';
+import SurvivalSolo from './pages/SurvivalSolo';
 import KingMode from './pages/KingMode';
 import SentenceOrderSolo from './pages/SentenceOrderSolo';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -97,6 +99,7 @@ function AppContent() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Home />} />
             <Route path="/room/:roomId" element={<Room />} />
+            <Route path="/updates" element={<Updates />} />
             <Route path="/solo" element={<SoloPlay />} />
             <Route path="/fishing" element={<FishingSolo />} />
             <Route path="/penalty" element={<PenaltySolo />} />
@@ -105,6 +108,7 @@ function AppContent() {
             <Route path="/chicken-solo" element={<ChickenSolo />} />
             <Route path="/king-mode" element={<KingMode />} />
             <Route path="/true-false" element={<TrueFalseSolo />} />
+            <Route path="/survival" element={<SurvivalSolo />} />
             <Route path="/sentence-order" element={<SentenceOrderSolo />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
