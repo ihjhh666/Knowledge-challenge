@@ -1,26 +1,51 @@
 import { useEffect } from 'react';
 import { storage } from '../lib/storage';
-import { updateOnlinePresence, removeOnlinePresence, updateUserProfile } from '../lib/firebase';
+import { updateOnlinePresence, removeOnlinePresence, updateUserProfile, searchUserById } from '../lib/firebase';
 import { supabaseService } from '../services/supabaseService';
 
 export function useOnlinePresence() {
   useEffect(() => {
     console.log('[Supabase_Presence] ONLINE_INIT_STARTED');
     const playerId = storage.getPlayerId();
-    const playerName = storage.getPlayerName() || `لاعب مجهول`;
     
     const syncProfile = async () => {
-        console.log('[Supabase_Presence] ONLINE_SESSION_STARTED');
-        // Initial heartbeat
-        supabaseService.setPlayerOnline(playerId, playerName);
-        
-        // Also sync profile info to ensure they are searchable
-        const avatar = storage.getPlayerAvatar();
-        await updateUserProfile(playerId, { 
-            username: playerName,
-            avatarUrl: avatar,
-            playerId: playerId 
-        });
+        try {
+           const dbUser = await searchUserById(playerId);
+           let finalName = storage.getPlayerName() || '';
+           
+           // If local name is missing or "Unknown", try to recover from DB
+           if (!finalName || finalName === 'لاعب مجهول') {
+               if (dbUser && dbUser.playerName && dbUser.playerName !== 'لاعب مجهول') {
+                   finalName = dbUser.playerName;
+                   storage.setPlayerName(finalName);
+               } else if (dbUser && dbUser.username && dbUser.username !== 'لاعب مجهول') {
+                   finalName = dbUser.username;
+                   storage.setPlayerName(finalName);
+               }
+           }
+           
+           if (!finalName) finalName = 'لاعب مجهول';
+
+           console.log('[Supabase_Presence] ONLINE_SESSION_STARTED', { finalName });
+           // Initial heartbeat
+           supabaseService.setPlayerOnline(playerId, finalName);
+           
+           const avatar = storage.getPlayerAvatar();
+           
+           // Only update DB name if it's a real name
+           if (finalName !== 'لاعب مجهول') {
+               await updateUserProfile(playerId, { 
+                   username: finalName,
+                   playerName: finalName,
+                   avatarUrl: avatar,
+                   playerId: playerId 
+               });
+           } else {
+               await updateUserProfile(playerId, { avatarUrl: avatar, playerId: playerId });
+           }
+        } catch (err) {
+            console.error("Error syncing profile", err);
+        }
     };
     
     syncProfile();

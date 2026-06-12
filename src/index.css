@@ -44,6 +44,11 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes bg-position {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
 }

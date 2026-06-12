@@ -72,7 +72,7 @@ export default function Leaderboard() {
         ) : leaders.length === 0 ? (
           <div className="p-12 text-center text-slate-500">لا توجد بيانات حالياً</div>
         ) : (
-          <div className="divide-y divide-slate-800">
+          <div className="divide-y divide-slate-800/0 p-2">
             {/* نظام تشخيص مؤقت: Diagnostics */}
             <div className="p-4 bg-slate-950 text-emerald-400 text-xs font-mono border-b border-slate-800">
                 [Diagnostics] اللاعبون في قاعدة البيانات: تم تحميل {leaders.length} سجل بنجاح.
@@ -80,23 +80,71 @@ export default function Leaderboard() {
             {leaders.map((player, idx) => {
               const winRate = player.gamesPlayed > 0 ? Math.round((player.wins / player.gamesPlayed) * 100) : 0;
               const playerAvatar = player.playerId === myPlayerId ? (myAvatar || player.avatarUrl) : player.avatarUrl;
+              const isFirst = idx === 0;
+              const isSecond = idx === 1;
+              const isThird = idx === 2;
+              
               return (
               <div 
                 key={player.playerId || `rank-${idx}`} 
-                className={`flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center p-4 hover:bg-slate-800/50 transition-colors ${idx === 0 ? 'bg-amber-500/10 border-r-4 border-amber-500' : idx === 1 ? 'bg-slate-300/10 border-r-4 border-slate-300' : idx === 2 ? 'bg-amber-700/10 border-r-4 border-amber-700' : ''}`}
+                className={`relative group flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center p-4 mx-2 my-2 rounded-2xl transition-all duration-300 ${
+                  isFirst ? 'bg-gradient-to-r from-amber-900/30 to-amber-950/30 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)] hover:shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:-translate-y-1 hover:border-amber-400 z-10' : 
+                  isSecond ? 'bg-gradient-to-r from-slate-800/40 to-slate-900/40 border border-slate-300/30 hover:-translate-y-0.5 hover:border-slate-300/50' : 
+                  isThird ? 'bg-gradient-to-r from-amber-950/40 to-slate-900/40 border border-amber-700/30 hover:-translate-y-0.5 hover:border-amber-700/50' : 
+                  'bg-slate-900/50 border border-slate-800/50 hover:bg-slate-800/80'
+                }`}
               >
+                {/* Visual Effects */}
+                {isFirst && (
+                  <>
+                    <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(245,158,11,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%,100%_100%] animate-[bg-position_2s_linear_infinite]" />
+                    </div>
+                    {/* Golden halo glow */}
+                    <div className="absolute -inset-1 rounded-[20px] opacity-20 pointer-events-none bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-600 blur-md group-hover:opacity-40 transition-opacity duration-700" />
+                  </>
+                )}
+                {isSecond && (
+                  <div className="absolute -inset-0.5 rounded-[18px] opacity-10 pointer-events-none bg-gradient-to-r from-slate-300 via-white to-slate-400 blur-sm group-hover:opacity-20 transition-opacity duration-700" />
+                )}
+
                 <div 
-                  className="flex items-center gap-3 w-full sm:w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-3 w-full sm:w-auto flex-1 cursor-pointer hover:opacity-80 transition-opacity relative z-10"
                   onClick={() => window.dispatchEvent(new CustomEvent('open_player_profile', { detail: player.playerId }))}
                 >
-                  <div className={`w-10 h-10 shrink-0 font-bold font-mono rounded-xl flex items-center justify-center ${idx === 0 ? 'bg-amber-500 text-amber-950 text-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]' : idx === 1 ? 'bg-slate-300 text-slate-900 text-lg shadow-[0_0_15px_rgba(203,213,225,0.3)]' : idx === 2 ? 'bg-amber-700 text-amber-100 text-lg shadow-[0_0_15px_rgba(180,83,9,0.5)]' : 'bg-slate-800 text-slate-400'}`}>
-                    {idx === 0 ? <Trophy className="w-5 h-5" /> : idx === 1 ? <Medal className="w-5 h-5" /> : idx === 2 ? <Medal className="w-5 h-5" /> : idx + 1}
+                  {/* Rank Badge */}
+                  <div className={`w-10 h-10 shrink-0 font-bold font-mono rounded-xl flex items-center justify-center relative ${
+                    isFirst ? 'bg-gradient-to-br from-yellow-300 to-amber-600 text-amber-950 text-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 
+                    isSecond ? 'bg-gradient-to-br from-slate-100 to-slate-400 text-slate-800 text-lg shadow-[0_0_10px_rgba(203,213,225,0.3)]' : 
+                    isThird ? 'bg-gradient-to-br from-amber-600 to-amber-900 text-amber-100 text-lg shadow-[0_0_10px_rgba(180,83,9,0.3)]' : 
+                    'bg-slate-800 text-slate-400'
+                  }`}>
+                    {isFirst ? <span className="drop-shadow-sm text-2xl">👑</span> : 
+                     isSecond ? <span className="drop-shadow-sm text-xl">🥈</span> : 
+                     isThird ? <span className="drop-shadow-sm text-xl">🥉</span> : 
+                     idx + 1}
                   </div>
-                  <img src={playerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.playerId}`} className="w-10 h-10 rounded-xl bg-slate-950 object-cover shrink-0" alt="avatar" />
-                  <div className="font-bold text-white truncate text-lg flex-1 sm:w-36 sm:flex-none hover:text-indigo-400 transition-colors" title={player.playerName || 'لاعب مجهول'}>{player.playerName || 'لاعب مجهول'}</div>
+
+                  {/* Avatar */}
+                  <div className="relative shrink-0">
+                    <img src={playerAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.playerId}`} className={`w-11 h-11 rounded-full object-cover shrink-0 border-2 ${isFirst ? 'border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.4)]' : isSecond ? 'border-slate-300' : isThird ? 'border-amber-700' : 'border-slate-700'}`} alt="avatar" />
+                  </div>
+
+                  {/* Player Info */}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <div className={`font-bold truncate text-base sm:text-lg transition-colors ${
+                      isFirst ? 'text-amber-400 font-extrabold tracking-wide drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 
+                      isSecond ? 'text-slate-200' : 
+                      isThird ? 'text-amber-600' : 
+                      'text-slate-100 group-hover:text-indigo-400'
+                    }`} title={player.playerName || 'لاعب مجهول'}>
+                      {player.playerName || 'لاعب مجهول'}
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-2 sm:gap-6 text-xs sm:text-sm text-slate-400 w-full sm:w-auto flex-1 justify-between sm:justify-start">
+                {/* Stats */}
+                <div className="flex flex-wrap gap-2 sm:gap-6 text-xs sm:text-sm text-slate-400 w-full sm:w-auto relative z-10 justify-between sm:justify-end">
                   <div className="bg-slate-950/50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg flex flex-col sm:block">
                     <span className="sm:hidden block text-[10px] text-slate-500 mb-0.5">النقاط</span>
                     <span className="sm:inline-block sm:mr-1 font-mono text-indigo-400 font-bold text-base sm:text-sm">{player.totalPoints?.toLocaleString() || 0}</span>

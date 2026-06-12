@@ -22,6 +22,8 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
   
   const isMe = targetPlayerId === myPlayerId;
 
+  const [statusMessage, setStatusMessage] = useState<{text: string, type: 'success' | 'warn' | 'error'} | null>(null);
+
   useEffect(() => {
     const fetchStats = async () => {
       if (!db || !targetPlayerId) {
@@ -51,9 +53,16 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
      return unsub;
   }, [myPlayerId, isMe]);
 
-  const sendRequest = () => {
+  const sendRequest = async () => {
       if (myPlayerId) {
-          sendFriendRequest(myPlayerId, myPlayerName, targetPlayerId);
+          const res = await sendFriendRequest(myPlayerId, myPlayerName || 'Unknown', targetPlayerId);
+          if (res) {
+             let type: 'success' | 'warn' | 'error' = 'warn';
+             if (res.success) type = 'success';
+             else if (res.code === 'error' || res.code === 'db_error') type = 'error';
+             setStatusMessage({ text: res.message, type });
+             setTimeout(() => setStatusMessage(null), 3000);
+          }
       }
   };
 
@@ -114,7 +123,12 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
                    <img src={stats.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${stats.shortId || targetPlayerId}`} className="w-24 h-24 rounded-2xl border-4 border-slate-900 bg-slate-900 object-cover" />
                  </div>
                  {!isMe && (
-                    <div className="mt-4">
+                    <div className="mt-4 relative">
+                       {statusMessage && (
+                          <div className={`absolute top-[40px] left-1/2 -translate-x-1/2 mt-2 w-max max-w-[200px] text-center px-3 py-1.5 rounded-lg text-xs font-bold animate-in fade-in slide-in-from-top-2 z-10 ${statusMessage.type === 'success' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : statusMessage.type === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-amber-500/20 text-amber-400 border border-amber-500/50'}`}>
+                             {statusMessage.text}
+                          </div>
+                       )}
                        {isFriend ? (
                           <button onClick={unfriend} className="flex flex-col items-center gap-1 text-emerald-400 hover:text-emerald-500 transition-colors text-xs font-bold">
                              <div className="bg-emerald-500/20 p-2 rounded-xl"><UserCheck className="w-5 h-5" /></div>

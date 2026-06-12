@@ -45,6 +45,8 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
     return unsub;
   }, [playerId]);
 
+  const [friendStatus, setFriendStatus] = useState<{msg: string, type: 'success' | 'warn' | 'error'} | null>(null);
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -71,6 +73,12 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
         onClick={onClose}
       />
       
+      {friendStatus && (
+          <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-max max-w-[90%] text-center px-4 py-2 rounded-xl text-sm font-bold animate-in slide-in-from-bottom-2 z-[60] shadow-lg ${friendStatus.type === 'success' ? 'bg-emerald-500 text-white' : friendStatus.type === 'error' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
+             {friendStatus.msg}
+          </div>
+      )}
+
       <div className={`fixed top-0 bottom-0 right-0 w-full md:w-96 bg-slate-900 border-l border-slate-800 z-50 transform transition-transform duration-300 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
@@ -147,10 +155,21 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
                        </div>
                        {!isFriend ? (
                          <button 
-                           onClick={() => {
-                             sendFriendRequest(playerId, playerName, u.id);
-                             setSearchResults(prev => prev.filter(x => x.id !== u.id));
+                           onClick={async () => {
+                             const res = await sendFriendRequest(playerId, playerName || 'Unknown', u.id);
+                             if (res) {
+                               let type: 'success' | 'warn' | 'error' = 'warn';
+                               if (res.success) type = 'success';
+                               else if (res.code === 'error' || res.code === 'db_error') type = 'error';
+                               setFriendStatus({ msg: res.message, type });
+                               setTimeout(() => setFriendStatus(null), 3000);
+                             }
+                             // Don't filter out, they might want to see it or open profile
+                             if (res && res.success) {
+                               setSearchResults(prev => prev.filter(x => x.id !== u.id));
+                             }
                            }}
+                           title="إرسال طلب"
                            className="bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white p-2 rounded-lg transition-colors"
                          >
                            <UserPlus className="w-4 h-4" />

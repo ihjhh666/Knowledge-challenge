@@ -40,7 +40,7 @@ export default function Settings() {
     storage.setSettings(settings);
     
     const newName = username.trim();
-    let updatedName = storage.getPlayerName() || 'لاعب مجهول';
+    let updatedName = storage.getPlayerName() || '';
     if (newName.length >= 2) {
        storage.setPlayerName(newName);
        updatedName = newName;
@@ -51,13 +51,21 @@ export default function Settings() {
       const promises = [];
 
       // 1. Firebase Update
-      promises.push(
-        updateUserProfile(playerId, {
-           username: updatedName,
-           playerName: updatedName,
-           avatarUrl: avatar
-        }).catch(e => console.error("Firebase update failed:", e))
-      );
+      if (updatedName && updatedName !== 'لاعب مجهول') {
+        promises.push(
+          updateUserProfile(playerId, {
+             username: updatedName,
+             playerName: updatedName,
+             avatarUrl: avatar
+          }).catch(e => console.error("Firebase update failed:", e))
+        );
+      } else {
+        promises.push(
+          updateUserProfile(playerId, {
+             avatarUrl: avatar
+          }).catch(e => console.error("Firebase update failed:", e))
+        );
+      }
 
       // 2. Supabase Update
       const { data: sessionData } = await supabase.auth.getSession();

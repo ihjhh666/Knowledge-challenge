@@ -784,30 +784,44 @@ export const searchUserById = async (playerId: string) => {
 // Friends System
 // ------------------------------------------------------------------
 
-export const sendFriendRequest = async (fromId: string, fromName: string, toId: string) => {
-  if (!db) return;
+export const sendFriendRequest = async (fromId: string, fromName: string, toId: string): Promise<{ success: boolean; code: string; message: string }> => {
+  if (!db) return { success: false, code: 'db_error', message: 'قاعدة البيانات غير متصلة' };
   try {
     // Prevent self-request
-    if (fromId === toId) return;
+    if (fromId === toId) return { success: false, code: 'self_request', message: 'لا يمكن إرسال طلب لنفسك' };
 
     // Check if already friends or if request already exists in either direction
     const q1 = query(collection(db, 'friend_requests'), where('fromId', '==', fromId), where('toId', '==', toId));
     const q2 = query(collection(db, 'friend_requests'), where('fromId', '==', toId), where('toId', '==', fromId));
     const { getDocs } = await import('firebase/firestore');
     const [docs1, docs2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-    if (!docs1.empty || !docs2.empty) return; // already sent or already friends
+    
+    if (!docs1.empty) {
+        const data = docs1.docs[0].data();
+        if (data.status === 'accepted') return { success: false, code: 'already_friends', message: '👥 هذا اللاعب موجود بالفعل ضمن أصدقائك' };
+        return { success: false, code: 'already_sent', message: '⚠️ تم إرسال طلب سابقاً' };
+    }
+    if (!docs2.empty) {
+        const data = docs2.docs[0].data();
+        if (data.status === 'accepted') return { success: false, code: 'already_friends', message: '👥 هذا اللاعب موجود بالفعل ضمن أصدقائك' };
+        // The other person already sent a request to you! Maybe we accept it automatically or tell them they have a pending request.
+        return { success: false, code: 'pending_receive', message: '⚠️ لديك طلب صداقة معلق من هذا اللاعب' };
+    }
 
     const reqId = `${fromId}_${toId}`;
     const reqRef = doc(db, 'friend_requests', reqId);
     await setDoc(reqRef, {
       fromId,
-      fromName,
+      fromName: fromName && fromName !== 'لاعب مجهول' ? fromName : 'Unknown',
       toId,
       status: 'pending',
       createdAt: Date.now()
     });
+    
+    return { success: true, code: 'sent', message: '✅ تم إرسال طلب الصداقة بنجاح' };
   } catch (err) {
     console.error('Error sending friend request:', err);
+    return { success: false, code: 'error', message: 'حدث خطأ غير متوقع' };
   }
 };
 
