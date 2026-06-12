@@ -48,37 +48,55 @@ export default function Settings() {
     storage.setPlayerAvatar(avatar);
 
     try {
-      await updateUserProfile(playerId, {
-         username: updatedName,
-         playerName: updatedName,
-         avatarUrl: avatar
-      });
+      const promises = [];
 
-      // Update Supabase Database records
+      // 1. Firebase Update
+      promises.push(
+        updateUserProfile(playerId, {
+           username: updatedName,
+           playerName: updatedName,
+           avatarUrl: avatar
+        }).catch(e => console.error("Firebase update failed:", e))
+      );
+
+      // 2. Supabase Update
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session?.user) {
-         await supabase.from('players').update({
-            username: updatedName,
-            avatar_url: avatar
-         }).eq('id', sessionData.session.user.id);
+         promises.push(
+            supabase.from('players').upsert({
+                id: sessionData.session.user.id,
+                username: updatedName,
+                last_active_at: new Date().toISOString(),
+                is_online: true
+            }, { onConflict: 'id' }).then(({ error }) => {
+                if (error) console.error("Supabase Profile Upsert Error:", error);
+            })
+         );
          
-         await supabase.auth.updateUser({
-            data: { username: updatedName, avatar_url: avatar }
-         });
+         promises.push(
+            supabase.auth.updateUser({
+                data: { username: updatedName, avatar_url: avatar }
+            }).then(({ error }) => {
+                if (error) console.error("Auth User Update Error:", error);
+            })
+         );
       }
+
+      await Promise.all(promises);
 
       console.log("SAVE_USERNAME_SUCCESS");
       
+      // Dispatch event for UI updates
+      window.dispatchEvent(new Event('playerProfileUpdated'));
+
       if (settings.theme === 'light') {
         document.documentElement.classList.add('light');
       } else {
         document.documentElement.classList.remove('light');
       }
 
-      setTimeout(() => {
-          setIsSaving(false);
-          alert('تم الحفظ بنجاح');
-      }, 500);
+      setIsSaving(false);
+      alert('تم الحفظ بنجاح');
     } catch (err) {
       console.error("SAVE_USERNAME_ERROR", err);
       setIsSaving(false);

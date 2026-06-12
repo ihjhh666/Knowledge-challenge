@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (player && player.username) {
         console.log('PLAYER_RECORD_FOUND');
         storage.setPlayerName(player.username);
-        storage.setPlayerAvatar(player.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`);
+        storage.setPlayerAvatar(sessionUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${sessionUser.id}`);
         setNeedsUsernamePrompt(false);
 
         // Recover stats from leaderboard

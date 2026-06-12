@@ -65,14 +65,19 @@ export const ALL_COUNTRIES = [
 ];
 
 // Helper to remove duplicates based on question text
+(globalThis as any).duplicateCount = (globalThis as any).duplicateCount || 0;
 const deduplicateQs = (qs: { text: string; correctAnswer: string; wrongOptions: string[] }[]) => {
   const seen = new Set<string>();
-  return qs.filter(q => {
+  const origLength = qs.length;
+  const filtered = qs.filter(q => {
     if (seen.has(q.text)) return false;
     seen.add(q.text);
     return true;
   });
-}
+  const dups = origLength - filtered.length;
+  (globalThis as any).duplicateCount += dups;
+  return filtered;
+};
 
 export const GENERAL_KNOWLEDGE = deduplicateQs([
   ...NEW_GENERAL, 
@@ -90,12 +95,12 @@ export const GENERAL_KNOWLEDGE = deduplicateQs([
   ...GENERAL_ADDITIONS_8,
   ...GENERAL_ADDITIONS_9,
   ...GENERAL_ADDITIONS_10,
-  ...getDynamicGeneral(1800)
+  ...getDynamicGeneral(5000)
 ]);
-export const FOOTBALL = deduplicateQs([...NEW_FOOTBALL, ...MEGA_FOOTBALL, ...MASSIVE_FOOTBALL, ...BULK_FOOTBALL, ...FOOTBALL_BULK_2, ...FOOTBALL_ADDITIONS_1, ...FOOTBALL_ADDITIONS_2, ...FOOTBALL_ADDITIONS_3, ...FOOTBALL_ADDITIONS_4, ...FOOTBALL_ADDITIONS_5, ...FOOTBALL_ADDITIONS_6, ...FOOTBALL_ADDITIONS_7, ...getDynamicFootball(1800)]);
-export const MOVIES = deduplicateQs([...NEW_MOVIES, ...MEGA_MOVIES, ...MASSIVE_MOVIES, ...BULK_MOVIES, ...MOVIES_BULK_2, ...getDynamicMovies(1800)]);
-export const ANIME = deduplicateQs([...NEW_ANIME, ...MEGA_ANIME, ...MASSIVE_ANIME, ...BULK_ANIME, ...getDynamicAnime(1800)]);
-export const SCIENCE = deduplicateQs([...NEW_SCIENCE, ...MEGA_SCIENCE, ...MASSIVE_SCIENCE, ...BULK_SCIENCE, ...getDynamicScience(1800)]);
-export const HISTORY = deduplicateQs([...NEW_HISTORY, ...MEGA_HISTORY, ...MASSIVE_HISTORY, ...BULK_HISTORY, ...HISTORY_BULK_2, ...HISTORY_ADDITIONS_1, ...HISTORY_ADDITIONS_2, ...HISTORY_ADDITIONS_3, ...HISTORY_ADDITIONS_4, ...HISTORY_ADDITIONS_5, ...HISTORY_ADDITIONS_6, ...HISTORY_ADDITIONS_7, ...getDynamicHistory(1800)]);
-export const ISLAMIC = deduplicateQs([...NEW_ISLAMIC, ...MEGA_ISLAMIC, ...MASSIVE_ISLAMIC, ...BULK_ISLAMIC, ...getDynamicIslamic(1800)]);
-export const MATH = deduplicateQs([...BULK_MATH, ...getDynamicMath(1800)]);
+export const FOOTBALL = deduplicateQs([...NEW_FOOTBALL, ...MEGA_FOOTBALL, ...MASSIVE_FOOTBALL, ...BULK_FOOTBALL, ...FOOTBALL_BULK_2, ...FOOTBALL_ADDITIONS_1, ...FOOTBALL_ADDITIONS_2, ...FOOTBALL_ADDITIONS_3, ...FOOTBALL_ADDITIONS_4, ...FOOTBALL_ADDITIONS_5, ...FOOTBALL_ADDITIONS_6, ...FOOTBALL_ADDITIONS_7, ...getDynamicFootball(5000)]);
+export const MOVIES = deduplicateQs([...NEW_MOVIES, ...MEGA_MOVIES, ...MASSIVE_MOVIES, ...BULK_MOVIES, ...MOVIES_BULK_2, ...getDynamicMovies(5000)]);
+export const ANIME = deduplicateQs([...NEW_ANIME, ...MEGA_ANIME, ...MASSIVE_ANIME, ...BULK_ANIME, ...getDynamicAnime(5000)]);
+export const SCIENCE = deduplicateQs([...NEW_SCIENCE, ...MEGA_SCIENCE, ...MASSIVE_SCIENCE, ...BULK_SCIENCE, ...getDynamicScience(5000)]);
+export const HISTORY = deduplicateQs([...NEW_HISTORY, ...MEGA_HISTORY, ...MASSIVE_HISTORY, ...BULK_HISTORY, ...HISTORY_BULK_2, ...HISTORY_ADDITIONS_1, ...HISTORY_ADDITIONS_2, ...HISTORY_ADDITIONS_3, ...HISTORY_ADDITIONS_4, ...HISTORY_ADDITIONS_5, ...HISTORY_ADDITIONS_6, ...HISTORY_ADDITIONS_7, ...getDynamicHistory(5000)]);
+export const ISLAMIC = deduplicateQs([...NEW_ISLAMIC, ...MEGA_ISLAMIC, ...MASSIVE_ISLAMIC, ...BULK_ISLAMIC, ...getDynamicIslamic(5000)]);
+export const MATH = deduplicateQs([...BULK_MATH, ...getDynamicMath(8000)]);
