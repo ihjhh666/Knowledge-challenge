@@ -16,7 +16,7 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const [friendDetails, setFriendDetails] = useState<Record<string, any>>({});
   
   const playerId = storage.getPlayerId();
-  const playerName = storage.getPlayerName() || 'لاعب مجهول';
+  const playerName = storage.getPlayerName() || storage.getDefaultName(playerId);
   const { state: gameState } = useGame();
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
       />
       
       {friendStatus && (
-          <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-max max-w-[90%] text-center px-4 py-2 rounded-xl text-sm font-bold animate-in slide-in-from-bottom-2 z-[60] shadow-lg ${friendStatus.type === 'success' ? 'bg-emerald-500 text-white' : friendStatus.type === 'error' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
+          <div className={`fixed top-12 left-1/2 -translate-x-1/2 w-max max-w-[90%] text-center px-6 py-3 rounded-2xl text-base font-bold animate-in fade-in slide-in-from-top-5 z-[99999] shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-none ${friendStatus.type === 'success' ? 'bg-emerald-500 text-white' : friendStatus.type === 'error' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
              {friendStatus.msg}
           </div>
       )}
@@ -156,7 +156,7 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
                        {!isFriend ? (
                          <button 
                            onClick={async () => {
-                             const res = await sendFriendRequest(playerId, playerName || 'Unknown', u.id);
+                             const res = await sendFriendRequest(playerId, playerName, u.id);
                              if (res) {
                                let type: 'success' | 'warn' | 'error' = 'warn';
                                if (res.success) type = 'success';
@@ -195,6 +195,7 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
               {pendingRequests.map(req => {
                 const details = friendDetails[req.fromId];
                 const avatar = details?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${req.fromId}`;
+                const finalName = details?.username || details?.playerName || req.fromName || storage.getDefaultName(req.fromId);
                 return (
                 <div key={req.id} className="bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
                   <div 
@@ -204,7 +205,7 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
                      <img src={avatar} className="w-10 h-10 rounded-xl bg-slate-950 object-cover" alt="avatar" />
                      <div className="text-sm">
                        <div className="font-bold text-indigo-400 flex items-center gap-2">
-                           {req.fromName}
+                           {finalName}
                            <span className="text-[10px] text-slate-500 font-mono">ID: {req.fromId}</span>
                        </div>
                        <div className="text-xs text-slate-300 mt-0.5">أرسل لك طلب صداقة</div>
@@ -240,7 +241,8 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
                {friends.map(friend => {
                  const details = friendDetails[friend.friendId];
                  const isOnline = details?.lastActive && (Date.now() - details.lastActive < 20000); // 20s
-                 const name = details?.username || (friend.fromId === playerId ? friend.toId : friend.fromName);
+                 const name = details?.username || details?.playerName || (friend.fromId === playerId ? friend.toId : friend.fromName);
+                 const finalName = name === 'Unknown' || name === 'لاعب مجهول' ? storage.getDefaultName(friend.friendId) : name;
                  const avatar = details?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${friend.friendId}`;
 
                  return (
@@ -253,7 +255,7 @@ export function FriendsSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: 
                          </div>
                          <div>
                            <div className="font-bold text-slate-200 text-sm flex items-center gap-2">
-                               {name}
+                               {finalName}
                                <span className="text-[10px] text-slate-500 font-mono font-normal">ID: {friend.friendId}</span>
                            </div>
                            <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">

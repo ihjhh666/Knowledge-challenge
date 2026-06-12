@@ -13,7 +13,7 @@ export default function Leaderboard() {
   const [dbStats, setDbStats] = useState({ fetched: 0 });
 
   const myPlayerId = storage.getPlayerId();
-  const myPlayerName = storage.getPlayerName() || 'لاعب مجهول';
+  const myPlayerName = storage.getPlayerName() || storage.getDefaultName(myPlayerId);
   const myAvatar = storage.getPlayerAvatar();
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function Leaderboard() {
                 {isFirst && (
                   <>
                     <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-                      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(245,158,11,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%,100%_100%] animate-[bg-position_2s_linear_infinite]" />
+                      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(245,158,11,0.08)_50%,transparent_75%,transparent_100%)] animate-shimmer" />
                     </div>
                     {/* Golden halo glow */}
                     <div className="absolute -inset-1 rounded-[20px] opacity-20 pointer-events-none bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-600 blur-md group-hover:opacity-40 transition-opacity duration-700" />
@@ -137,8 +137,8 @@ export default function Leaderboard() {
                       isSecond ? 'text-slate-200' : 
                       isThird ? 'text-amber-600' : 
                       'text-slate-100 group-hover:text-indigo-400'
-                    }`} title={player.playerName || 'لاعب مجهول'}>
-                      {player.playerName || 'لاعب مجهول'}
+                    }`} title={player.playerName && player.playerName !== 'لاعب مجهول' ? player.playerName : storage.getDefaultName(player.playerId)}>
+                      {player.playerName && player.playerName !== 'لاعب مجهول' ? player.playerName : storage.getDefaultName(player.playerId)}
                     </div>
                   </div>
                 </div>

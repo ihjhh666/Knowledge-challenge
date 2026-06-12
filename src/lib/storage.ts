@@ -42,6 +42,9 @@ export const storage = {
   clearPlayerName: () => {
     localStorage.removeItem('know_player_name');
   },
+  getDefaultName: (id: string): string => {
+    return 'لاعب #' + id.slice(0, 7);
+  },
   getPlayerId: (): string => {
     let id = localStorage.getItem('know_player_id');
     if (!id || id.length < 30) {

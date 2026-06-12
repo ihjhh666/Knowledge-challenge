@@ -19,25 +19,18 @@ async function fixUnknownPlayers() {
     const processDocs = (snapshot) => {
       for (const d of snapshot.docs) {
         const data = d.data();
-        if (!data.playerName || data.playerName === 'لاعب مجهول' || data.playerName === 'Unknown') {
+        if (data.playerName === 'لاعب مجهول' || data.playerName === 'Unknown') {
           unknownCount++;
           
-          let newName = null;
+          let newName = '';
           if (data.username && data.username !== 'لاعب مجهول' && data.username !== 'Unknown') {
             newName = data.username;
           }
 
-          if (newName) {
-            batch.update(d.ref, { playerName: newName });
-            fixedCount++;
-            batchOps++;
-            console.log(`Fixing ${d.ref.path} ${d.id}: 'لاعب مجهول' -> '${newName}'`);
-            if (batchOps === 400) {
-                // commit not inside loop as it's async, but whatever
-            }
-          } else {
-             // Let's at least clear the name or set it to ID if nothing
-          }
+          batch.update(d.ref, { playerName: newName });
+          fixedCount++;
+          batchOps++;
+          console.log(`Fixing ${d.ref.path} ${d.id}: 'لاعب مجهول' -> '${newName}'`);
         }
       }
     };

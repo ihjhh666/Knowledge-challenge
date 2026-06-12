@@ -14,17 +14,17 @@ export function useOnlinePresence() {
            let finalName = storage.getPlayerName() || '';
            
            // If local name is missing or "Unknown", try to recover from DB
-           if (!finalName || finalName === 'لاعب مجهول') {
-               if (dbUser && dbUser.playerName && dbUser.playerName !== 'لاعب مجهول') {
+           if (!finalName || finalName === 'لاعب مجهول' || finalName.startsWith('لاعب #')) {
+               if (dbUser && dbUser.playerName && dbUser.playerName !== 'لاعب مجهول' && !dbUser.playerName.startsWith('لاعب #')) {
                    finalName = dbUser.playerName;
                    storage.setPlayerName(finalName);
-               } else if (dbUser && dbUser.username && dbUser.username !== 'لاعب مجهول') {
+               } else if (dbUser && dbUser.username && dbUser.username !== 'لاعب مجهول' && !dbUser.username.startsWith('لاعب #')) {
                    finalName = dbUser.username;
                    storage.setPlayerName(finalName);
                }
            }
            
-           if (!finalName) finalName = 'لاعب مجهول';
+           if (!finalName || finalName === 'لاعب مجهول') finalName = storage.getDefaultName(playerId);
 
            console.log('[Supabase_Presence] ONLINE_SESSION_STARTED', { finalName });
            // Initial heartbeat
@@ -33,7 +33,7 @@ export function useOnlinePresence() {
            const avatar = storage.getPlayerAvatar();
            
            // Only update DB name if it's a real name
-           if (finalName !== 'لاعب مجهول') {
+           if (!finalName.startsWith('لاعب #')) {
                await updateUserProfile(playerId, { 
                    username: finalName,
                    playerName: finalName,
@@ -52,7 +52,9 @@ export function useOnlinePresence() {
     
     // Heartbeat every 30 seconds
     const interval = setInterval(() => {
-      supabaseService.setPlayerOnline(playerId, storage.getPlayerName() || `لاعب مجهول`);
+      let finalN = storage.getPlayerName();
+      if (!finalN || finalN === 'لاعب مجهول') finalN = storage.getDefaultName(playerId);
+      supabaseService.setPlayerOnline(playerId, finalN);
     }, 30000);
     
     const handleUnload = () => {

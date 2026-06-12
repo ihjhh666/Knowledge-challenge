@@ -650,8 +650,8 @@ export const subscribeToLeaderboard = (sortBy: 'wins' | 'totalPoints' | 'success
     snapshot.forEach(docSnap => {
       const data = docSnap.data() as PlayerStats;
       data.playerId = docSnap.id;
-      if (!data.playerName || data.playerName.trim() === '') {
-         data.playerName = 'لاعب مجهول';
+      if (!data.playerName || data.playerName.trim() === 'لاعب مجهول') {
+         data.playerName = ''; // Leave it empty so components fall back correctly
       }
       // Ensure local sorting is robust against missing fields, though query should handle it
       results.push(data);
@@ -827,7 +827,7 @@ export const sendFriendRequest = async (fromId: string, fromName: string, toId: 
     const reqRef = doc(db, 'friend_requests', reqId);
     await setDoc(reqRef, {
       fromId,
-      fromName: fromName && fromName !== 'لاعب مجهول' ? fromName : 'Unknown',
+      fromName: fromName || '',
       toId,
       status: 'pending',
       createdAt: Date.now()

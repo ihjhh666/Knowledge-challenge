@@ -55,7 +55,9 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
 
   const sendRequest = async () => {
       if (myPlayerId) {
-          const res = await sendFriendRequest(myPlayerId, myPlayerName || 'Unknown', targetPlayerId);
+          const nameToUse = myPlayerName || storage.getDefaultName(myPlayerId);
+          console.log('[Friends] PlayerProfileModal - Sending request from:', nameToUse);
+          const res = await sendFriendRequest(myPlayerId, nameToUse, targetPlayerId);
           if (res) {
              let type: 'success' | 'warn' | 'error' = 'warn';
              if (res.success) type = 'success';
@@ -93,20 +95,20 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
   const legendaryCount = unlockedIds.filter(id => ACHIEVEMENTS.find(a => a.id === id)?.rarity === 'legendary').length;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose} dir="rtl">
+    <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose} dir="rtl">
+      {statusMessage && (
+         <div className={`fixed top-12 left-1/2 -translate-x-1/2 w-max max-w-[90%] text-center px-6 py-3 rounded-2xl text-base font-bold animate-in fade-in slide-in-from-top-5 z-[99999] shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-none ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : statusMessage.type === 'error' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
+            {statusMessage.text}
+         </div>
+      )}
       <div 
         className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" 
         onClick={e => e.stopPropagation()}
       >
-        <div className="relative h-24 bg-gradient-to-r from-indigo-900 to-slate-900 border-b border-slate-800 shrink-0">
-           <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors z-20">
+         <div className="relative h-24 bg-gradient-to-r from-indigo-900 to-slate-900 border-b border-slate-800 shrink-0">
+           <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors z-[100]">
               <X className="w-5 h-5" />
            </button>
-           {statusMessage && (
-               <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 mt-2 w-max max-w-[90%] text-center px-4 py-2 rounded-xl text-sm font-bold animate-in fade-in slide-in-from-bottom-5 z-[5000] shadow-2xl ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : statusMessage.type === 'error' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
-                  {statusMessage.text}
-               </div>
-           )}
         </div>
         
         {loading ? (
