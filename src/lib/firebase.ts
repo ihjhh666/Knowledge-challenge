@@ -785,10 +785,17 @@ export const searchUserById = async (playerId: string) => {
 // ------------------------------------------------------------------
 
 export const sendFriendRequest = async (fromId: string, fromName: string, toId: string): Promise<{ success: boolean; code: string; message: string }> => {
-  if (!db) return { success: false, code: 'db_error', message: 'قاعدة البيانات غير متصلة' };
+  console.log('[Friends] SEND_FRIEND_REQUEST_STARTED: from', fromId, 'to', toId);
+  if (!db) {
+    console.error('[Friends] SEND_FRIEND_REQUEST_ERROR: db not connected');
+    return { success: false, code: 'db_error', message: 'قاعدة البيانات غير متصلة' };
+  }
   try {
     // Prevent self-request
-    if (fromId === toId) return { success: false, code: 'self_request', message: 'لا يمكن إرسال طلب لنفسك' };
+    if (fromId === toId) {
+      console.warn('[Friends] SEND_FRIEND_REQUEST_ERROR: self request');
+      return { success: false, code: 'self_request', message: 'لا يمكن إرسال طلب لنفسك' };
+    }
 
     // Check if already friends or if request already exists in either direction
     const q1 = query(collection(db, 'friend_requests'), where('fromId', '==', fromId), where('toId', '==', toId));
@@ -798,13 +805,21 @@ export const sendFriendRequest = async (fromId: string, fromName: string, toId: 
     
     if (!docs1.empty) {
         const data = docs1.docs[0].data();
-        if (data.status === 'accepted') return { success: false, code: 'already_friends', message: '👥 هذا اللاعب موجود بالفعل ضمن أصدقائك' };
+        if (data.status === 'accepted') {
+          console.warn('[Friends] SEND_FRIEND_REQUEST_ERROR: already friends');
+          return { success: false, code: 'already_friends', message: '👥 هذا اللاعب موجود بالفعل ضمن أصدقائك' };
+        }
+        console.warn('[Friends] SEND_FRIEND_REQUEST_ERROR: already sent');
         return { success: false, code: 'already_sent', message: '⚠️ تم إرسال طلب سابقاً' };
     }
     if (!docs2.empty) {
         const data = docs2.docs[0].data();
-        if (data.status === 'accepted') return { success: false, code: 'already_friends', message: '👥 هذا اللاعب موجود بالفعل ضمن أصدقائك' };
+        if (data.status === 'accepted') {
+          console.warn('[Friends] SEND_FRIEND_REQUEST_ERROR: already friends');
+          return { success: false, code: 'already_friends', message: '👥 هذا اللاعب موجود بالفعل ضمن أصدقائك' };
+        }
         // The other person already sent a request to you! Maybe we accept it automatically or tell them they have a pending request.
+        console.warn('[Friends] SEND_FRIEND_REQUEST_ERROR: pending receive');
         return { success: false, code: 'pending_receive', message: '⚠️ لديك طلب صداقة معلق من هذا اللاعب' };
     }
 
@@ -818,9 +833,10 @@ export const sendFriendRequest = async (fromId: string, fromName: string, toId: 
       createdAt: Date.now()
     });
     
+    console.log('[Friends] SEND_FRIEND_REQUEST_SUCCESS');
     return { success: true, code: 'sent', message: '✅ تم إرسال طلب الصداقة بنجاح' };
   } catch (err) {
-    console.error('Error sending friend request:', err);
+    console.error('[Friends] SEND_FRIEND_REQUEST_ERROR:', err);
     return { success: false, code: 'error', message: 'حدث خطأ غير متوقع' };
   }
 };

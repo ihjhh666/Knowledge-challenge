@@ -99,9 +99,14 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
         onClick={e => e.stopPropagation()}
       >
         <div className="relative h-24 bg-gradient-to-r from-indigo-900 to-slate-900 border-b border-slate-800 shrink-0">
-           <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors">
+           <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors z-20">
               <X className="w-5 h-5" />
            </button>
+           {statusMessage && (
+               <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 mt-2 w-max max-w-[90%] text-center px-4 py-2 rounded-xl text-sm font-bold animate-in fade-in slide-in-from-bottom-5 z-[5000] shadow-2xl ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : statusMessage.type === 'error' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
+                  {statusMessage.text}
+               </div>
+           )}
         </div>
         
         {loading ? (
@@ -124,11 +129,6 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
                  </div>
                  {!isMe && (
                     <div className="mt-4 relative">
-                       {statusMessage && (
-                          <div className={`absolute top-[40px] left-1/2 -translate-x-1/2 mt-2 w-max max-w-[200px] text-center px-3 py-1.5 rounded-lg text-xs font-bold animate-in fade-in slide-in-from-top-2 z-10 ${statusMessage.type === 'success' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : statusMessage.type === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-amber-500/20 text-amber-400 border border-amber-500/50'}`}>
-                             {statusMessage.text}
-                          </div>
-                       )}
                        {isFriend ? (
                           <button onClick={unfriend} className="flex flex-col items-center gap-1 text-emerald-400 hover:text-emerald-500 transition-colors text-xs font-bold">
                              <div className="bg-emerald-500/20 p-2 rounded-xl"><UserCheck className="w-5 h-5" /></div>
