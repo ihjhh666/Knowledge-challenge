@@ -1,157 +1,319 @@
+import { storage } from './storage';
+
 class WebAudioEngine {
   private ctx: AudioContext | null = null;
   private enabled = true;
+  private sfxGainNode: GainNode | null = null;
+  private masterVolume: number = 1.0;
+  private sfxVolume: number = 0.8;
 
   constructor() {
-    // Wait for user interaction to initialize AudioContext if needed
-    // but we will do it lazily.
+    this.loadSettings();
+  }
+
+  public loadSettings() {
+    const s = storage.getSettings();
+    this.masterVolume = s.soundEnabled ? s.masterVolume : 0;
+    this.sfxVolume = s.sfxEnabled ? s.sfxVolume : 0;
+    if (this.ctx && this.sfxGainNode) {
+      this.sfxGainNode.gain.setValueAtTime(this.sfxVolume * this.masterVolume, this.ctx.currentTime);
+    }
   }
 
   private init() {
+    if (!this.enabled || this.masterVolume === 0 || this.sfxVolume === 0) return false;
+    
     if (!this.ctx) {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      try {
+        this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        this.sfxGainNode = this.ctx.createGain();
+        this.sfxGainNode.gain.value = this.sfxVolume * this.masterVolume;
+        this.sfxGainNode.connect(this.ctx.destination);
+      } catch (e) {
+        console.warn("Web Audio API not supported", e);
+        return false;
+      }
     }
+    
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+    
+    if (this.sfxGainNode) {
+      this.sfxGainNode.gain.setValueAtTime(this.sfxVolume * this.masterVolume, this.ctx.currentTime);
+    }
+    
+    return true;
   }
 
+  public updateVolume(master: number, sfx: number) {
+    this.masterVolume = master;
+    this.sfxVolume = sfx;
+    if (this.ctx && this.sfxGainNode) {
+      this.sfxGainNode.gain.setValueAtTime(this.sfxVolume * this.masterVolume, this.ctx.currentTime);
+    }
+  }
 
-  private playTone(oscType: OscillatorType, freq: number, duration: number, vol = 0.1, slideFreq?: number) {
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx) return;
+  public setEnabled(enabled: boolean) {
+    this.enabled = enabled;
+  }
+
+  private playToneWithADSR(
+    oscType: OscillatorType,
+    freq: number,
+    attack: number,
+    decay: number,
+    sustain: number,
+    release: number,
+    peakVol = 0.1,
+    slideFreq?: number,
+    pitchBendDuration?: number
+  ) {
+    if (!this.init() || !this.ctx || !this.sfxGainNode) return;
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = oscType;
     osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-    
-    if (slideFreq) {
-      osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + duration);
+
+    if (slideFreq && pitchBendDuration) {
+      osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + pitchBendDuration);
     }
 
-    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+    const t = this.ctx.currentTime;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(peakVol, t + attack);
+    gain.gain.linearRampToValueAtTime(peakVol * sustain, t + attack + decay);
+    
+    const totalDuration = attack + decay + release;
+    gain.gain.setValueAtTime(peakVol * sustain, t + attack + decay);
+    gain.gain.linearRampToValueAtTime(0, t + totalDuration);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.sfxGainNode);
 
-    osc.start();
-    osc.stop(this.ctx.currentTime + duration);
+    osc.start(t);
+    osc.stop(t + totalDuration);
   }
 
-  private playChord(oscType: OscillatorType, freqs: number[], duration: number, vol = 0.1) {
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-    gain.connect(this.ctx.destination);
-
-    freqs.forEach(freq => {
-      const osc = this.ctx.createOscillator();
-      osc.type = oscType;
-      osc.frequency.value = freq;
-      osc.connect(gain);
-      osc.start();
-      osc.stop(this.ctx.currentTime + duration);
-    });
-  }
-
-  public click() {
-    // Soft UI pop
-    this.playTone('sine', 600, 0.1, 0.1, 300);
-  }
-
-  public hover() {
-    // Very soft glass tick
-    this.playTone('triangle', 900, 0.05, 0.02, 800);
-  }
-
-  public joinLobby() {
-    // Friendly UI chime (ascending)
-    if (!this.enabled) return;
-    this.init();
-    setTimeout(() => this.playTone('sine', 523.25, 0.2, 0.1), 0);
-    setTimeout(() => this.playTone('sine', 659.25, 0.4, 0.1), 100);
-  }
-
-  public startGame() {
-    // Deep modern whoosh/bell
-    this.playTone('triangle', 220, 0.8, 0.15, 110);
-    setTimeout(() => {
-      this.playTone('sine', 440, 1.0, 0.1);
-    }, 200);
-  }
-
-  public tick() {
-    // Timer tick - very short click
-    this.playTone('square', 1000, 0.03, 0.03, 100);
-  }
-
-  public correct() {
-    // Bright sparkle / bell
-    if (!this.enabled) return;
-    this.init();
-    setTimeout(() => this.playTone('sine', 523.25, 0.1, 0.1), 0);     // C5
-    setTimeout(() => this.playTone('sine', 659.25, 0.1, 0.1), 100);    // E5
-    setTimeout(() => this.playTone('sine', 783.99, 0.4, 0.1), 200);    // G5
-    setTimeout(() => this.playTone('sine', 1046.50, 0.6, 0.08), 300);  // C6
-  }
-
-  public wrong() {
-    // Modern soft thud / error buzzer
-    if (!this.enabled) return;
-    this.init();
-    this.playChord('sawtooth', [150, 160], 0.3, 0.1);
-    setTimeout(() => {
-      this.playChord('sawtooth', [130, 140], 0.4, 0.1);
-    }, 150);
-  }
-
-  public win() {
-    if (!this.enabled) return;
-    this.init();
-    setTimeout(() => this.playTone('sine', 440, 0.2, 0.1), 0);
-    setTimeout(() => this.playTone('sine', 554.37, 0.2, 0.1), 150);
-    setTimeout(() => this.playTone('sine', 659.25, 0.2, 0.1), 300);
-    setTimeout(() => this.playTone('sine', 880, 0.8, 0.15), 450);
-  }
-
-  // Football sounds
-  private bgNoise: AudioBufferSourceNode | null = null;
-  private bgGain: GainNode | null = null;
-
-  public startCrowd() {
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx || this.bgNoise) return;
-
-    const bufferSize = this.ctx.sampleRate * 2;
+  private playNoise(duration: number, bandPassFreq?: number, vol = 0.1) {
+    if (!this.init() || !this.ctx || !this.sfxGainNode) return;
+    
+    const bufferSize = this.ctx.sampleRate * duration;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++) {
         data[i] = Math.random() * 2 - 1;
     }
     
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    
+    let filter;
+    if (bandPassFreq) {
+      filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = bandPassFreq;
+      filter.Q.value = 1.0;
+      noise.connect(filter);
+    }
+    
+    const gain = this.ctx.createGain();
+    const t = this.ctx.currentTime;
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
+    
+    if (filter) {
+      filter.connect(gain);
+    } else {
+      noise.connect(gain);
+    }
+    gain.connect(this.sfxGainNode);
+    
+    noise.start(t);
+  }
+
+  // --- UI SOUNDS ---
+  
+  public hover() {
+    // Very subtle glass tick
+    this.playToneWithADSR('sine', 800, 0.01, 0.02, 0, 0.01, 0.02);
+  }
+
+  public click() {
+    // Modern soft pop
+    this.playToneWithADSR('sine', 600, 0.01, 0.05, 0, 0.05, 0.05, 300, 0.1);
+  }
+  
+  public openModal() {
+    // Elegant whoosh/chime up
+    this.playToneWithADSR('sine', 440, 0.05, 0.1, 0.2, 0.2, 0.05, 880, 0.2);
+  }
+
+  public joinLobby() {
+    this.playToneWithADSR('triangle', 523.25, 0.05, 0.1, 0.5, 0.2, 0.05); // C5
+    setTimeout(() => this.playToneWithADSR('triangle', 659.25, 0.05, 0.1, 0.5, 0.3, 0.05), 100); // E5
+  }
+
+  public startGame() {
+    this.playToneWithADSR('square', 220, 0.1, 0.2, 0.1, 0.4, 0.05, 110, 0.4);
+    setTimeout(() => {
+      this.playToneWithADSR('triangle', 440, 0.1, 0.2, 0.5, 0.5, 0.08);
+    }, 200);
+  }
+
+  public tick() {
+    this.playToneWithADSR('square', 900, 0.01, 0.02, 0, 0.01, 0.01, 100, 0.03);
+  }
+
+  // --- QUESTION SECTION ---
+
+  public correct() {
+    // Professional success chime (C5, E5, G5, C6) with soft attack
+    const r = Math.random();
+    if (r < 0.33) {
+      this.playToneWithADSR('triangle', 523.25, 0.02, 0.1, 0, 0.1, 0.05);
+      setTimeout(() => this.playToneWithADSR('triangle', 659.25, 0.02, 0.1, 0, 0.1, 0.05), 50);
+      setTimeout(() => this.playToneWithADSR('triangle', 783.99, 0.02, 0.1, 0.5, 0.3, 0.08), 100);
+    } else if (r < 0.66) {
+      this.playToneWithADSR('sine', 659.25, 0.02, 0.1, 0, 0.1, 0.05);
+      setTimeout(() => this.playToneWithADSR('sine', 880.00, 0.02, 0.1, 0, 0.5, 0.08), 80);
+    } else {
+      this.playToneWithADSR('sine', 587.33, 0.02, 0.1, 0, 0.2, 0.06);
+      setTimeout(() => this.playToneWithADSR('sine', 880.00, 0.02, 0.1, 0.3, 0.4, 0.08), 120);
+    }
+  }
+
+  public wrong() {
+    // Clear but soft, non-annoying muted thump
+    this.playToneWithADSR('sawtooth', 150, 0.05, 0.1, 0.2, 0.2, 0.04, 100, 0.2);
+    setTimeout(() => {
+      this.playToneWithADSR('sawtooth', 130, 0.05, 0.1, 0, 0.2, 0.04, 90, 0.2);
+    }, 120);
+  }
+
+  public streak(level: number) {
+    // Ascending pitch based on streak multiplier
+    const root = 440; // A4
+    const semitones = Math.min(level, 12);
+    const freq = root * Math.pow(1.059463, semitones);
+    this.playToneWithADSR('sine', freq, 0.02, 0.1, 0.5, 0.3, 0.06);
+    this.playToneWithADSR('triangle', freq * 1.5, 0.05, 0.1, 0.2, 0.4, 0.03); // added harmonic
+  }
+  
+  public newRecord() {
+    // Exciting fanfare
+    this.playToneWithADSR('square', 523.25, 0.05, 0.1, 0.5, 0.2, 0.05); // C
+    setTimeout(() => this.playToneWithADSR('square', 659.25, 0.05, 0.1, 0.5, 0.2, 0.05), 150); // E
+    setTimeout(() => this.playToneWithADSR('square', 783.99, 0.05, 0.1, 0.5, 0.2, 0.05), 300); // G
+    setTimeout(() => {
+      this.playToneWithADSR('square', 1046.50, 0.05, 0.2, 0.8, 0.6, 0.08); // high C
+      this.playToneWithADSR('sine', 523.25, 0.05, 0.2, 0.8, 0.6, 0.08); // beef it up
+    }, 450);
+  }
+
+  public achievement() {
+    this.playToneWithADSR('sine', 880, 0.01, 0.1, 0, 0.5, 0.05);
+    setTimeout(() => this.playToneWithADSR('triangle', 1108.73, 0.01, 0.1, 0, 0.6, 0.06), 100);
+    setTimeout(() => this.playToneWithADSR('sine', 1318.51, 0.02, 0.2, 0.5, 0.8, 0.08), 200);
+  }
+
+  public roundEnd() {
+    // Mellow resolution
+    this.playToneWithADSR('sine', 440, 0.2, 0.2, 0.5, 0.8, 0.05);
+    setTimeout(() => this.playToneWithADSR('sine', 349.23, 0.2, 0.2, 0.5, 0.8, 0.05), 200);
+    setTimeout(() => this.playToneWithADSR('sine', 261.63, 0.3, 0.2, 0.5, 1.2, 0.08), 400);
+  }
+  
+  public win() {
+      this.roundEnd();
+  }
+
+  // --- SURVIVAL MODE ---
+
+  public survivalTick(dangerLevel: number) {
+    // Tense pulse, speeds up or raises pitch
+    const freq = 100 + (dangerLevel * 20);
+    this.playToneWithADSR('triangle', freq, 0.01, 0.05, 0, 0.05, 0.03, freq - 20, 0.1);
+  }
+  
+  public survivalDangerPulse() {
+      // Very suspenseful heartbeat
+      this.playToneWithADSR('sine', 60, 0.1, 0.1, 0, 0.2, 0.1);
+      setTimeout(() => this.playToneWithADSR('sine', 65, 0.1, 0.1, 0, 0.3, 0.1), 200);
+  }
+
+  // --- FISHING MODE ---
+
+  public waterBubble() {
+    const startFreq = 300 + Math.random() * 200;
+    this.playToneWithADSR('sine', startFreq, 0.01, 0.05, 0, 0.05, 0.05, startFreq + 300, 0.1);
+  }
+
+  public fishCatch() {
+    this.playToneWithADSR('triangle', 600, 0.02, 0.1, 0, 0.2, 0.06, 900, 0.2);
+    this.waterBubble();
+  }
+  
+  public rareFishCatch() {
+      this.achievement();
+      for(let i=0; i<3; i++) {
+          setTimeout(() => this.waterBubble(), i * 100);
+      }
+  }
+
+  // --- FOOTBALL (Existing mappings kept but improved) ---
+  
+  public whistle() {
+    this.playNoise(0.4, 2500, 0.05); // air aspect
+    this.playToneWithADSR('square', 2500, 0.05, 0.1, 0.8, 0.2, 0.05);
+    setTimeout(() => {
+        this.playNoise(0.6, 2500, 0.05);
+        this.playToneWithADSR('square', 2500, 0.05, 0.2, 0.8, 0.4, 0.05);
+    }, 200);
+  }
+
+  public kick() {
+    // Solid deep thud
+    this.playToneWithADSR('triangle', 120, 0.01, 0.1, 0, 0.1, 0.1, 50, 0.1);
+    this.playNoise(0.1, 500, 0.05); // shoe impact
+  }
+
+  public slide() {
+    this.playNoise(0.3, 800, 0.05);
+  }
+
+  public postHit() {
+    this.playToneWithADSR('sawtooth', 800, 0.01, 0.05, 0, 0.3, 0.05);
+    this.playToneWithADSR('sine', 1200, 0.01, 0.1, 0.2, 0.5, 0.05);
+  }
+
+  private bgNoise: AudioBufferSourceNode | null = null;
+  private bgGain: GainNode | null = null;
+
+  public startCrowd() {
+    if (!this.init() || !this.ctx || this.bgNoise) return;
+
+    const bufferSize = this.ctx.sampleRate * 2;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 300; // Low rumble
+    filter.frequency.value = 400; 
     
     this.bgNoise = this.ctx.createBufferSource();
     this.bgNoise.buffer = buffer;
     this.bgNoise.loop = true;
     
     this.bgGain = this.ctx.createGain();
-    this.bgGain.gain.value = 0.015; // Very soft
+    this.bgGain.gain.value = 0.005 * this.sfxVolume * this.masterVolume;
 
     this.bgNoise.connect(filter);
     filter.connect(this.bgGain);
-    this.bgGain.connect(this.ctx.destination);
+    if(this.sfxGainNode) this.bgGain.connect(this.sfxGainNode);
     
     this.bgNoise.start();
   }
@@ -168,105 +330,41 @@ class WebAudioEngine {
     }
   }
 
-  public setEnabled(enabled: boolean) {
-    this.enabled = enabled;
-    if (!enabled) {
-       this.stopCrowd();
-    }
-  }
-
-  public whistle() {
-    if (!this.enabled) return;
-    this.init();
-    // High pitched short whistle
-    this.playTone('square', 2000, 0.2, 0.1, 1800);
-    setTimeout(() => this.playTone('square', 2000, 0.4, 0.1, 1800), 200);
-  }
-
-  public kick() {
-    // Deep thud
-    this.playTone('square', 150, 0.15, 0.2, 50);
-    this.playTone('triangle', 300, 0.1, 0.1, 100);
-  }
-
-  public postHit() {
-    // Metal clang
-    this.playChord('triangle', [800, 1200, 1600], 0.3, 0.1);
-  }
-
-  public slide() {
-    // Goal save friction
-    this.playTone('sawtooth', 200, 0.3, 0.15, 50);
-  }
-
   public crowdCheer() {
-    // White noise approximation for crowd cheer spike
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx) return;
-    const bufferSize = this.ctx.sampleRate * 2; 
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * 0.5;
-    }
-    
-    // Apply lowpass filter
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 1200;
-    
-    const noiseSource = this.ctx.createBufferSource();
-    noiseSource.buffer = buffer;
-    
-    const gainNode = this.ctx.createGain();
-    gainNode.gain.setValueAtTime(0.01, this.ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.15, this.ctx.currentTime + 0.3);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.8);
-    
-    noiseSource.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(this.ctx.destination);
-    
-    noiseSource.start();
+    this.playNoise(2.0, 1500, 0.08);
   }
 
-  // --- King Mode Specific Sounds ---
+  // --- KING MODE ---
 
   public kingCrownPickup() {
-    this.playChord('triangle', [440, 554.37, 659.25, 880], 0.8, 0.15); // A major 7th chord
-    setTimeout(() => this.playTone('sine', 1108.73, 0.4, 0.1), 100);
+    this.achievement();
   }
 
   public kingCrownSteal() {
-    this.playTone('sawtooth', 800, 0.3, 0.1, 1200);
-    setTimeout(() => this.playTone('square', 600, 0.2, 0.1, 800), 50);
+    this.playToneWithADSR('sawtooth', 800, 0.05, 0.1, 0, 0.2, 0.08, 1200, 0.25);
   }
 
   public kingCrownLost() {
-    this.playTone('triangle', 300, 0.5, 0.15, 100);
-    this.playTone('sine', 200, 0.6, 0.1, 50);
+    this.playToneWithADSR('triangle', 300, 0.1, 0.2, 0, 0.3, 0.08, 150, 0.3);
   }
 
   public kingTickScore() {
-    this.playTone('sine', 1200, 0.05, 0.03, 1400);
+    this.playToneWithADSR('sine', 1200, 0.02, 0.05, 0, 0.1, 0.03, 1400, 0.1);
   }
 
   public kingWin() {
-    this.playChord('square', [523.25, 659.25, 783.99], 0.3, 0.1); // C major
-    setTimeout(() => this.playChord('square', [659.25, 783.99, 987.77], 0.3, 0.1), 300); // E minor
-    setTimeout(() => this.playChord('square', [783.99, 987.77, 1174.66], 0.3, 0.1), 600); // G major
-    setTimeout(() => this.playChord('square', [1046.50, 1318.51, 1567.98, 2093.00], 1.5, 0.15), 900); // High C
+    this.newRecord();
   }
 
   public kingDash() {
-    this.playTone('sine', 200, 0.2, 0.1, 50);
+    this.playToneWithADSR('sine', 200, 0.05, 0.1, 0, 0.2, 0.05, 50, 0.2);
   }
 
   public eventStart() {
-    this.playChord('sine', [440, 554.37], 0.4, 0.2); 
-    setTimeout(() => this.playChord('sine', [554.37, 880], 0.4, 0.5), 150);
+    this.playToneWithADSR('sine', 440, 0.1, 0.1, 0.5, 0.4, 0.06); 
+    setTimeout(() => this.playToneWithADSR('sine', 880, 0.1, 0.2, 0.5, 0.6, 0.08), 150);
   }
 }
 
 export const audio = new WebAudioEngine();
+

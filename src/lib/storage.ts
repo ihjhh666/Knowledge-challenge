@@ -1,6 +1,8 @@
 export interface UserSettings {
   soundEnabled: boolean;
   sfxEnabled: boolean;
+  masterVolume: number;
+  sfxVolume: number;
   graphicsQuality: 'low' | 'medium' | 'high';
   theme: 'light' | 'dark';
   showVFX: boolean;
@@ -20,6 +22,8 @@ export interface UserSettings {
 const DEFAULT_SETTINGS: UserSettings = {
   soundEnabled: true,
   sfxEnabled: true,
+  masterVolume: 1.0,
+  sfxVolume: 0.8,
   graphicsQuality: 'high',
   theme: 'dark',
   showVFX: true,

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Save, User as UserIcon, Settings as SettingsIcon, Copy, Upload, LogOut, Shield, Bell, Info, ShieldAlert, FileText, Mail, Smartphone } from 'lucide-react';
+import { ChevronRight, Save, User as UserIcon, Settings as SettingsIcon, Copy, Upload, LogOut, Shield, Bell, Info, ShieldAlert, FileText, Mail, Smartphone, Volume2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { storage, UserSettings as SettingsType } from '../lib/storage';
 import { updateUserProfile } from '../lib/firebase';
 import { useAuth } from '../components/AuthContext';
 import { supabase } from '../lib/supabase';
+
+import { audio } from '../lib/audio';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -38,6 +40,9 @@ export default function Settings() {
     console.log("SAVE_USERNAME_STARTED");
     setIsSaving(true);
     storage.setSettings(settings);
+    audio.loadSettings();
+    audio.setEnabled(settings.soundEnabled);
+    audio.click();
     
     const newName = username.trim();
     let updatedName = storage.getPlayerName() || '';
@@ -342,6 +347,56 @@ export default function Settings() {
                        checked={settings.notifyDailyRewards} 
                        onChange={(v: boolean) => setSettings({...settings, notifyDailyRewards: v})} 
                     />
+                </div>
+                
+                {/* Audio */}
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
+                    <div className="flex items-center gap-2 text-indigo-400 mb-2 border-b border-slate-800 pb-4">
+                       <Volume2 className="w-5 h-5" />
+                       <h2 className="text-lg font-bold">الصوتيات</h2>
+                    </div>
+                    
+                    <Toggle 
+                       label="الأصوات العامة" 
+                       desc="تفعيل وتحديث الأصوات العامة في اللعبة"
+                       checked={settings.soundEnabled} 
+                       onChange={(v: boolean) => setSettings({...settings, soundEnabled: v})} 
+                    />
+                    {settings.soundEnabled && (
+                       <div className="pr-4 space-y-2 mb-4">
+                           <div className="flex justify-between text-xs font-bold text-slate-400">
+                               <span>مستوى الصوت العام</span>
+                               <span>{Math.round(settings.masterVolume * 100)}%</span>
+                           </div>
+                           <input 
+                             type="range" min="0" max="1" step="0.01"
+                             value={settings.masterVolume}
+                             onChange={e => setSettings({...settings, masterVolume: parseFloat(e.target.value)})}
+                             className="w-full accent-indigo-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" 
+                           />
+                       </div>
+                    )}
+
+                    <Toggle 
+                       label="المؤثرات الصوتية" 
+                       desc="أصوات الأزرار، التنبيهات، والأحداث"
+                       checked={settings.sfxEnabled} 
+                       onChange={(v: boolean) => setSettings({...settings, sfxEnabled: v})} 
+                    />
+                    {settings.sfxEnabled && (
+                       <div className="pr-4 space-y-2 mb-2">
+                           <div className="flex justify-between text-xs font-bold text-slate-400">
+                               <span>مستوى المؤثرات</span>
+                               <span>{Math.round(settings.sfxVolume * 100)}%</span>
+                           </div>
+                           <input 
+                             type="range" min="0" max="1" step="0.01"
+                             value={settings.sfxVolume}
+                             onChange={e => setSettings({...settings, sfxVolume: parseFloat(e.target.value)})}
+                             className="w-full accent-indigo-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" 
+                           />
+                       </div>
+                    )}
                 </div>
                 
                 {/* About */}

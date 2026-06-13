@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './components/AuthContext';
 import { GameProvider } from './components/GameContext';
 import Home from './pages/Home';
@@ -35,6 +35,51 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+
+import { audio } from './lib/audio';
+
+function useGlobalAudio() {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    // Transition sound
+    if (location.pathname !== '/' && location.pathname !== '/login') {
+      audio.openModal();
+    }
+  }, [location.pathname]);
+
+  React.useEffect(() => {
+    let lastHovered: HTMLElement | null = null;
+    
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const button = target.closest('button, a, [role="button"]');
+      if (button && !button.hasAttribute('disabled')) {
+        audio.click();
+      }
+    };
+
+    const handleGlobalMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const button = target.closest('button, a, [role="button"]') as HTMLElement;
+      if (button && button !== lastHovered && !button.hasAttribute('disabled')) {
+        audio.hover();
+        lastHovered = button;
+      } else if (!button) {
+        lastHovered = null;
+      }
+    };
+
+    document.body.addEventListener('click', handleGlobalClick, { capture: true });
+    document.body.addEventListener('mouseover', handleGlobalMouseOver, { passive: true });
+
+    return () => {
+      document.body.removeEventListener('click', handleGlobalClick, { capture: true });
+      document.body.removeEventListener('mouseover', handleGlobalMouseOver);
+    };
+  }, []);
+}
 
 export default function App() {
   return (
@@ -56,6 +101,7 @@ import { UsernamePrompt } from './components/UsernamePrompt';
 
 function AppContent() {
   useOnlinePresence();
+  useGlobalAudio();
 
   React.useEffect(() => {
     // Apply theme on mount
@@ -83,6 +129,14 @@ function AppContent() {
       }
     };
     checkMigration();
+
+    // Supabase auth recovery interception for HashRouter
+    if (window.location.hash.includes('type=recovery')) {
+       // Let supabase initialize session, then redirect to reset-password
+       setTimeout(() => {
+          window.location.hash = '#/reset-password';
+       }, 500);
+    }
   }, []);
   
   return (
@@ -95,6 +149,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Home />} />
