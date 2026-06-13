@@ -1,0 +1,28 @@
+import { ProverbData } from './types';
+export const LEVANT_PROVERBS: ProverbData[] = [
+  { text: "طنجرة ولقت", completions: { correct: "غطاها", wrong: ["صاحبها", "نارها", "أكلها"] }, type: 'proverb', difficulty: 0 },
+  { text: "إللي استحوا", completions: { correct: "ماتوا", wrong: ["ناموا", "خسروا", "هربوا"] }, type: 'proverb', difficulty: 0 },
+  { text: "من برا رخام ومن جوا", completions: { correct: "سخام", wrong: ["عظام", "ظلام", "فحم"] }, type: 'proverb', difficulty: 1 },
+  { text: "بطيختين بإيد وحدة ما", completions: { correct: "بينحملوا", wrong: ["بينشالوا", "بينأكلوا", "بينشروا"] }, type: 'proverb', difficulty: 0 },
+  { text: "العين ما بتعلى عن", completions: { correct: "الحاجب", wrong: ["الرأس", "الخد", "الأذن"] }, type: 'proverb', difficulty: 0 },
+  { text: "يا جبل ما يهزك", completions: { correct: "ريح", wrong: ["مطر", "رعد", "ثلج"] }, type: 'proverb', difficulty: 0 },
+  { text: "إللي بيعرف بيعرف، وإللي ما بيعرف بيقول كف", completions: { correct: "عدس", wrong: ["ذهب", "حمص", "فول"] }, type: 'proverb', difficulty: 1 },
+  { text: "إللي بياكل العصي مش متل إللي", completions: { correct: "بيعدها", wrong: ["بيمسكها", "بيكسرها", "بيضربها"] }, type: 'proverb', difficulty: 1 },
+  { text: "الديك الفصيح من البيضة", completions: { correct: "بيصيح", wrong: ["بيطير", "بيكاكي", "بيطلع"] }, type: 'proverb', difficulty: 1 },
+  { text: "كل ديك على مزبلته", completions: { correct: "صياح", wrong: ["ملك", "أمير", "شجاع"] }, type: 'proverb', difficulty: 0 },
+  { text: "من شابه أباه فما", completions: { correct: "ظلم", wrong: ["كذب", "غلط", "نقص"] }, type: 'wisdom', difficulty: 0 },
+  { text: "بيقتل القتيل وبيمشي بـ", completions: { correct: "جنازته", wrong: ["عزاه", "طريقه", "دمه"] }, type: 'proverb', difficulty: 0 },
+  { text: "ديك المزارب يعوعي على", completions: { correct: "المزبلة", wrong: ["السطح", "الشجرة", "الناس"] }, type: 'proverb', difficulty: 2 },
+  { text: "بياكل بوشين وبيبخ بـ", completions: { correct: "لسانين", wrong: ["عينين", "سمين", "نارين"] }, type: 'proverb', difficulty: 2 },
+  { text: "متل الأطرش بـ", completions: { correct: "الزفة", wrong: ["العرس", "السوق", "الحفلة"] }, type: 'proverb', difficulty: 0 },
+  { text: "ابن يومين ما بيعيش", completions: { correct: "تلاتة", wrong: ["أسبوع", "شهر", "سنة"] }, type: 'proverb', difficulty: 1 },
+  { text: "إللي ما بيطول العنب حامض عنه", completions: { correct: "بيقول", wrong: ["بيرمي", "بيترك", "بينسى"] }, type: 'proverb', difficulty: 0 },
+  { text: "خبئ قرشك الأبيض ليومك", completions: { correct: "الأسود", wrong: ["الأحمر", "الفقير", "الكبير"] }, type: 'proverb', difficulty: 0 },
+  { text: "عصفور بالإيد ولا عشرة على", completions: { correct: "الشجرة", wrong: ["السطح", "الجدار", "السما"] }, type: 'proverb', difficulty: 0 },
+  { text: "إجري يا مشحر للي", completions: { correct: "متبحر", wrong: ["نايم", "قاعد", "مبسوط"] }, type: 'proverb', difficulty: 2 },
+  { text: "آب اللهاب قطف العنب والـ", completions: { correct: "تين", wrong: ["رمان", "تفاح", "بلح"] }, type: 'proverb', difficulty: 2 },
+  { text: "بين حانا ومانا ضاعت", completions: { correct: "لحانا", wrong: ["عمرنا", "فلوسنا", "أيامنا"] }, type: 'proverb', difficulty: 2 },
+  { text: "قال يا مستعجل وقف لـ", completions: { correct: "أقلك", wrong: ["أضربك", "أشوفك", "أسمعك"] }, type: 'proverb', difficulty: 1 },
+  { text: "دود الخل منه و", completions: { correct: "فيه", wrong: ["حوله", "عله", "بره"] }, type: 'proverb', difficulty: 1 },
+  { text: "عمر الدم ما بيصير", completions: { correct: "مي", wrong: ["لبن", "عصير", "زيت"] }, type: 'proverb', difficulty: 0 }
+];

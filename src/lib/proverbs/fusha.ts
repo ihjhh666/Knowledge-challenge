@@ -1,0 +1,28 @@
+import { ProverbData } from './types';
+export const FUSHA_PROVERBS: ProverbData[] = [
+  { text: "أول الغيث قطرة ثم", completions: { correct: "ينهمر", wrong: ["يكثر", "يمطر", "يغزر"] }, type: 'wisdom', difficulty: 0 },
+  { text: "لا يلدغ المؤمن من جحر", completions: { correct: "مرتين", wrong: ["ثلاثاً", "أبداً", "مجدداً"] }, type: 'wisdom', difficulty: 0 },
+  { text: "قطعت جهيزة قول كل", completions: { correct: "خطيب", wrong: ["عاقل", "عالم", "متحدث"] }, type: 'saying', difficulty: 2 },
+  { text: "سبق السيف", completions: { correct: "العذل", wrong: ["الندم", "الدم", "القول"] }, type: 'saying', difficulty: 1 },
+  { text: "مكره أخاك لا", completions: { correct: "بطل", wrong: ["جبان", "هارب", "خائف"] }, type: 'saying', difficulty: 1 },
+  { text: "الصيف ضيعتِ", completions: { correct: "اللبن", wrong: ["النوم", "الحصاد", "الهوى"] }, type: 'saying', difficulty: 2, situation: { text: "يقال لمن أضاع فرصة ثم عاد يطلبها متأخراً.", wrongProverbs: ["عادت حليمة لعادتها القديمة", "سبق السيف العذل"] } },
+  { text: "وافق شن", completions: { correct: "طبقة", wrong: ["طموحه", "صديقه", "رأيه"] }, type: 'proverb', difficulty: 1 },
+  { text: "عاد بخفي", completions: { correct: "حنين", wrong: ["ذئب", "نادم", "ثعلب"] }, type: 'saying', difficulty: 1 },
+  { text: "رب رمية من غير", completions: { correct: "رام", wrong: ["قوس", "قصد", "عين"] }, type: 'saying', difficulty: 1 },
+  { text: "أكذب من", completions: { correct: "مسيلمة", wrong: ["إبليس", "الثعالب", "السراب"] }, type: 'saying', difficulty: 2 },
+  { text: "بيدي لا بيد", completions: { correct: "عمرو", wrong: ["زيد", "العدو", "الزمان"] }, type: 'saying', difficulty: 2 },
+  { text: "إن كنت الريح فقد لاقيت", completions: { correct: "إعصارا", wrong: ["بركاناً", "جبلاً", "ناراً"] }, type: 'saying', difficulty: 2 },
+  { text: "جزاء", completions: { correct: "سنمار", wrong: ["فرعون", "الخائن", "قارون"] }, type: 'saying', difficulty: 1 },
+  { text: "كالباحث عن حتف ظلفه بـ", completions: { correct: "ظلفه", wrong: ["يده", "رجله", "عينه"] }, type: 'saying', difficulty: 2 },
+  { text: "كل فتاة بأبيها", completions: { correct: "معجبة", wrong: ["مشغوفة", "مغرمة", "سعيدة"] }, type: 'saying', difficulty: 0 },
+  { text: "رمتني بدائها و", completions: { correct: "انسلت", wrong: ["هربت", "تنصلت", "مضت"] }, type: 'saying', difficulty: 1 },
+  { text: "كالمستجير من الرمضاء بالـ", completions: { correct: "نار", wrong: ["ماء", "برد", "طين"] }, type: 'saying', difficulty: 1 },
+  { text: "أشأم من", completions: { correct: "البسوس", wrong: ["الغراب", "الأسود", "البوم"] }, type: 'saying', difficulty: 2 },
+  { text: "على نفسها جنت", completions: { correct: "براقش", wrong: ["نملة", "قرية", "ناقة"] }, type: 'saying', difficulty: 1 },
+  { text: "أسمع جعجعة ولا أرى", completions: { correct: "طحنا", wrong: ["خبزا", "ماء", "نارا"] }, type: 'saying', difficulty: 1 },
+  { text: "عند الجهينة الخبر", completions: { correct: "اليقين", wrong: ["الكاذب", "الصحيح", "الشافي"] }, type: 'saying', difficulty: 2 },
+  { text: "يد الله مع", completions: { correct: "الجماعة", wrong: ["القوي", "الحاكم", "الشجاع"] }, type: 'wisdom', difficulty: 0 },
+  { text: "لا عطر بعد", completions: { correct: "عروس", wrong: ["ورد", "بخور", "يوم"] }, type: 'saying', difficulty: 2 },
+  { text: "أعذر من", completions: { correct: "أنذر", wrong: ["عاقب", "سامح", "ضرب"] }, type: 'saying', difficulty: 0 },
+  { text: "أنجح من", completions: { correct: "طموح", wrong: ["سهم", "الأسد", "السيف"] }, type: 'saying', difficulty: 2 }
+];

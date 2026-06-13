@@ -1,0 +1,28 @@
+import { ProverbData } from './types';
+export const WISDOM_PROVERBS: ProverbData[] = [
+  { text: "السيف أصدق أنباء من", completions: { correct: "الكتب", wrong: ["الأقلام", "الكلام", "الصحف"] }, type: 'wisdom', difficulty: 1 },
+  { text: "إياك ومصادقة الأحمق، فإنه يريد أن ينفعك فيـ", completions: { correct: "ـيضرك", wrong: ["ـتركك", "ـخدعك", "ـغرقك"] }, type: 'wisdom', difficulty: 0 },
+  { text: "لا تأسفن على غدر", completions: { correct: "الزمان", wrong: ["الخِلان", "الأعداء", "الأيام"] }, type: 'wisdom', difficulty: 0 },
+  { text: "إذا الشعب يوماً أراد الحياة فلا بد أن يستجيب", completions: { correct: "القدر", wrong: ["الله", "العالم", "الزمن"] }, type: 'saying', difficulty: 0 },
+  { text: "إنما الأمم الأخلاق ما بقيت، فإن هم ذهبت أخلاقهم", completions: { correct: "ذهبوا", wrong: ["ماتوا", "زالوا", "سقطوا"] }, type: 'wisdom', difficulty: 0 },
+  { text: "وما نيل المطالب بالتمني، ولكن تؤخذ الدنيا", completions: { correct: "غلابا", wrong: ["كفاحا", "عنادا", "سهاما"] }, type: 'wisdom', difficulty: 0 },
+  { text: "لا تحسبن المجد تمراً أنت آكله، لن تبلغ المجد حتى تلعق", completions: { correct: "الصبرا", wrong: ["العسلا", "السما", "الأرضا"] }, type: 'wisdom', difficulty: 1 },
+  { text: "رأيي صواب يحتمل الخطأ، ورأي غيري خطأ يحتمل", completions: { correct: "الصواب", wrong: ["الصدق", "اليقين", "العذر"] }, type: 'saying', difficulty: 1 },
+  { text: "الأم مدرسة إذا أعددتها، أعددت شعباً طيب", completions: { correct: "الأعراق", wrong: ["الأخلاق", "الأساس", "الأصل"] }, type: 'wisdom', difficulty: 0 },
+  { text: "إذا أنت أكرمت الكريم ملكته، وإن أنت أكرمت اللئيم", completions: { correct: "تمردا", wrong: ["تنكرا", "تجبرا", "تبغدا"] }, type: 'wisdom', difficulty: 0 },
+  { text: "لكل داء دواء يستطب به، إلا الحماقة أعيت من", completions: { correct: "يداويها", wrong: ["يعالجها", "يفهمها", "يشفيها"] }, type: 'wisdom', difficulty: 1 },
+  { text: "نعيب زماننا والعيب فينا، وما لزماننا عيب", completions: { correct: "سوانا", wrong: ["غيرنا", "إلانا", "معنا"] }, type: 'wisdom', difficulty: 0 },
+  { text: "من يهن يسهل الهوان عليه، ما لجرح بميت", completions: { correct: "إيلام", wrong: ["شفاء", "علاج", "دواء"] }, type: 'wisdom', difficulty: 1 },
+  { text: "إذا رأيت نيوب الليث بارزة، فلا تظنن أن الليث", completions: { correct: "يبتسم", wrong: ["يضحك", "يلعب", "يفرح"] }, type: 'wisdom', difficulty: 0 },
+  { text: "المرء مخبوء تحت", completions: { correct: "لسانه", wrong: ["ثيابه", "قبعته", "عقله"] }, type: 'wisdom', difficulty: 1 },
+  { text: "العقل السليم في الجسم", completions: { correct: "السليم", wrong: ["القوي", "الكبير", "الصحي"] }, type: 'wisdom', difficulty: 0 },
+  { text: "أنا الغريق فما خوفي من", completions: { correct: "البلل", wrong: ["المطر", "الموت", "البحر"] }, type: 'saying', difficulty: 1 },
+  { text: "تعددت الأسباب والموت", completions: { correct: "واحد", wrong: ["قادم", "آت", "حتم"] }, type: 'wisdom', difficulty: 0 },
+  { text: "ما كل ما يتمنى المرء", completions: { correct: "يدركه", wrong: ["يبلغه", "يحققه", "يحصده"] }, type: 'wisdom', difficulty: 0 },
+  { text: "إن المعارف للمعالي", completions: { correct: "سلم", wrong: ["طريق", "نور", "درب"] }, type: 'wisdom', difficulty: 2 },
+  { text: "ألا ليت الشباب يعود", completions: { correct: "يوماً", wrong: ["عمراً", "دهراً", "غداً"] }, type: 'saying', difficulty: 0 },
+  { text: "لا يُفتى ومالك في", completions: { correct: "المدينة", wrong: ["المسجد", "الدار", "البلد"] }, type: 'saying', difficulty: 1 },
+  { text: "لكل جواد", completions: { correct: "كبوة", wrong: ["سقطة", "فارس", "سرعة"] }, type: 'wisdom', difficulty: 0 },
+  { text: "الطمع يقل ما", completions: { correct: "جمع", wrong: ["نفع", "صنع", "أخذ"] }, type: 'wisdom', difficulty: 0 },
+  { text: "العبد يقرع بالعصا والحر تكفيه", completions: { correct: "الإشارة", wrong: ["العبارة", "النظرة", "الكلمة"] }, type: 'wisdom', difficulty: 1 }
+];
