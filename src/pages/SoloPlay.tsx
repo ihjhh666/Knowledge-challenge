@@ -15,7 +15,8 @@ export const CATEGORIES = [
   { id: 'history', name: 'التاريخ', icon: '📜', data: HISTORY, color: 'from-amber-500 to-amber-700' },
   { id: 'islamic', name: 'إسلاميات', icon: '🕌', data: ISLAMIC, color: 'from-emerald-500 to-emerald-700' },
   { id: 'math', name: 'رياضيات', icon: '🧮', data: MATH, color: 'from-blue-400 to-blue-600' },
-  { id: 'sentence_order', name: 'رتب الجمل', icon: '🧩', data: [], color: 'from-sky-500 to-sky-700' }
+  { id: 'sentence_order', name: 'رتب الجمل', icon: '🧩', data: [], color: 'from-sky-500 to-sky-700' },
+  { id: 'proverbs', name: 'أكمل المثل', icon: '🏺', data: [], color: 'from-amber-600 to-amber-900' }
 ];
 
 export default function SoloPlay() {
@@ -71,6 +72,10 @@ export default function SoloPlay() {
   const startGame = (category: typeof CATEGORIES[0]) => {
     if (category.id === 'sentence_order') {
       navigate('/sentence-order');
+      return;
+    }
+    if (category.id === 'proverbs') {
+      navigate('/proverbs');
       return;
     }
 
@@ -266,7 +271,7 @@ export default function SoloPlay() {
               <span className="text-4xl mb-4 block">{cat.icon}</span>
               <h3 className="text-xl font-bold font-heading text-white">{cat.name}</h3>
               <p className="text-white/80 text-sm mt-2">
-                {cat.id === 'sentence_order' ? 'مئات الجمل' : `${cat.data.length} سؤال`}
+                {cat.id === 'sentence_order' ? 'مئات الجمل' : cat.id === 'proverbs' ? 'آلاف الأمثال' : `${cat.data.length} سؤال`}
               </p>
             </button>
           ))}

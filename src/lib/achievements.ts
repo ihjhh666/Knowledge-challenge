@@ -1,4 +1,4 @@
-import { Trophy, Medal, Crown, Star, Target, Zap, Clock, Users, Flame, Swords, Shield, Award, Sparkles, Ghost, Rocket, Heart, Diamond } from 'lucide-react';
+import { Trophy, Medal, Crown, Star, Target, Zap, Clock, Users, Flame, Swords, Shield, Award, Sparkles, Ghost, Rocket, Heart, Diamond, BookOpen } from 'lucide-react';
 import React from 'react';
 
 export type Rarity = 'common' | 'medium' | 'rare' | 'legendary';
@@ -34,6 +34,9 @@ export interface PlayerStats {
   tfCorrectAnswers?: number;
   tfBestStreak?: number;
   tfHighScore?: number;
+  proverbsCorrect?: number;
+  proverbsBestStreak?: number;
+  proverbsRoundsPlayed?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -506,6 +509,67 @@ export const ACHIEVEMENTS: Achievement[] = [
     targetMax: 1000,
     condition: (s) => (s.sentencesCorrect || 0) >= 1000,
     getProgress: (s) => s.sentencesCorrect || 0,
+  },
+  // --- أكمل المثل (Proverbs) ---
+  {
+    id: 'proverbs_25',
+    title: 'ابن البلد',
+    description: 'أكمل 25 مثلاً صحيحاً',
+    rarity: 'common',
+    icon: Star,
+    targetMax: 25,
+    condition: (s) => (s.proverbsCorrect || 0) >= 25,
+    getProgress: (s) => s.proverbsCorrect || 0,
+  },
+  {
+    id: 'proverbs_100',
+    title: 'حافظ الأمثال',
+    description: 'أكمل 100 مثل صحيح',
+    rarity: 'medium',
+    icon: BookOpen,
+    targetMax: 100,
+    condition: (s) => (s.proverbsCorrect || 0) >= 100,
+    getProgress: (s) => s.proverbsCorrect || 0,
+  },
+  {
+    id: 'proverbs_250',
+    title: 'حكيم القرية',
+    description: 'أكمل 250 مثل صحيح',
+    rarity: 'rare',
+    icon: Flame,
+    targetMax: 250,
+    condition: (s) => (s.proverbsCorrect || 0) >= 250,
+    getProgress: (s) => s.proverbsCorrect || 0,
+  },
+  {
+    id: 'proverbs_500',
+    title: 'شيخ الأمثال',
+    description: 'أكمل 500 مثل صحيح',
+    rarity: 'legendary',
+    icon: Crown,
+    targetMax: 500,
+    condition: (s) => (s.proverbsCorrect || 0) >= 500,
+    getProgress: (s) => s.proverbsCorrect || 0,
+  },
+  {
+    id: 'proverbs_1000',
+    title: 'موسوعة الحكم',
+    description: 'أكمل 1000 مثل وحكمة صحيحة',
+    rarity: 'legendary',
+    icon: Diamond,
+    targetMax: 1000,
+    condition: (s) => (s.proverbsCorrect || 0) >= 1000,
+    getProgress: (s) => s.proverbsCorrect || 0,
+  },
+  {
+    id: 'proverbs_streak_20',
+    title: 'سلسلة الحكمة',
+    description: 'حقق 20 إجابة صحيحة متتالية',
+    rarity: 'rare',
+    icon: Flame,
+    targetMax: 20,
+    condition: (s) => (s.proverbsBestStreak || 0) >= 20,
+    getProgress: (s) => Math.min(s.proverbsBestStreak || 0, 20),
   },
 ];
 
