@@ -364,6 +364,60 @@ class WebAudioEngine {
     this.playToneWithADSR('sine', 440, 0.1, 0.1, 0.5, 0.4, 0.06); 
     setTimeout(() => this.playToneWithADSR('sine', 880, 0.1, 0.2, 0.5, 0.6, 0.08), 150);
   }
+
+  // --- SORTING GAME SOUNDS ---
+  
+  public sortDrag() {
+    this.playToneWithADSR('sine', 400, 0.02, 0.05, 0.1, 0.05, 0.05, 500, 0.05);
+    this.playNoise(0.05, 800, 0.01); 
+  }
+
+  public sortDrop() {
+    this.playToneWithADSR('triangle', 600, 0.01, 0.03, 0.1, 0.05, 0.06, 300, 0.05);
+    this.playNoise(0.05, 500, 0.02);
+  }
+
+  public sortSwap() {
+    this.playToneWithADSR('sine', 800, 0.02, 0.05, 0.2, 0.05, 0.03, 900, 0.05);
+  }
+
+  public sortSuccess() {
+    // Satisfying bell-like chord
+    this.playToneWithADSR('triangle', 523.25, 0.02, 0.1, 0.3, 0.2, 0.06); // C5
+    this.playToneWithADSR('sine', 659.25, 0.02, 0.15, 0.2, 0.2, 0.05); // E5
+    setTimeout(() => {
+        this.playToneWithADSR('triangle', 783.99, 0.02, 0.1, 0.3, 0.3, 0.06); // G5
+        this.playToneWithADSR('sine', 1046.50, 0.02, 0.2, 0.5, 0.4, 0.08); // C6
+    }, 100);
+  }
+
+  public sortError() {
+    // Professional low muted error
+    this.playToneWithADSR('sawtooth', 180, 0.02, 0.1, 0, 0.15, 0.05, 120, 0.1);
+    setTimeout(() => {
+        this.playToneWithADSR('sawtooth', 140, 0.02, 0.1, 0, 0.2, 0.05, 90, 0.1);
+    }, 80);
+    this.playNoise(0.15, 600, 0.03);
+  }
+
+  public sortHighscore() {
+    this.playToneWithADSR('square', 440, 0.05, 0.2, 0.5, 0.8, 0.08);
+    setTimeout(() => this.playToneWithADSR('triangle', 554.37, 0.05, 0.2, 0.5, 0.8, 0.08), 120);
+    setTimeout(() => this.playToneWithADSR('square', 659.25, 0.05, 0.2, 0.5, 0.8, 0.08), 240);
+    setTimeout(() => this.playToneWithADSR('triangle', 880, 0.1, 0.3, 0.8, 1.2, 0.1), 360);
+    setTimeout(() => this.playToneWithADSR('sine', 1108.73, 0.05, 0.4, 0.6, 1.5, 0.12), 480);
+  }
+
+  public sortCountdown() {
+    // Tension tick
+    this.playToneWithADSR('sine', 1000, 0.01, 0.02, 0, 0.01, 0.05);
+  }
+
+  public sortTimeout() {
+    // Deep fading hum
+    this.playToneWithADSR('triangle', 150, 0.05, 0.2, 0.1, 0.5, 0.08, 80, 0.4);
+    this.playNoise(0.4, 400, 0.04);
+  }
 }
 
 export const audio = new WebAudioEngine();

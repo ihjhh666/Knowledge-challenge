@@ -40,6 +40,10 @@ export interface PlayerStats {
   logosCorrect?: number;
   logosBestStreak?: number;
   logosRoundsPlayed?: number;
+  sortRoundsPlayed?: number;
+  sortCorrectAnswers?: number;
+  sortBestStreak?: number;
+  sortHighScore?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -513,6 +517,58 @@ export const ACHIEVEMENTS: Achievement[] = [
     condition: (s) => (s.sentencesCorrect || 0) >= 1000,
     getProgress: (s) => s.sentencesCorrect || 0,
   },
+  // --- ترتيب (Sorting) ---
+  {
+    id: 'sort_starter',
+    title: 'مرتب مبتدئ',
+    description: 'أكمل 10 جولات في طور الترتيب',
+    rarity: 'common',
+    icon: Target,
+    targetMax: 10,
+    condition: (s) => (s.sortRoundsPlayed || 0) >= 10,
+    getProgress: (s) => s.sortRoundsPlayed || 0,
+  },
+  {
+    id: 'sort_expert',
+    title: 'خبير التصنيف',
+    description: 'أكمل 50 جولة في طور الترتيب',
+    rarity: 'medium',
+    icon: Star,
+    targetMax: 50,
+    condition: (s) => (s.sortRoundsPlayed || 0) >= 50,
+    getProgress: (s) => s.sortRoundsPlayed || 0,
+  },
+  {
+    id: 'sort_master',
+    title: 'سيد الترتيب',
+    description: 'أكمل 100 جولة في طور الترتيب',
+    rarity: 'rare',
+    icon: Crown,
+    targetMax: 100,
+    condition: (s) => (s.sortRoundsPlayed || 0) >= 100,
+    getProgress: (s) => s.sortRoundsPlayed || 0,
+  },
+  {
+    id: 'sort_legend',
+    title: 'أسطورة الترتيب',
+    description: 'أجب 1000 إجابة صحيحة في الترتيب',
+    rarity: 'legendary',
+    icon: Flame,
+    targetMax: 1000,
+    condition: (s) => (s.sortCorrectAnswers || 0) >= 1000,
+    getProgress: (s) => s.sortCorrectAnswers || 0,
+  },
+  {
+    id: 'sort_king',
+    title: 'سيد السلسلة',
+    description: 'حقق سلسلة 10 إجابات صحيحة في الترتيب',
+    rarity: 'legendary',
+    icon: Zap,
+    targetMax: 10,
+    condition: (s) => (s.sortBestStreak || 0) >= 10,
+    getProgress: (s) => Math.min(s.sortBestStreak || 0, 10),
+  },
+
   // --- أكمل المثل (Proverbs) ---
   {
     id: 'proverbs_25',

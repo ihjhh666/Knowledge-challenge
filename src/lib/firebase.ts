@@ -115,6 +115,11 @@ export interface PlayerStats {
   tfWrongAnswers?: number;
   tfBestStreak?: number;
   tfHighScore?: number;
+  // Sorting Stats
+  sortRoundsPlayed?: number;
+  sortCorrectAnswers?: number;
+  sortBestStreak?: number;
+  sortHighScore?: number;
   unlockedAchievements?: { id: string; date: number }[];
   createdAt?: number;
 }
