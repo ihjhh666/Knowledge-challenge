@@ -37,6 +37,9 @@ export interface PlayerStats {
   proverbsCorrect?: number;
   proverbsBestStreak?: number;
   proverbsRoundsPlayed?: number;
+  logosCorrect?: number;
+  logosBestStreak?: number;
+  logosRoundsPlayed?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -570,6 +573,38 @@ export const ACHIEVEMENTS: Achievement[] = [
     targetMax: 20,
     condition: (s) => (s.proverbsBestStreak || 0) >= 20,
     getProgress: (s) => Math.min(s.proverbsBestStreak || 0, 20),
+  },
+
+  // --- خمن الشعار (Logo Game) ---
+  {
+    id: 'logos_50',
+    title: 'مبتدئ الشعارات',
+    description: 'أجب على 50 شعار بشكل صحيح',
+    rarity: 'common',
+    icon: Trophy,
+    targetMax: 50,
+    condition: (s) => (s.logosCorrect || 0) >= 50,
+    getProgress: (s) => s.logosCorrect || 0,
+  },
+  {
+    id: 'logos_250',
+    title: 'خبير الشعارات',
+    description: 'أجب على 250 شعار بشكل صحيح',
+    rarity: 'rare',
+    icon: Star,
+    targetMax: 250,
+    condition: (s) => (s.logosCorrect || 0) >= 250,
+    getProgress: (s) => s.logosCorrect || 0,
+  },
+  {
+    id: 'logos_1000',
+    title: 'أسطورة الشعارات',
+    description: 'أجب على 1000 شعار بشكل صحيح',
+    rarity: 'legendary',
+    icon: Diamond,
+    targetMax: 1000,
+    condition: (s) => (s.logosCorrect || 0) >= 1000,
+    getProgress: (s) => s.logosCorrect || 0,
   },
 ];
 

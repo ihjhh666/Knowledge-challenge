@@ -16,6 +16,7 @@ import SurvivalSolo from './pages/SurvivalSolo';
 import KingMode from './pages/KingMode';
 import SentenceOrderSolo from './pages/SentenceOrderSolo';
 import ProverbsSolo from './pages/ProverbsSolo';
+import LogoGame from './pages/LogoGame';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
@@ -167,6 +168,7 @@ function AppContent() {
             <Route path="/survival" element={<SurvivalSolo />} />
             <Route path="/sentence-order" element={<SentenceOrderSolo />} />
             <Route path="/proverbs" element={<ProverbsSolo />} />
+            <Route path="/logos" element={<LogoGame />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/achievements" element={<Achievements />} />

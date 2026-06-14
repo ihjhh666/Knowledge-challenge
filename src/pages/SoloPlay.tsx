@@ -16,7 +16,8 @@ export const CATEGORIES = [
   { id: 'islamic', name: 'إسلاميات', icon: '🕌', data: ISLAMIC, color: 'from-emerald-500 to-emerald-700' },
   { id: 'math', name: 'رياضيات', icon: '🧮', data: MATH, color: 'from-blue-400 to-blue-600' },
   { id: 'sentence_order', name: 'رتب الجمل', icon: '🧩', data: [], color: 'from-sky-500 to-sky-700' },
-  { id: 'proverbs', name: 'أكمل المثل', icon: '🏺', data: [], color: 'from-amber-600 to-amber-900' }
+  { id: 'proverbs', name: 'أكمل المثل', icon: '🏺', data: [], color: 'from-amber-600 to-amber-900' },
+  { id: 'logos', name: 'خمن الشعار', icon: '🏷️', data: [], color: 'from-pink-500 to-pink-700' }
 ];
 
 export default function SoloPlay() {
@@ -78,6 +79,10 @@ export default function SoloPlay() {
       navigate('/proverbs');
       return;
     }
+    if (category.id === 'logos') {
+      navigate('/logos');
+      return;
+    }
 
     setSelectedCategory(category);
     
@@ -97,9 +102,9 @@ export default function SoloPlay() {
 
     if (category.id === 'math') {
       // Custom building logic for math to progression & prevent type repetition
-      const easyBucket = unseen.filter(q => q.difficultyRank === 0).sort(() => 0.5 - Math.random());
-      const medBucket = unseen.filter(q => q.difficultyRank === 1).sort(() => 0.5 - Math.random());
-      const hardBucket = unseen.filter(q => q.difficultyRank === 2).sort(() => 0.5 - Math.random());
+      const easyBucket = unseen.filter((q: any) => q.difficultyRank === 0).sort(() => 0.5 - Math.random());
+      const medBucket = unseen.filter((q: any) => q.difficultyRank === 1).sort(() => 0.5 - Math.random());
+      const hardBucket = unseen.filter((q: any) => q.difficultyRank === 2).sort(() => 0.5 - Math.random());
 
       // Try to pick 7 easy, 8 medium, 5 hard
       const queue = [
@@ -111,16 +116,16 @@ export default function SoloPlay() {
       // Enforce max 2 in a row of the same 'type' (e.g. addition)
       for (let i = 0; i < queue.length; i++) {
         if (i >= 2) {
-          const type1 = queue[i-1].type;
-          const type2 = queue[i-2].type;
-          if (queue[i].type === type1 && type1 === type2) {
-            // Find a swap candidate ahead
-            const swapIdx = queue.findIndex((q, idx) => idx > i && q.type !== type1);
-            if (swapIdx !== -1) {
-              const temp = queue[i];
-              queue[i] = queue[swapIdx];
-              queue[swapIdx] = temp;
-            }
+          const type1 = (queue[i-1] as any).type;
+          const type2 = (queue[i-2] as any).type;
+          if ((queue[i] as any).type === type1 && type1 === type2) {
+             // Find a swap candidate ahead
+             const swapIdx = queue.findIndex((q: any, idx) => idx > i && q.type !== type1);
+             if (swapIdx !== -1) {
+               const temp = queue[i];
+               queue[i] = queue[swapIdx];
+               queue[swapIdx] = temp;
+             }
           }
         }
         selected20.push(queue[i]);
@@ -271,7 +276,7 @@ export default function SoloPlay() {
               <span className="text-4xl mb-4 block">{cat.icon}</span>
               <h3 className="text-xl font-bold font-heading text-white">{cat.name}</h3>
               <p className="text-white/80 text-sm mt-2">
-                {cat.id === 'sentence_order' ? 'مئات الجمل' : cat.id === 'proverbs' ? 'آلاف الأمثال' : `${cat.data.length} سؤال`}
+                {cat.id === 'sentence_order' ? 'مئات الجمل' : cat.id === 'proverbs' ? 'آلاف الأمثال' : cat.id === 'logos' ? 'مئات الشعارات' : `${cat.data.length} سؤال`}
               </p>
             </button>
           ))}
