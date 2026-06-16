@@ -133,13 +133,78 @@ function AppContent() {
     };
     checkMigration();
 
-    // Supabase auth recovery interception for HashRouter
-    if (window.location.hash.includes('type=recovery')) {
-       // Let supabase initialize session, then redirect to reset-password
-       setTimeout(() => {
-          window.location.hash = '#/reset-password';
-       }, 500);
+    // Supabase auth recovery interception for HashRouter and PKCE
+    const hashStr = window.location.hash;
+    const url = new URL(window.location.href);
+    
+    // Sometimes the code or token is appended to the hash because of redirectTo
+    let code = url.searchParams.get('code');
+    if (!code && hashStr.includes('code=')) {
+      const match = hashStr.match(/[?&]code=([^&]+)/);
+      if (match) code = match[1];
     }
+
+    const handleRecovery = async () => {
+      let isRecovery = false;
+
+      // Handle Code exchange flow (PKCE)
+      if (code) {
+        isRecovery = true;
+        try {
+          await supabase.auth.exchangeCodeForSession(code);
+          url.searchParams.delete('code');
+          window.history.replaceState({}, document.title, url.pathname + url.search);
+        } catch (err) {
+          console.error("Code exchange error:", err);
+        }
+      } 
+      // Handle implicit flow (access_token in hash)
+      else if (hashStr.includes('type=recovery') || hashStr.includes('access_token=')) {
+        isRecovery = true;
+        
+        // The hash might look like "#/reset-password#access_token=..." or just "#access_token=..."
+        // Let's extract everything after the last # or ? that contains access_token
+        let paramsString = hashStr;
+        const hashParts = hashStr.split('#');
+        for (const part of hashParts) {
+            if (part.includes('access_token=')) {
+                paramsString = part;
+                break;
+            }
+        }
+        
+        if (paramsString.includes('?')) {
+            paramsString = paramsString.split('?')[1];
+        } else if (paramsString.startsWith('/')) {
+            // just in case it's /reset-password&access_token=...
+            paramsString = paramsString.replace(/^\/reset-password\/?/, '');
+            if (paramsString.startsWith('?') || paramsString.startsWith('&') || paramsString.startsWith('#')) {
+                paramsString = paramsString.substring(1);
+            }
+        }
+
+        const params = new URLSearchParams(paramsString);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+          try {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+          } catch (err) {
+            console.error("Session set error:", err);
+          }
+        }
+      }
+
+      if (isRecovery) {
+        window.location.hash = '#/reset-password';
+      }
+    };
+    
+    handleRecovery();
   }, []);
   
   return (
