@@ -106,6 +106,8 @@ function AppContent() {
   useOnlinePresence();
   useGlobalAudio();
 
+  const [isRecovering, setIsRecovering] = React.useState(true);
+
   React.useEffect(() => {
     // Apply theme on mount
     const settings = storage.getSettings();
@@ -137,33 +139,30 @@ function AppContent() {
     const hashStr = window.location.hash;
     const url = new URL(window.location.href);
     
-    // Sometimes the code or token is appended to the hash because of redirectTo
     let code = url.searchParams.get('code');
     if (!code && hashStr.includes('code=')) {
       const match = hashStr.match(/[?&]code=([^&]+)/);
       if (match) code = match[1];
     }
+    
+    const isImplicitRecovery = hashStr.includes('type=recovery') || hashStr.includes('access_token=');
+
+    if (!code && !isImplicitRecovery) {
+      setIsRecovering(false);
+      return;
+    }
 
     const handleRecovery = async () => {
-      let isRecovery = false;
-
-      // Handle Code exchange flow (PKCE)
       if (code) {
-        isRecovery = true;
         try {
+          // If strict mode causes this to run twice, only the first will succeed,
+          // which is fine, because it establishes the session in Supabase client locally.
           await supabase.auth.exchangeCodeForSession(code);
-          url.searchParams.delete('code');
-          window.history.replaceState({}, document.title, url.pathname + url.search);
         } catch (err) {
-          console.error("Code exchange error:", err);
+          console.log("Code exchange error (might be already exchanged):", err);
         }
       } 
-      // Handle implicit flow (access_token in hash)
-      else if (hashStr.includes('type=recovery') || hashStr.includes('access_token=')) {
-        isRecovery = true;
-        
-        // The hash might look like "#/reset-password#access_token=..." or just "#access_token=..."
-        // Let's extract everything after the last # or ? that contains access_token
+      else if (isImplicitRecovery) {
         let paramsString = hashStr;
         const hashParts = hashStr.split('#');
         for (const part of hashParts) {
@@ -176,7 +175,6 @@ function AppContent() {
         if (paramsString.includes('?')) {
             paramsString = paramsString.split('?')[1];
         } else if (paramsString.startsWith('/')) {
-            // just in case it's /reset-password&access_token=...
             paramsString = paramsString.replace(/^\/reset-password\/?/, '');
             if (paramsString.startsWith('?') || paramsString.startsWith('&') || paramsString.startsWith('#')) {
                 paramsString = paramsString.substring(1);
@@ -194,19 +192,30 @@ function AppContent() {
               refresh_token: refreshToken
             });
           } catch (err) {
-            console.error("Session set error:", err);
+            console.log("Session set error:", err);
           }
         }
       }
 
-      if (isRecovery) {
-        window.location.hash = '#/reset-password';
-      }
+      // Restore URL and redirect Hash Router to reset-password
+      url.searchParams.delete('code');
+      window.history.replaceState({}, document.title, url.pathname + url.search);
+      window.location.hash = '#/reset-password';
+      setIsRecovering(false);
     };
     
     handleRecovery();
   }, []);
   
+  if (isRecovering) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-white font-heading">جاري التحقق من الرابط...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 font-sans flex flex-col" dir="rtl">
       <AchievementSystem />

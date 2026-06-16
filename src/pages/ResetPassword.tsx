@@ -14,25 +14,41 @@ export default function ResetPassword() {
   const [sessionValid, setSessionValid] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Verify session exists, meaning we are allowed to update the password.
+    // Check initial session
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setSessionValid(true);
-      } else {
-        // Wait a tiny bit just in case supabase is still initializing from hash interception
-        setTimeout(async () => {
-          const { data: { session: retrySession } } = await supabase.auth.getSession();
-          if (retrySession) {
-            setSessionValid(true);
-          } else {
-            setSessionValid(false);
-            setError('رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية. يرجى طلب رابط جديد.');
-          }
-        }, 1000);
       }
     };
+    
     checkSession();
+
+    // Listen for auth state changes (which happens after exchangeCodeForSession completes)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+        if (session) {
+          setSessionValid(true);
+          setError('');
+        }
+      }
+    });
+
+    // Fallback timeout in case no session ever arrives
+    const timeout = setTimeout(() => {
+      setSessionValid((prev) => {
+        if (prev === null) {
+           setError('رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية. يرجى طلب رابط جديد.');
+           return false;
+        }
+        return prev;
+      });
+    }, 4000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
