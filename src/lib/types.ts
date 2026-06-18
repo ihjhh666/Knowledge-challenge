@@ -4,7 +4,7 @@ export interface PublicRoom {
   roomId: string;
   hostName: string;
   category: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' | 'proverbs' | 'logos' | 'sort' | 'famous' | 'emoji';
   playerCount: number;
   maxPlayers: number;
   status: RoomStatus;
@@ -17,6 +17,9 @@ export interface Question {
   text: string;
   options: string[];
   correctAnswer: string;
+  image?: string;
+  famousData?: any;
+  sortingData?: any[];
 }
 
 export interface RoomPlayer {
@@ -48,7 +51,7 @@ export type RoomVisibility = 'public' | 'private' | 'link' | 'password';
 export interface GameState {
   roomId: string;
   category?: string;
-  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken';
+  gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' | 'proverbs' | 'logos' | 'sort' | 'famous' | 'emoji';
   subMode?: string;
   roomVisibility?: RoomVisibility;
   maxPlayers?: number;
@@ -106,6 +109,7 @@ export interface GameState {
   roundStartTime?: number;
   askedQuestions: string[];
   rematchApprovals?: string[];
+  targetScore?: number;
 }
 
 export type PeerMessage = 
@@ -123,7 +127,8 @@ export type PeerMessage =
   | { type: 'KICKED', reason: string }
   | { type: 'MUTE', playerId: string, isMuted: boolean }
   | { type: 'CHANGE_CATEGORY', category: string }
-  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' }
+  | { type: 'CHANGE_TARGET_SCORE', targetScore: number }
+  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' | 'proverbs' | 'logos' | 'sort' | 'famous' | 'emoji' }
   | { type: 'FORCE_NEXT_QUESTION' }
   | { type: 'LEAVE', playerId: string }
   | { type: 'TRANSFER_HOST', playerId: string }

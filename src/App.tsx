@@ -40,6 +40,9 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
+import FamousSolo from './pages/FamousSolo';
+import EmojiGuess from './pages/EmojiGuess';
+
 import { audio } from './lib/audio';
 
 function useGlobalAudio() {
@@ -241,6 +244,8 @@ function AppContent() {
             <Route path="/king-mode" element={<KingMode />} />
             <Route path="/true-false" element={<TrueFalseSolo />} />
             <Route path="/survival" element={<SurvivalSolo />} />
+            <Route path="/famous-solo" element={<FamousSolo />} />
+            <Route path="/emoji-guess" element={<EmojiGuess />} />
             <Route path="/sentence-order" element={<SentenceOrderSolo />} />
             <Route path="/proverbs" element={<ProverbsSolo />} />
             <Route path="/logos" element={<LogoGame />} />

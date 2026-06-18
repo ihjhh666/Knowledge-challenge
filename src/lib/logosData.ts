@@ -189,3 +189,41 @@ export const LOGOS_DATA: LogoItem[] = [
   { id: 'logo_179', name: "Qantas", url: "https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/qantas.svg", category: 'travel' as LogoCategory, difficulty: 3 as 1|2|3 },
   { id: 'logo_175', name: "Air Canada", url: "https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/aircanada.svg", category: 'travel' as LogoCategory, difficulty: 3 as 1|2|3 },
 ];
+
+export function getRandomLogo(seenIds: Set<string>, forceCategory?: LogoCategory | 'all'): { id: string, name: string, image: string, options: string[] } {
+  let pool = LOGOS_DATA;
+  if (forceCategory && forceCategory !== 'all') {
+    pool = pool.filter(l => l.category === forceCategory);
+  }
+  let available = pool.filter(l => !seenIds.has(l.id));
+  if (available.length === 0) available = pool;
+
+  const logo = available[Math.floor(Math.random() * available.length)];
+  
+  // generated options
+  let sameCat = LOGOS_DATA.filter(l => l.category === logo.category && l.id !== logo.id);
+  let otherCat = LOGOS_DATA.filter(l => l.category !== logo.category);
+  const options = [logo.name];
+  
+  for(let i=0; i<2; i++) {
+     if(sameCat.length>0) {
+        const j = Math.floor(Math.random() * sameCat.length);
+        options.push(sameCat[j].name);
+        sameCat.splice(j, 1);
+     }
+  }
+  
+  while(options.length < 4) {
+     const src = sameCat.length > 0 ? sameCat : otherCat;
+     const j = Math.floor(Math.random() * src.length);
+     if (!options.includes(src[j].name)) options.push(src[j].name);
+     src.splice(j, 1);
+  }
+  
+  return {
+    id: logo.id,
+    name: logo.name,
+    image: logo.url,
+    options: options.sort(() => Math.random() - 0.5)
+  };
+}

@@ -467,6 +467,16 @@ export default function Home() {
           ))}
           
           <button
+            onClick={() => navigate('/famous-solo')}
+            className={`bg-gradient-to-br from-amber-500 to-amber-700 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
+          >
+            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
+            <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform">🏆</span>
+            <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">من الأشهر؟</h3>
+          </button>
+          
+          <button
             onClick={() => navigate('/true-false')}
             className={`bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
           >
@@ -474,6 +484,16 @@ export default function Home() {
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
             <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform">✅</span>
             <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">صح أم خطأ</h3>
+          </button>
+          
+          <button
+            onClick={() => navigate('/emoji-guess')}
+            className={`bg-gradient-to-br from-purple-600 to-purple-800 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
+          >
+            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
+            <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform">🧩</span>
+            <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">خمن الإيموجي</h3>
           </button>
         </div>
       </section>

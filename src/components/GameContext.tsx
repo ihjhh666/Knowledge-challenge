@@ -2,6 +2,11 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { GameState, RoomPlayer, ChatMessage, PeerMessage, Question, RoomVisibility } from '../lib/types';
 import { createPeer } from '../lib/peer';
 import { storage } from '../lib/storage';
+import { getRandomLogo } from '../lib/logosData';
+import { generateProverbQuestions } from '../lib/proverbsData';
+import { generateSortingQuestion } from '../lib/sortingData';
+import { generateFamousQuestions } from '../data/famousData';
+import { generateEmojiOptionQuestions } from '../data/emojiData';
 import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBALL, MOVIES_EXPANDED as MOVIES, ANIME_EXPANDED as ANIME, SCI_EXPANDED as SCIENCE, HIST_EXPANDED as HISTORY, ISLAMIC_EXPANDED as ISLAMIC, MATH_EXPANDED as MATH } from '../lib/dynamicQuestions';
 import { audio } from '../lib/audio';
 import { supabaseService } from '../services/supabaseService';
@@ -26,7 +31,7 @@ export interface GameContextType {
   state: GameState | null;
   playerId: string;
   isHost: boolean;
-  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king', subMode?: string) => void;
+  createRoom: (category?: string, roomVisibility?: RoomVisibility, password?: string, maxPlayers?: number, gameMode?: string, subMode?: string) => void;
   joinRoom: (roomId: string, password?: string, onError?: (err: string) => void) => void;
   sendMessage: (text: string) => void;
   toggleReady: () => void;
@@ -36,7 +41,8 @@ export interface GameContextType {
   kickPlayer: (playerId: string) => void;
   mutePlayer: (playerId: string, isMuted: boolean) => void;
   changeCategory: (category: string) => void;
-  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken') => void;
+  changeGameMode: (gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' | 'proverbs' | 'logos' | 'sort' | 'famous' | 'emoji') => void;
+  changeTargetScore: (score: number) => void;
   returnToLobby: () => void;
   requestRematch: () => void;
   forceNextQuestion: () => void;
@@ -968,6 +974,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
            broadcast({ type: 'STATE_UPDATE', state: newState });
         }
         break;
+      case 'CHANGE_TARGET_SCORE':
+        if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
+           const newState = { ...stateRef.current, targetScore: message.targetScore };
+           setState(newState);
+           broadcast({ type: 'STATE_UPDATE', state: newState });
+        }
+        break;
       case 'CHANGE_MODE':
         if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
            const newCat = message.gameMode === 'fishing' ? '🎣 صيد السمك' : message.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : message.gameMode === 'domino' ? '🎲 الدومينو' : message.gameMode === 'hockey' ? '🏒 هوكي' : '🧠 معلومات عامة';
@@ -1541,59 +1554,95 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const startNextRound = (currentState: GameState) => {
     console.log(`[GameContext] START_GAME_TRIGGERED - Generating new question and preparing to broadcast state...`);
     let nextRound = currentState.round + 1;
-    if (nextRound > currentState.totalRounds) {
+    
+    const hasWinner = Object.values(currentState.players).some(p => p.score >= (currentState.targetScore || 100));
+    const isNewMode = ['proverbs', 'logos', 'sort', 'famous', 'emoji'].includes(currentState.gameMode || 'quiz');
+
+    if (isNewMode ? hasWinner : nextRound > currentState.totalRounds) {
        // Game Over
        const newState = { ...currentState, status: 'finished' as const };
        setState(newState);
        broadcast({ type: 'STATE_UPDATE', state: newState });
        
-       // Update Firebase Room Status
        updatePublicRoom(currentState.roomId, { status: 'finished' });
        return;
     }
 
-    let questionsPool = ALL_GAME_QUESTIONS;
-    if (currentState.category === '🧠 معلومات عامة') questionsPool = GENERAL_KNOWLEDGE;
-    else if (currentState.category === '⚽ كرة قدم') questionsPool = FOOTBALL;
-    else if (currentState.category === '📜 تاريخ') questionsPool = HISTORY;
-    else if (currentState.category === '🔬 علوم') questionsPool = SCIENCE;
-    else if (currentState.category === '🎬 أفلام') questionsPool = MOVIES;
-    else if (currentState.category === '🎌 أنمي') questionsPool = ANIME;
-    else if (currentState.category === '🧮 رياضيات') questionsPool = MATH;
+    let qText = '';
+    let qCorrect = '';
+    let qOptions: string[] = [];
+    let qImage: string | undefined = undefined;
+    let qFamousData: any = undefined;
+    let qSortingData: any = undefined;
 
-    // Load global seen history from localStorage to prevent repeats across games
-    let globalSeenQuestions: string[] = [];
-    try {
-      const stored = localStorage.getItem('seenQuestionsHistory');
-      if (stored) globalSeenQuestions = JSON.parse(stored);
-    } catch(e) {}
+    if (currentState.gameMode === 'proverbs') {
+      const q = generateProverbQuestions(new Set(currentState.askedQuestions), 1)[0];
+      qText = q.text;
+      qCorrect = q.correctWord;
+      qOptions = q.options;
+    } else if (currentState.gameMode === 'logos') {
+      const l = getRandomLogo(new Set(currentState.askedQuestions), 'all');
+      qText = `ما هو اسم هذا الشعار؟`;
+      qCorrect = l.name;
+      qOptions = l.options;
+      qImage = l.image;
+    } else if (currentState.gameMode === 'sort') {
+      const sq = generateSortingQuestion();
+      qText = sq.question;
+      qCorrect = sq.items[0].name;
+      qOptions = [];
+      qSortingData = sq.items;
+    } else if (currentState.gameMode === 'famous') {
+      const fq = generateFamousQuestions(new Set(currentState.askedQuestions))[0];
+      qText = `${fq.question} (${fq.unit})`;
+      qCorrect = fq.correct;
+      qOptions = ['A', 'B'];
+      qFamousData = fq;
+    } else if (currentState.gameMode === 'emoji') {
+       const eq = generateEmojiOptionQuestions(1, new Set(currentState.askedQuestions))[0];
+       qText = eq.emojis;
+       qCorrect = eq.correct;
+       qOptions = eq.options;
+    } else {
+      let questionsPool = ALL_GAME_QUESTIONS;
+      if (currentState.category === '🧠 معلومات عامة') questionsPool = GENERAL_KNOWLEDGE;
+      else if (currentState.category === '⚽ كرة قدم') questionsPool = FOOTBALL;
+      else if (currentState.category === '📜 تاريخ') questionsPool = HISTORY;
+      else if (currentState.category === '🔬 علوم') questionsPool = SCIENCE;
+      else if (currentState.category === '🎬 أفلام') questionsPool = MOVIES;
+      else if (currentState.category === '🎌 أنمي') questionsPool = ANIME;
+      else if (currentState.category === '🧮 رياضيات') questionsPool = MATH;
 
-    // Filter out already asked questions, handle pool exhaustion gracefully
-    let availableQuestions = questionsPool.filter(q => !currentState.askedQuestions.includes(q.text));
-    
-    // Also try to filter out global history
-    let unseenAvailable = availableQuestions.filter(q => !globalSeenQuestions.includes(q.text));
-    
-    if (unseenAvailable.length > 0) {
-      availableQuestions = unseenAvailable;
-    } else if (availableQuestions.length === 0) {
-      availableQuestions = questionsPool; // fallback if all were asked completely
+      let globalSeenQuestions: string[] = [];
+      try {
+        const stored = localStorage.getItem('seenQuestionsHistory');
+        if (stored) globalSeenQuestions = JSON.parse(stored);
+      } catch(e) {}
+
+      let availableQuestions = questionsPool.filter(q => !currentState.askedQuestions.includes(q.text));
+      let unseenAvailable = availableQuestions.filter(q => !globalSeenQuestions.includes(q.text));
+      
+      if (unseenAvailable.length > 0) {
+        availableQuestions = unseenAvailable;
+      } else if (availableQuestions.length === 0) {
+        availableQuestions = questionsPool;
+      }
+
+      const q = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+      
+      globalSeenQuestions.push(q.text);
+      if (globalSeenQuestions.length > 2000) {
+        globalSeenQuestions = globalSeenQuestions.slice(globalSeenQuestions.length - 2000);
+      }
+      try {
+        localStorage.setItem('seenQuestionsHistory', JSON.stringify(globalSeenQuestions));
+      } catch(e) {}
+
+      qText = q.text;
+      qCorrect = q.correctAnswer;
+      qOptions = [q.correctAnswer, ...q.wrongOptions].sort(() => Math.random() - 0.5);
     }
 
-    const q = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
-    
-    // Update global history (keep max 2000 questions to avoid filling storage)
-    globalSeenQuestions.push(q.text);
-    if (globalSeenQuestions.length > 2000) {
-      globalSeenQuestions = globalSeenQuestions.slice(globalSeenQuestions.length - 2000);
-    }
-    try {
-      localStorage.setItem('seenQuestionsHistory', JSON.stringify(globalSeenQuestions));
-    } catch(e) {}
-
-    const options = [q.correctAnswer, ...q.wrongOptions].sort(() => Math.random() - 0.5);
-    
-    // reset players
     const updatedPlayers = { ...currentState.players };
     (Object.values(updatedPlayers) as RoomPlayer[]).forEach(p => {
       updatedPlayers[p.id] = { ...p, hasAnsweredCurrentRound: false, lastAnswerSucceeded: false };
@@ -1604,11 +1653,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       status: 'playing',
       round: nextRound,
       roundStartTime: Date.now(),
-      askedQuestions: [...(currentState.askedQuestions || []), q.text],
+      askedQuestions: [...(currentState.askedQuestions || []), qText],
       currentQuestion: {
-        text: q.text,
-        correctAnswer: q.correctAnswer,
-        options
+        text: qText,
+        correctAnswer: qCorrect,
+        options: qOptions,
+        image: qImage,
+        famousData: qFamousData,
+        sortingData: qSortingData
       },
       players: updatedPlayers
     };
@@ -1616,7 +1668,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log(`[GameContext] STATE_UPDATE_SENT - status: playing, question: ${newState.currentQuestion?.text.substring(0, 20)}...`);
     broadcast({ type: 'STATE_UPDATE', state: newState });
     
-    // Optional: send explicit QUESTION_SYNC to guarantee transition
     console.log(`[GameContext] QUESTION_SYNC_SENT - broadcasting individual question update...`);
     broadcast({ type: 'NEW_QUESTION', question: newState.currentQuestion, status: 'playing', round: nextRound, roundStartTime: newState.roundStartTime! });
 
@@ -1651,12 +1702,24 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAllAnswered(newState);
   };
 
-  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' = 'quiz', subMode?: string) => {
+  const createRoom = React.useCallback((category?: string, roomVisibility: RoomVisibility = 'public', password?: string, maxPlayers: number = 10, gameMode: string = 'quiz', subMode?: string) => {
     intentionalLeaveRef.current = false;
     const roomId = `ROOM-${Math.floor(1000 + Math.random() * 9000)}`;
     const myId = `host-${Math.random().toString(36).substr(2, 9)}`;
     const username = storage.getPlayerName() || 'شبح';
-    const roomCategory = gameMode === 'king' ? '👑 طور الملك' : gameMode === 'fishing' ? '🎣 صيد السمك' : gameMode === 'penalty' ? '⚽ ركلات الجزاء' : gameMode === 'domino' ? '🎲 الدومينو' : gameMode === 'hockey' ? (subMode === '2v2' ? '🏒 هوكي 2 ضد 2' : '🏒 هوكي 1 ضد 1') : category || '🧠 معلومات عامة';
+    
+    let roomCategory = category || '🧠 معلومات عامة';
+    if (gameMode === 'king') roomCategory = '👑 طور الملك';
+    else if (gameMode === 'fishing') roomCategory = '🎣 صيد السمك';
+    else if (gameMode === 'penalty') roomCategory = '⚽ ركلات الجزاء';
+    else if (gameMode === 'domino') roomCategory = '🎲 الدومينو';
+    else if (gameMode === 'hockey') roomCategory = subMode === '2v2' ? '🏒 هوكي 2 ضد 2' : '🏒 هوكي 1 ضد 1';
+    else if (gameMode === 'chicken') roomCategory = '🐔 حماية الدجاجات';
+    
+    let targetScore = 1500;
+    if (['proverbs', 'logos', 'sort', 'famous', 'emoji'].includes(gameMode)) {
+      targetScore = 1000;
+    }
     
     setPlayerId(myId);
     setIsHost(true);
@@ -1673,6 +1736,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         roomVisibility,
         maxPlayers,
         password,
+        targetScore,
         status: 'waiting',
         round: 0,
         totalRounds: 10,
@@ -2097,9 +2161,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const changeGameMode = React.useCallback((gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken') => {
+  const changeGameMode = React.useCallback((gameMode: any) => {
     if (isHostRef.current) {
       handleMessage({ type: 'CHANGE_MODE', gameMode });
+    }
+  }, []);
+
+  const changeTargetScore = React.useCallback((targetScore: number) => {
+    if (isHostRef.current) {
+      handleMessage({ type: 'CHANGE_TARGET_SCORE', targetScore });
     }
   }, []);
 
@@ -2224,7 +2294,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [disconnectedPlayer]);
 
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent, sendChickenEvent }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, changeTargetScore, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent, sendChickenEvent }}>
       {children}
       {disconnectedPlayer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

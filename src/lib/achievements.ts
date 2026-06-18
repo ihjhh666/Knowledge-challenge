@@ -44,6 +44,14 @@ export interface PlayerStats {
   sortCorrectAnswers?: number;
   sortBestStreak?: number;
   sortHighScore?: number;
+  famousRoundsPlayed?: number;
+  famousCorrectAnswers?: number;
+  famousBestStreak?: number;
+  famousHighScore?: number;
+  emojiRoundsPlayed?: number;
+  emojiCorrectAnswers?: number;
+  emojiBestStreak?: number;
+  emojiHighScore?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -179,6 +187,108 @@ export const ACHIEVEMENTS: Achievement[] = [
     targetMax: 100,
     condition: (s) => (s.tfRoundsPlayed || 0) >= 100,
     getProgress: (s) => s.tfRoundsPlayed || 0,
+  },
+  // --- من الأشهر؟ ---
+  {
+    id: 'famous_first_play',
+    title: 'مقياس الشهرة',
+    description: 'إلعب أول جولة لك في طور من الأشهر؟',
+    rarity: 'common',
+    icon: Star,
+    targetMax: 1,
+    condition: (s) => (s.famousRoundsPlayed || 0) >= 1,
+    getProgress: (s) => s.famousRoundsPlayed || 0,
+  },
+  {
+    id: 'famous_10_correct',
+    title: 'متابع جيد',
+    description: 'أجب عن 10 أسئلة بشكل صحيح',
+    rarity: 'common',
+    icon: Target,
+    targetMax: 10,
+    condition: (s) => (s.famousCorrectAnswers || 0) >= 10,
+    getProgress: (s) => Math.min(s.famousCorrectAnswers || 0, 10),
+  },
+  {
+    id: 'famous_50_correct',
+    title: 'خبير إحصائيات',
+    description: 'أجب عن 50 سؤال بشكل صحيح',
+    rarity: 'medium',
+    icon: Medal,
+    targetMax: 50,
+    condition: (s) => (s.famousCorrectAnswers || 0) >= 50,
+    getProgress: (s) => Math.min(s.famousCorrectAnswers || 0, 50),
+  },
+  {
+    id: 'famous_100_correct',
+    title: 'موسوعة عالمية',
+    description: 'أجب عن 100 سؤال بشكل صحيح',
+    rarity: 'rare',
+    icon: Crown,
+    targetMax: 100,
+    condition: (s) => (s.famousCorrectAnswers || 0) >= 100,
+    getProgress: (s) => Math.min(s.famousCorrectAnswers || 0, 100),
+  },
+  {
+    id: 'famous_20_streak',
+    title: 'إحساس النجومية',
+    description: 'حقق سلسلة 20 إجابة صحيحة متتالية',
+    rarity: 'legendary',
+    icon: Zap,
+    targetMax: 20,
+    condition: (s) => (s.famousBestStreak || 0) >= 20,
+    getProgress: (s) => Math.min(s.famousBestStreak || 0, 20),
+  },
+  // --- خمن الكلمة من الإيموجي ---
+  {
+    id: 'emoji_first_play',
+    title: 'مفكك الرموز',
+    description: 'إلعب أول جولة لك في طور خمن الإيموجي',
+    rarity: 'common',
+    icon: Star,
+    targetMax: 1,
+    condition: (s) => (s.emojiRoundsPlayed || 0) >= 1,
+    getProgress: (s) => s.emojiRoundsPlayed || 0,
+  },
+  {
+    id: 'emoji_10_correct',
+    title: 'مبتدئ الرموز',
+    description: 'أجب عن 10 إيموجيات بشكل صحيح',
+    rarity: 'common',
+    icon: Target,
+    targetMax: 10,
+    condition: (s) => (s.emojiCorrectAnswers || 0) >= 10,
+    getProgress: (s) => Math.min(s.emojiCorrectAnswers || 0, 10),
+  },
+  {
+    id: 'emoji_50_correct',
+    title: 'مترجم الإيموجي',
+    description: 'أجب عن 50 إيموجي بشكل صحيح',
+    rarity: 'medium',
+    icon: Medal,
+    targetMax: 50,
+    condition: (s) => (s.emojiCorrectAnswers || 0) >= 50,
+    getProgress: (s) => Math.min(s.emojiCorrectAnswers || 0, 50),
+  },
+  {
+    id: 'emoji_100_correct',
+    title: 'أسطورة الرموز',
+    description: 'أجب عن 100 إيموجي بشكل صحيح',
+    rarity: 'rare',
+    icon: Crown,
+    targetMax: 100,
+    condition: (s) => (s.emojiCorrectAnswers || 0) >= 100,
+    getProgress: (s) => Math.min(s.emojiCorrectAnswers || 0, 100),
+  },
+  {
+    id: 'emoji_20_streak',
+    title: 'تخاطر ذهني',
+    description: 'حقق سلسلة 20 إجابة صحيحة متتالية',
+    rarity: 'legendary',
+    icon: Zap,
+    targetMax: 20,
+    condition: (s) => (s.emojiBestStreak || 0) >= 20,
+    getProgress: (s) => Math.min(s.emojiBestStreak || 0, 20),
   },
   // --- العادية (Common) ---
   {

@@ -11,6 +11,11 @@ import HockeyRoom from './HockeyRoom';
 import Hockey2v2Room from './Hockey2v2Room';
 import KingModeRoom from './KingModeRoom';
 import ChickenRoom from './ChickenRoom';
+import FamousRoom from './FamousRoom';
+import EmojiRoom from './EmojiRoom';
+import LogosRoom from './LogosRoom';
+import ProverbsRoom from './ProverbsRoom';
+import SortRoom from './SortRoom';
 import Chat from './Chat';
 import { LogOut, Users, Lock, UserPlus, Settings } from 'lucide-react';
 import { FriendsSidebar } from '../components/FriendsSidebar';
@@ -201,7 +206,7 @@ export default function Room() {
       <div className="flex-1 grid lg:grid-cols-3 gap-8 pb-8 items-start">
         <div className="lg:col-span-2 space-y-6">
           {state.status === 'waiting' && <Lobby />}
-          {state.status !== 'waiting' && state.gameMode !== 'fishing' && state.gameMode !== 'penalty' && state.gameMode !== 'domino' && state.gameMode !== 'hockey' && state.gameMode !== 'king' && state.gameMode !== 'chicken' && <PlayingField />}
+          {state.status !== 'waiting' && (!state.gameMode || state.gameMode === 'quiz') && <PlayingField />}
           {state.status !== 'waiting' && state.gameMode === 'fishing' && <FishingRoom />}
           {state.status !== 'waiting' && state.gameMode === 'penalty' && <PenaltyRoom />}
           {state.status !== 'waiting' && state.gameMode === 'domino' && <DominoRoom />}
@@ -209,6 +214,11 @@ export default function Room() {
           {state.status !== 'waiting' && state.gameMode === 'hockey' && state.hockeyState?.is2v2 && <Hockey2v2Room />}
           {state.status !== 'waiting' && state.gameMode === 'king' && <KingModeRoom />}
           {state.status !== 'waiting' && state.gameMode === 'chicken' && <ChickenRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'famous' && <FamousRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'emoji' && <EmojiRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'logos' && <LogosRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'proverbs' && <ProverbsRoom />}
+          {state.status !== 'waiting' && state.gameMode === 'sort' && <SortRoom />}
         </div>
         
         <div className="h-[500px] lg:h-[calc(100vh-160px)] lg:sticky lg:top-8 flex flex-col">

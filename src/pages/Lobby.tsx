@@ -15,7 +15,7 @@ const CATEGORIES = [
 ];
 
 export default function Lobby() {
-      const { state, toggleReady, playerId, isHost, startGame, kickPlayer, mutePlayer, changeCategory, changeGameMode, transferHost, sendHockeyEvent } = useGame();
+      const { state, toggleReady, playerId, isHost, startGame, kickPlayer, mutePlayer, changeCategory, changeGameMode, changeTargetScore, transferHost, sendHockeyEvent } = useGame();
   const [showSettings, setShowSettings] = useState(false);
 
   if (!state) return null;
@@ -98,6 +98,11 @@ export default function Lobby() {
               className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none"
             >
               <option value="quiz">🧠 تحدي المعرفة</option>
+              <option value="proverbs">📝 أكمل المثل</option>
+              <option value="logos">🏷️ خمن الشعار</option>
+              <option value="sort">📏 رتب الأشياء</option>
+              <option value="famous">🏆 من الأشهر؟</option>
+              <option value="emoji">🧩 خمن الإيموجي</option>
               <option value="fishing">🎣 صيد السمك</option>
               <option value="penalty">⚽ ركلات الجزاء</option>
               <option value="domino">🎲 الدومينو (1 ضد 1)</option>
@@ -119,6 +124,24 @@ export default function Lobby() {
                 {CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
+              </select>
+            </div>
+          )}
+
+          {(!state.gameMode || ['quiz', 'proverbs', 'logos', 'sort', 'famous', 'emoji'].includes(state.gameMode)) && (
+            <div>
+              <label className="block text-slate-400 text-sm mb-2">الهدف (نقاط الفوز)</label>
+              <select 
+                value={state.targetScore || 100}
+                onChange={(e) => {
+                  try { changeTargetScore(Number(e.target.value)) } catch(e){}
+                }}
+                className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none"
+              >
+                <option value={50}>50 نقطة</option>
+                <option value={100}>100 نقطة</option>
+                <option value={150}>150 نقطة</option>
+                <option value={200}>200 نقطة</option>
               </select>
             </div>
           )}
