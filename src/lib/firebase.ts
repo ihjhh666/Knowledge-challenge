@@ -293,9 +293,9 @@ export const subscribeToPublicRooms = (callback: (rooms: PublicRoom[], stats?: {
   }
   console.log("Subscribing to Firestore 'rooms' collection...");
   const roomsRef = collection(db, 'rooms');
+  const q = query(roomsRef, orderBy('lastActiveAt', 'desc'), limit(50));
   
-  // Use a query without filters to debug what is actually returning
-  const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
+  const unsubscribe = onSnapshot(q, (snapshot) => {
     const rooms: PublicRoom[] = [];
     snapshot.forEach(doc => {
       rooms.push({ ...doc.data(), roomId: doc.id } as PublicRoom);

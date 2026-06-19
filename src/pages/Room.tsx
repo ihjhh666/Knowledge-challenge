@@ -1,26 +1,27 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useGame } from '../components/GameContext';
 import { useAuth } from '../components/AuthContext';
 import Lobby from './Lobby';
-import PlayingField from './PlayingField';
-import FishingRoom from './FishingRoom';
-import PenaltyRoom from './PenaltyRoom';
-import DominoRoom from './DominoRoom';
-import HockeyRoom from './HockeyRoom';
-import Hockey2v2Room from './Hockey2v2Room';
-import KingModeRoom from './KingModeRoom';
-import ChickenRoom from './ChickenRoom';
-import FamousRoom from './FamousRoom';
-import EmojiRoom from './EmojiRoom';
-import LogosRoom from './LogosRoom';
-import ProverbsRoom from './ProverbsRoom';
-import SortRoom from './SortRoom';
 import Chat from './Chat';
 import { LogOut, Users, Lock, UserPlus, Settings } from 'lucide-react';
 import { FriendsSidebar } from '../components/FriendsSidebar';
 import { subscribeToFriends } from '../lib/firebase';
 import { storage } from '../lib/storage';
+
+const PlayingField = lazy(() => import('./PlayingField'));
+const FishingRoom = lazy(() => import('./FishingRoom'));
+const PenaltyRoom = lazy(() => import('./PenaltyRoom'));
+const DominoRoom = lazy(() => import('./DominoRoom'));
+const HockeyRoom = lazy(() => import('./HockeyRoom'));
+const Hockey2v2Room = lazy(() => import('./Hockey2v2Room'));
+const KingModeRoom = lazy(() => import('./KingModeRoom'));
+const ChickenRoom = lazy(() => import('./ChickenRoom'));
+const FamousRoom = lazy(() => import('./FamousRoom'));
+const EmojiRoom = lazy(() => import('./EmojiRoom'));
+const LogosRoom = lazy(() => import('./LogosRoom'));
+const ProverbsRoom = lazy(() => import('./ProverbsRoom'));
+const SortRoom = lazy(() => import('./SortRoom'));
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -205,20 +206,22 @@ export default function Room() {
 
       <div className="flex-1 grid lg:grid-cols-3 gap-8 pb-8 items-start">
         <div className="lg:col-span-2 space-y-6">
-          {state.status === 'waiting' && <Lobby />}
-          {state.status !== 'waiting' && (!state.gameMode || state.gameMode === 'quiz') && <PlayingField />}
-          {state.status !== 'waiting' && state.gameMode === 'fishing' && <FishingRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'penalty' && <PenaltyRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'domino' && <DominoRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'hockey' && !state.hockeyState?.is2v2 && <HockeyRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'hockey' && state.hockeyState?.is2v2 && <Hockey2v2Room />}
-          {state.status !== 'waiting' && state.gameMode === 'king' && <KingModeRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'chicken' && <ChickenRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'famous' && <FamousRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'emoji' && <EmojiRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'logos' && <LogosRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'proverbs' && <ProverbsRoom />}
-          {state.status !== 'waiting' && state.gameMode === 'sort' && <SortRoom />}
+          <Suspense fallback={<div className="h-64 flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+            {state.status === 'waiting' && <Lobby />}
+            {state.status !== 'waiting' && (!state.gameMode || state.gameMode === 'quiz') && <PlayingField />}
+            {state.status !== 'waiting' && state.gameMode === 'fishing' && <FishingRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'penalty' && <PenaltyRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'domino' && <DominoRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'hockey' && !state.hockeyState?.is2v2 && <HockeyRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'hockey' && state.hockeyState?.is2v2 && <Hockey2v2Room />}
+            {state.status !== 'waiting' && state.gameMode === 'king' && <KingModeRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'chicken' && <ChickenRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'famous' && <FamousRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'emoji' && <EmojiRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'logos' && <LogosRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'proverbs' && <ProverbsRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'sort' && <SortRoom />}
+          </Suspense>
         </div>
         
         <div className="h-[500px] lg:h-[calc(100vh-160px)] lg:sticky lg:top-8 flex flex-col">

@@ -3,23 +3,29 @@ import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
 import { useAuth } from '../components/AuthContext';
-import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell, Crown, Newspaper } from 'lucide-react';
+import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell, Crown, Newspaper, HelpCircle, Shield, Edit3, ListOrdered } from 'lucide-react';
 import { subscribeToFriends } from '../lib/firebase';
 import { supabaseService } from '../services/supabaseService';
 import { RoomVisibility, PublicRoom } from '../lib/types';
 import { FriendsSidebar } from '../components/FriendsSidebar';
 import { supabase } from '../lib/supabase';
+import { GameCard, GameCardTheme } from '../components/GameCard';
 
 import { CATEGORIES as SOLO_CATEGORIES } from './SoloPlay';
 
 const ROOM_CATEGORIES = [
-  { id: '🧠 معلومات عامة', name: 'معلومات عامة', icon: Brain, color: 'text-violet-400', bg: 'bg-violet-500/20' },
-  { id: '⚽ كرة قدم', name: 'كرة قدم', icon: Trophy, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
-  { id: '📜 تاريخ', name: 'تاريخ', icon: BookOpen, color: 'text-amber-400', bg: 'bg-amber-500/20' },
-  { id: '🔬 علوم', name: 'علوم', icon: FlaskConical, color: 'text-cyan-400', bg: 'bg-cyan-500/20' },
-  { id: '🎬 أفلام', name: 'أفلام', icon: Film, color: 'text-rose-400', bg: 'bg-rose-500/20' },
-  { id: '🎌 أنمي', name: 'أنمي', icon: PlayCircle, color: 'text-orange-400', bg: 'bg-orange-500/20' },
-  { id: '🧮 رياضيات', name: 'رياضيات', icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+  { id: '🧠 معلومات عامة', name: 'معلومات عامة', icon: <Brain className="w-5 h-5"/>, themeStyle: 'quiz', primaryColor: 'from-indigo-600 to-indigo-900', glowColor: '#6366f1' },
+  { id: '⚽ كرة قدم', name: 'كرة قدم', icon: '⚽', themeStyle: 'football', primaryColor: 'from-emerald-600 to-green-900', glowColor: '#10b981' },
+  { id: '📜 تاريخ', name: 'تاريخ', icon: <BookOpen className="w-5 h-5"/>, themeStyle: 'history', primaryColor: 'from-amber-700 to-stone-900', glowColor: '#d97706' },
+  { id: '🔬 علوم', name: 'علوم', icon: <FlaskConical className="w-5 h-5"/>, themeStyle: 'science', primaryColor: 'from-teal-600 to-cyan-900', glowColor: '#0d9488' },
+  { id: '🎬 أفلام', name: 'أفلام', icon: <Film className="w-5 h-5"/>, themeStyle: 'movies', primaryColor: 'from-rose-600 to-red-900', glowColor: '#e11d48' },
+  { id: '🎌 أنمي', name: 'أنمي', icon: '🎌', themeStyle: 'anime', primaryColor: 'from-red-500 to-orange-800', glowColor: '#ef4444' },
+  { id: '🧮 رياضيات', name: 'رياضيات', icon: <BookOpen className="w-5 h-5"/>, themeStyle: 'math', primaryColor: 'from-blue-600 to-indigo-900', glowColor: '#2563eb' },
+  { id: '🏆 من الأشهر؟', name: 'من الأشهر؟', icon: '🏆', themeStyle: 'famous', primaryColor: 'from-rose-950 to-amber-900', glowColor: '#d97706' },
+  { id: '🧩 خمن الإيموجي', name: 'خمن الإيموجي', icon: '🧩', themeStyle: 'emoji', primaryColor: 'from-fuchsia-600 to-purple-900', glowColor: '#d946ef' },
+  { id: '🏷️ خمن الشعار', name: 'خمن الشعار', icon: '🏷️', themeStyle: 'logos', primaryColor: 'from-slate-700 to-zinc-900', glowColor: '#64748b' },
+  { id: '📝 أكمل المثل', name: 'أكمل المثل', icon: '🏺', themeStyle: 'proverbs', primaryColor: 'from-amber-700 to-amber-900', glowColor: '#d97706' },
+  { id: '📏 رتب الأشياء', name: 'رتب الأشياء', icon: '📊', themeStyle: 'sort', primaryColor: 'from-teal-600 to-emerald-800', glowColor: '#0d9488' },
 ];
 
 export default function Home() {
@@ -123,7 +129,15 @@ export default function Home() {
 
   const handleCreateRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    createRoom(createConfig.gameMode === 'fishing' ? '🎣 صيد السمك' : createConfig.category, createConfig.type, createConfig.password, createConfig.maxPlayers, createConfig.gameMode, createConfig.hockeySubMode);
+    let computedGameMode = createConfig.gameMode;
+    if (computedGameMode === 'quiz') {
+      if (createConfig.category === '🏆 من الأشهر؟') computedGameMode = 'famous';
+      else if (createConfig.category === '🧩 خمن الإيموجي') computedGameMode = 'emoji';
+      else if (createConfig.category === '🏷️ خمن الشعار') computedGameMode = 'logos';
+      else if (createConfig.category === '📝 أكمل المثل') computedGameMode = 'proverbs';
+      else if (createConfig.category === '📏 رتب الأشياء') computedGameMode = 'sort';
+    }
+    createRoom(createConfig.gameMode === 'fishing' ? '🎣 صيد السمك' : createConfig.category, createConfig.type, createConfig.password, createConfig.maxPlayers, computedGameMode, createConfig.hockeySubMode);
   };
 
   const handleJoinRoom = (e: React.FormEvent) => {
@@ -191,62 +205,13 @@ export default function Home() {
             <div>
               <label className="block text-slate-400 mb-3 font-bold">نمط اللعب</label>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken') ? 10 : createConfig.maxPlayers})}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'quiz' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                >
-                  <Brain className="w-6 h-6 text-indigo-400" />
-                  <span className="text-sm font-bold text-slate-200 text-center">تحدي المعرفة</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: (createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken') ? 10 : createConfig.maxPlayers})}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'fishing' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                >
-                  <div className="text-2xl">🎣</div>
-                  <span className="text-sm font-bold text-slate-200 text-center">صيد السمك</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'penalty', maxPlayers: 2})}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'penalty' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                >
-                  <Goal className="w-6 h-6 text-emerald-400" />
-                  <span className="text-sm font-bold text-slate-200 text-center">ركلات الجزاء</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'domino', maxPlayers: 2})}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'domino' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                >
-                  <div className="text-2xl">🎲</div>
-                  <span className="text-sm font-bold text-slate-200 text-center">الدومينو</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'hockey', maxPlayers: 2})}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'hockey' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                >
-                  <div className="text-2xl">🏒</div>
-                  <span className="text-sm font-bold text-slate-200 text-center">الهوكي</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'king', maxPlayers: 4})}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'king' ? 'border-amber-500 bg-amber-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                >
-                  <div className="text-2xl">👑</div>
-                  <span className="text-sm font-bold text-slate-200 text-center">التاج</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateConfig({...createConfig, gameMode: 'chicken', maxPlayers: 6})}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.gameMode === 'chicken' ? 'border-lime-500 bg-lime-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                >
-                  <div className="text-2xl">🐔</div>
-                  <span className="text-sm font-bold text-slate-200 text-center">سباق الدجاج</span>
-                </button>
+                <GameCard compact className={createConfig.gameMode === 'quiz' ? 'ring-2 ring-indigo-500' : 'opacity-80'} card={{ id: 'quiz', title: 'تحدي المعرفة', icon: <Brain className="w-6 h-6" />, themeStyle: 'quiz', primaryColor: 'from-indigo-600 to-indigo-900', glowColor: '#4f46e5', onClick: () => setCreateConfig({...createConfig, gameMode: 'quiz', maxPlayers: 10}) }} />
+                <GameCard compact className={createConfig.gameMode === 'fishing' ? 'ring-2 ring-sky-500' : 'opacity-80'} card={{ id: 'fishing', title: 'صيد السمك', icon: '🎣', themeStyle: 'fishing', primaryColor: 'from-cyan-600 to-blue-900', glowColor: '#0ea5e9', onClick: () => setCreateConfig({...createConfig, gameMode: 'fishing', maxPlayers: 10}) }} />
+                <GameCard compact className={createConfig.gameMode === 'penalty' ? 'ring-2 ring-emerald-500' : 'opacity-80'} card={{ id: 'penalty', title: 'ركلات الجزاء', icon: '⚽', themeStyle: 'penalty', primaryColor: 'from-emerald-600 to-teal-900', glowColor: '#10b981', onClick: () => setCreateConfig({...createConfig, gameMode: 'penalty', maxPlayers: 2}) }} />
+                <GameCard compact className={createConfig.gameMode === 'domino' ? 'ring-2 ring-violet-500' : 'opacity-80'} card={{ id: 'domino', title: 'الدومينو', icon: '🎲', themeStyle: 'domino', primaryColor: 'from-neutral-700 to-stone-900', glowColor: '#8b5cf6', onClick: () => setCreateConfig({...createConfig, gameMode: 'domino', maxPlayers: 2}) }} />
+                <GameCard compact className={createConfig.gameMode === 'hockey' ? 'ring-2 ring-blue-500' : 'opacity-80'} card={{ id: 'hockey', title: 'الهوكي', icon: '🏒', themeStyle: 'hockey', primaryColor: 'from-sky-500 to-blue-900', glowColor: '#3b82f6', onClick: () => setCreateConfig({...createConfig, gameMode: 'hockey', maxPlayers: 2}) }} />
+                <GameCard compact className={createConfig.gameMode === 'king' ? 'ring-2 ring-amber-500' : 'opacity-80'} card={{ id: 'king', title: 'التاج', icon: '👑', themeStyle: 'king', primaryColor: 'from-purple-700 to-amber-700', glowColor: '#f59e0b', onClick: () => setCreateConfig({...createConfig, gameMode: 'king', maxPlayers: 4}) }} />
+                <GameCard compact className={createConfig.gameMode === 'chicken' ? 'ring-2 ring-lime-500' : 'opacity-80'} card={{ id: 'chicken', title: 'سباق الدجاج', icon: '🐔', themeStyle: 'chicken', primaryColor: 'from-orange-500 to-yellow-600', glowColor: '#84cc16', onClick: () => setCreateConfig({...createConfig, gameMode: 'chicken', maxPlayers: 6}) }} />
               </div>
             </div>
 
@@ -255,15 +220,20 @@ export default function Home() {
                 <label className="block text-slate-400 mb-3 font-bold">تصنيف الغرفة</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {ROOM_CATEGORIES.map((cat) => (
-                    <button
-                      type="button"
-                      key={cat.id}
-                      onClick={() => setCreateConfig({...createConfig, category: cat.id})}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${createConfig.category === cat.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 hover:border-slate-600'}`}
-                    >
-                      <cat.icon className={`w-6 h-6 ${cat.color}`} />
-                      <span className="text-sm font-bold text-slate-200">{cat.name}</span>
-                    </button>
+                    <GameCard 
+                      key={cat.id} 
+                      compact 
+                      className={createConfig.category === cat.id ? 'ring-2 ring-indigo-500' : 'opacity-80'} 
+                      card={{ 
+                        id: cat.id, 
+                        title: cat.name, 
+                        icon: cat.icon, 
+                        themeStyle: cat.themeStyle, 
+                        primaryColor: cat.primaryColor, 
+                        glowColor: cat.glowColor, 
+                        onClick: () => setCreateConfig({...createConfig, category: cat.id}) 
+                      }} 
+                    />
                   ))}
                 </div>
               </div>
@@ -441,60 +411,69 @@ export default function Home() {
           </div>
           <h2 className="text-3xl font-bold font-heading text-white tracking-wide">قسم ألعاب الأسئلة</h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          <button
-            onClick={() => navigate('/survival')}
-            className={`bg-gradient-to-br from-rose-600 to-rose-900 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
-          >
-            <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
-            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
-            <div className="absolute -left-4 -top-4 w-24 h-24 bg-rose-500/30 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
-            <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform animate-pulse">🔥</span>
-            <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">طور البقاء</h3>
-          </button>
+        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <GameCard
+            card={{
+              id: 'survival',
+              title: 'طور البقاء',
+              icon: '🔥',
+              themeStyle: 'survival',
+              primaryColor: 'from-orange-600 to-red-900',
+              glowColor: '#ea580c',
+              onClick: () => navigate('/survival')
+            }}
+          />
 
           {SOLO_CATEGORIES.map(cat => (
-            <button
+            <GameCard
               key={cat.id}
-              onClick={() => navigate('/solo', { state: { categoryId: cat.id } })}
-              className={`bg-gradient-to-br ${cat.color} p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
-            >
-              <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
-              <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform">{cat.icon}</span>
-              <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">{cat.name}</h3>
-            </button>
+              card={{
+                id: cat.id,
+                title: cat.name,
+                icon: cat.icon,
+                themeStyle: cat.themeStyle,
+                primaryColor: cat.color,
+                glowColor: cat.glowColor,
+                onClick: () => navigate('/solo', { state: { categoryId: cat.id } })
+              }}
+            />
           ))}
           
-          <button
-            onClick={() => navigate('/famous-solo')}
-            className={`bg-gradient-to-br from-amber-500 to-amber-700 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
-          >
-            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
-            <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform">🏆</span>
-            <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">من الأشهر؟</h3>
-          </button>
+          <GameCard
+            card={{
+              id: 'famous',
+              title: 'من الأشهر؟',
+              icon: '🏆',
+              themeStyle: 'famous',
+              primaryColor: 'from-amber-600 to-amber-900',
+              glowColor: '#d97706',
+              onClick: () => navigate('/famous-solo')
+            }}
+          />
           
-          <button
-            onClick={() => navigate('/true-false')}
-            className={`bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
-          >
-            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
-            <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform">✅</span>
-            <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">صح أم خطأ</h3>
-          </button>
+          <GameCard
+            card={{
+              id: 'truefalse',
+              title: 'صح أم خطأ',
+              icon: '✅',
+              themeStyle: 'truefalse',
+              primaryColor: 'from-emerald-600 to-emerald-900',
+              glowColor: '#10b981',
+              onClick: () => navigate('/true-false')
+            }}
+          />
           
-          <button
-            onClick={() => navigate('/emoji-guess')}
-            className={`bg-gradient-to-br from-purple-600 to-purple-800 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 shadow-lg flex flex-col items-center justify-center text-center`}
-          >
-            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
-            <span className="text-4xl md:text-5xl mb-4 block relative z-10 drop-shadow-md group-hover:scale-110 transition-transform">🧩</span>
-            <h3 className="font-bold font-heading text-white relative z-10 text-lg md:text-xl drop-shadow-md">خمن الإيموجي</h3>
-          </button>
+          <GameCard
+            card={{
+              id: 'emoji',
+              title: 'خمن الإيموجي',
+              icon: '🧩',
+              themeStyle: 'emoji',
+              primaryColor: 'from-fuchsia-600 to-purple-900',
+              glowColor: '#d946ef',
+              onClick: () => navigate('/emoji-guess')
+            }}
+          />
         </div>
       </section>
 
@@ -508,92 +487,84 @@ export default function Home() {
           </div>
           <h2 className="text-3xl font-bold font-heading text-white tracking-wide">قسم الألعاب</h2>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div 
-            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-sky-500/50 hover:bg-slate-800/80 transition-all duration-300 cursor-pointer group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-sky-500/20" 
-            onClick={() => navigate('/fishing')}
-          >
-             <div className="bg-sky-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-sky-500/20 transition-all duration-300">
-                <Waves className="w-12 h-12 text-sky-400 drop-shadow-md" />
-             </div>
-             <h3 className="text-2xl font-bold font-heading text-white mb-3">صيد السمك</h3>
-             <p className="text-slate-400 text-sm mb-8 leading-relaxed">استمتع بوقتك في الصيد الفردي. اصطد أسماكاً نادرة وقم بجمع النقاط وحطم الأرقام القياسية.</p>
-             <span className="mt-auto bg-sky-500/10 text-sky-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-sky-500/20 group-hover:bg-sky-500 group-hover:text-white transition-colors">إلعب الآن</span>
-          </div>
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <GameCard
+            card={{
+              id: 'fishing',
+              title: 'صيد السمك',
+              subtitle: 'اصطد أسماكاً نادرة واجمع النقاط',
+              icon: <Waves className="w-8 h-8" />,
+              themeStyle: 'fishing',
+              primaryColor: 'from-cyan-600 to-blue-900',
+              glowColor: '#0ea5e9',
+              onClick: () => navigate('/fishing')
+            }}
+          />
           
-          <div 
-            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-emerald-500/50 hover:bg-slate-800/80 transition-all duration-300 cursor-pointer group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-emerald-500/20" 
-            onClick={() => navigate('/penalty')}
-          >
-             <div className="bg-emerald-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all duration-300">
-                <Goal className="w-12 h-12 text-emerald-400 drop-shadow-md" />
-             </div>
-             <h3 className="text-2xl font-bold font-heading text-white mb-3">ركلات الجزاء</h3>
-             <p className="text-slate-400 text-sm mb-8 leading-relaxed">تحدَّ الحارس وسدد الركلات وتصدى لتسديدات الخصم في مباراة مثيرة تحبس الأنفاس.</p>
-             <span className="mt-auto bg-emerald-500/10 text-emerald-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-colors">إلعب الآن</span>
-          </div>
+          <GameCard
+            card={{
+              id: 'penalty',
+              title: 'ركلات الجزاء',
+              subtitle: 'تحدَّ الحارس وسدد الركلات',
+              icon: <Goal className="w-8 h-8" />,
+              themeStyle: 'penalty',
+              primaryColor: 'from-emerald-600 to-teal-900',
+              glowColor: '#10b981',
+              onClick: () => navigate('/penalty')
+            }}
+          />
           
-          <div 
-            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-violet-500/50 hover:bg-slate-800/80 transition-all duration-300 cursor-pointer group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-violet-500/20" 
-            onClick={() => navigate('/domino')}
-          >
-             <div className="bg-violet-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-violet-500/20 transition-all duration-300">
-                <LayoutGrid className="w-12 h-12 text-violet-400 drop-shadow-md" />
-             </div>
-             <h3 className="text-2xl font-bold font-heading text-white mb-3">الدومينو</h3>
-             <p className="text-slate-400 text-sm mb-8 leading-relaxed">العب لعبة الدومينو الكلاسيكية ضد الذكاء الاصطناعي وضع استراتيجيتك واهزم خصومك.</p>
-             <span className="mt-auto bg-violet-500/10 text-violet-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-violet-500/20 group-hover:bg-violet-500 group-hover:text-white transition-colors">إلعب الآن</span>
-          </div>
+          <GameCard
+            card={{
+              id: 'domino',
+              title: 'الدومينو',
+              subtitle: 'العب لعبة الدومينو الكلاسيكية',
+              icon: <LayoutGrid className="w-8 h-8" />,
+              themeStyle: 'domino',
+              primaryColor: 'from-neutral-700 to-stone-900',
+              glowColor: '#8b5cf6',
+              onClick: () => navigate('/domino')
+            }}
+          />
 
-          <div 
-            className="bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-blue-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-blue-500/20" 
-          >
-             <div className="bg-blue-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-300">
-                <div className="text-5xl drop-shadow-md">🏒</div>
-             </div>
-             <h3 className="text-2xl font-bold font-heading text-white mb-3">الهوكي</h3>
-             <p className="text-slate-400 text-sm mb-6 leading-relaxed">لعبة الهوكي الفردية ضد الذكاء الاصطناعي، سجل 10 أهداف لتفوز.</p>
-             <div className="w-full grid grid-cols-2 gap-3 mt-auto">
-                <button 
-                  onClick={() => navigate('/hockey-solo?mode=1v1')}
-                  className="bg-blue-500/10 text-blue-400 font-bold px-4 py-2.5 rounded-xl text-sm border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-colors"
-                >
-                  1 ضد 1
-                </button>
-                <button 
-                  onClick={() => navigate('/hockey-solo?mode=2v2')}
-                  className="bg-sky-500/10 text-sky-400 font-bold px-4 py-2.5 rounded-xl text-sm border border-sky-500/20 hover:bg-sky-500 hover:text-white transition-colors"
-                >
-                  2 ضد 2
-                </button>
-             </div>
-          </div>
+          <GameCard
+            card={{
+              id: 'hockey',
+              title: 'الهوكي',
+              subtitle: 'لعبة الهوكي الفردية ضد الذكاء الاصطناعي',
+              icon: '🏒',
+              themeStyle: 'hockey',
+              primaryColor: 'from-sky-500 to-blue-900',
+              glowColor: '#3b82f6',
+              onClick: () => navigate('/hockey-solo?mode=1v1')
+            }}
+          />
 
-          <div 
-            onClick={() => navigate('/king-mode')}
-            className="cursor-pointer bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-amber-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-amber-500/20" 
-          >
-             <div className="bg-amber-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
-                <Crown className="w-12 h-12 text-amber-500 drop-shadow-md" />
-             </div>
-             <h3 className="text-2xl font-bold font-heading text-white mb-3">طور الملك</h3>
-             <p className="text-slate-400 text-sm mb-6 leading-relaxed">التقط التاج الذهبي وحافظ عليه لتجميع النقاط وتصبح الملك!</p>
-             <span className="mt-auto bg-amber-500/10 text-amber-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-colors">إلعب الآن</span>
-          </div>
+          <GameCard
+            card={{
+              id: 'king',
+              title: 'طور الملك',
+              subtitle: 'التقط التاج الذهبي وحافظ عليه',
+              icon: <Crown className="w-8 h-8" />,
+              themeStyle: 'king',
+              primaryColor: 'from-purple-700 to-amber-700',
+              glowColor: '#f59e0b',
+              onClick: () => navigate('/king-mode')
+            }}
+          />
 
-          <div 
-            onClick={() => navigate('/chicken-solo')}
-            className="cursor-pointer bg-slate-900 border border-slate-800 p-8 rounded-3xl hover:border-lime-500/50 hover:bg-slate-800/80 transition-all duration-300 group flex flex-col items-center text-center shadow-xl hover:-translate-y-2 hover:shadow-lime-500/20" 
-          >
-             <div className="bg-lime-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 group-hover:bg-lime-500/20 transition-all duration-300">
-                <div className="text-5xl drop-shadow-md">🐔</div>
-             </div>
-             <h3 className="text-2xl font-bold font-heading text-white mb-3">جمع الدجاج</h3>
-             <p className="text-slate-400 text-sm mb-6 leading-relaxed">اجمع الدجاج وأعده إلى حظيرتك قبل البوتات، الفوز لأول من يجمع 50 دجاجة!</p>
-             <span className="mt-auto bg-lime-500/10 text-lime-400 font-bold px-6 py-2.5 rounded-xl text-sm border border-lime-500/20 group-hover:bg-lime-500 group-hover:text-white transition-colors">إلعب الآن</span>
-          </div>
-
-
+          <GameCard
+            card={{
+              id: 'chicken',
+              title: 'جمع الدجاج',
+              subtitle: 'اجمع الدجاج وأعده إلى حظيرتك',
+              icon: '🐔',
+              themeStyle: 'chicken',
+              primaryColor: 'from-orange-500 to-yellow-600',
+              glowColor: '#84cc16',
+              onClick: () => navigate('/chicken-solo')
+            }}
+          />
         </div>
       </section>
 

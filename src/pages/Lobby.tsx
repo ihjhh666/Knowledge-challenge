@@ -12,6 +12,11 @@ const CATEGORIES = [
   '🎬 أفلام',
   '🎌 أنمي',
   '🧮 رياضيات',
+  '🏆 من الأشهر؟',
+  '🧩 خمن الإيموجي',
+  '🏷️ خمن الشعار',
+  '📝 أكمل المثل',
+  '📏 رتب الأشياء',
 ];
 
 export default function Lobby() {
@@ -82,7 +87,7 @@ export default function Lobby() {
           <div>
             <label className="block text-slate-400 text-sm mb-2">نوع اللعبة</label>
             <select 
-              value={state.gameMode === 'hockey' && state.hockeyState?.is2v2 ? 'hockey-2v2' : state.gameMode || 'quiz'}
+              value={state.gameMode === 'hockey' && state.hockeyState?.is2v2 ? 'hockey-2v2' : (['famous', 'emoji', 'logos', 'proverbs', 'sort'].includes(state.gameMode || '') ? 'quiz' : state.gameMode || 'quiz')}
               onChange={(e) => {
                 const val = e.target.value;
                 if (val === 'hockey-2v2') {
@@ -98,11 +103,6 @@ export default function Lobby() {
               className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none"
             >
               <option value="quiz">🧠 تحدي المعرفة</option>
-              <option value="proverbs">📝 أكمل المثل</option>
-              <option value="logos">🏷️ خمن الشعار</option>
-              <option value="sort">📏 رتب الأشياء</option>
-              <option value="famous">🏆 من الأشهر؟</option>
-              <option value="emoji">🧩 خمن الإيموجي</option>
               <option value="fishing">🎣 صيد السمك</option>
               <option value="penalty">⚽ ركلات الجزاء</option>
               <option value="domino">🎲 الدومينو (1 ضد 1)</option>
@@ -113,7 +113,7 @@ export default function Lobby() {
             </select>
           </div>
 
-          {(state.gameMode === 'quiz' || !state.gameMode) && (
+          {(state.gameMode === 'quiz' || state.gameMode === 'proverbs' || state.gameMode === 'logos' || state.gameMode === 'sort' || state.gameMode === 'famous' || state.gameMode === 'emoji' || !state.gameMode) && (
             <div>
               <label className="block text-slate-400 text-sm mb-2">تغيير التصنيف</label>
               <select 

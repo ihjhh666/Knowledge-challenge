@@ -116,7 +116,7 @@ export default function LogosRoom() {
               </h2>
               
               <div className="w-64 h-64 bg-slate-100 rounded-3xl p-8 shadow-inner border-4 border-slate-700 flex items-center justify-center mb-8 relative overflow-hidden">
-                <img src={currentQuestion.image} alt="Logo" className="w-full h-full object-contain filter drop-shadow-sm select-none pointer-events-none" />
+                <img src={currentQuestion.image} alt="Logo" className="w-full h-full object-contain filter drop-shadow-sm select-none pointer-events-none" loading="lazy" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">

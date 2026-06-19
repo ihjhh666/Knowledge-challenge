@@ -1,49 +1,49 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './components/AuthContext';
 import { GameProvider } from './components/GameContext';
 import Home from './pages/Home';
-import Room from './pages/Room';
-import Updates from './pages/Updates';
-import SoloPlay from './pages/SoloPlay';
-import FishingSolo from './pages/FishingSolo';
-import PenaltySolo from './pages/PenaltySolo';
-import DominoSolo from './pages/DominoSolo';
-import HockeySolo from './pages/HockeySolo';
-import ChickenSolo from './pages/ChickenSolo';
-import TrueFalseSolo from './pages/TrueFalseSolo';
-import SurvivalSolo from './pages/SurvivalSolo';
-import KingMode from './pages/KingMode';
-import SentenceOrderSolo from './pages/SentenceOrderSolo';
-import ProverbsSolo from './pages/ProverbsSolo';
-import LogoGame from './pages/LogoGame';
-import SortGame from './pages/SortGame';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import AboutUs from './pages/AboutUs';
-import ContactUs from './pages/ContactUs';
-import TermsOfService from './pages/TermsOfService';
+import Login from './pages/Login';
+import Register from './pages/Register';
+
 import { AdBanner } from './components/AdBanner';
 import { useOnlinePresence } from './hooks/useOnlinePresence';
 import { Footer } from './components/Footer';
-import Leaderboard from './pages/Leaderboard';
-import Profile from './pages/Profile';
-import Achievements from './pages/Achievements';
 import { AchievementSystem } from './components/AchievementSystem';
-
-import Settings from './pages/Settings';
 import { GameInvitesListener } from './components/GameInvitesListener';
-
 import { GlobalProfileModal } from './components/GlobalProfileModal';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-
-import FamousSolo from './pages/FamousSolo';
-import EmojiGuess from './pages/EmojiGuess';
-
 import { audio } from './lib/audio';
+import { supabase } from './lib/supabase';
+
+// Lazy loading all other pages and modes
+const Room = lazy(() => import('./pages/Room'));
+const Updates = lazy(() => import('./pages/Updates'));
+const SoloPlay = lazy(() => import('./pages/SoloPlay'));
+const FishingSolo = lazy(() => import('./pages/FishingSolo'));
+const PenaltySolo = lazy(() => import('./pages/PenaltySolo'));
+const DominoSolo = lazy(() => import('./pages/DominoSolo'));
+const HockeySolo = lazy(() => import('./pages/HockeySolo'));
+const ChickenSolo = lazy(() => import('./pages/ChickenSolo'));
+const TrueFalseSolo = lazy(() => import('./pages/TrueFalseSolo'));
+const SurvivalSolo = lazy(() => import('./pages/SurvivalSolo'));
+const KingMode = lazy(() => import('./pages/KingMode'));
+const SentenceOrderSolo = lazy(() => import('./pages/SentenceOrderSolo'));
+const ProverbsSolo = lazy(() => import('./pages/ProverbsSolo'));
+const LogoGame = lazy(() => import('./pages/LogoGame'));
+const SortGame = lazy(() => import('./pages/SortGame'));
+const FamousSolo = lazy(() => import('./pages/FamousSolo'));
+const EmojiGuess = lazy(() => import('./pages/EmojiGuess'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const ContactUs = lazy(() => import('./pages/ContactUs'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Achievements = lazy(() => import('./pages/Achievements'));
+const Settings = lazy(() => import('./pages/Settings'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 function useGlobalAudio() {
   const location = useLocation();
@@ -225,43 +225,45 @@ function AppContent() {
       <GlobalProfileModal />
       <UsernamePrompt />
       <main className="flex-1">
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/room/:roomId" element={<Room />} />
-            <Route path="/updates" element={<Updates />} />
-            <Route path="/solo" element={<SoloPlay />} />
-            <Route path="/fishing" element={<FishingSolo />} />
-            <Route path="/penalty" element={<PenaltySolo />} />
-            <Route path="/domino" element={<DominoSolo />} />
-            <Route path="/hockey-solo" element={<HockeySolo />} />
-            <Route path="/chicken-solo" element={<ChickenSolo />} />
-            <Route path="/king-mode" element={<KingMode />} />
-            <Route path="/true-false" element={<TrueFalseSolo />} />
-            <Route path="/survival" element={<SurvivalSolo />} />
-            <Route path="/famous-solo" element={<FamousSolo />} />
-            <Route path="/emoji-guess" element={<EmojiGuess />} />
-            <Route path="/sentence-order" element={<SentenceOrderSolo />} />
-            <Route path="/proverbs" element={<ProverbsSolo />} />
-            <Route path="/logos" element={<LogoGame />} />
-            <Route path="/sort" element={<SortGame />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/achievements" element={<Achievements />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
+        <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/room/:roomId" element={<Room />} />
+              <Route path="/updates" element={<Updates />} />
+              <Route path="/solo" element={<SoloPlay />} />
+              <Route path="/fishing" element={<FishingSolo />} />
+              <Route path="/penalty" element={<PenaltySolo />} />
+              <Route path="/domino" element={<DominoSolo />} />
+              <Route path="/hockey-solo" element={<HockeySolo />} />
+              <Route path="/chicken-solo" element={<ChickenSolo />} />
+              <Route path="/king-mode" element={<KingMode />} />
+              <Route path="/true-false" element={<TrueFalseSolo />} />
+              <Route path="/survival" element={<SurvivalSolo />} />
+              <Route path="/famous-solo" element={<FamousSolo />} />
+              <Route path="/emoji-guess" element={<EmojiGuess />} />
+              <Route path="/sentence-order" element={<SentenceOrderSolo />} />
+              <Route path="/proverbs" element={<ProverbsSolo />} />
+              <Route path="/logos" element={<LogoGame />} />
+              <Route path="/sort" element={<SortGame />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/achievements" element={<Achievements />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
 
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
       
       <div className="w-full bg-slate-950 px-4 py-8">

@@ -845,10 +845,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'CHANGE_CATEGORY':
         if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
-           const newState = { ...stateRef.current, category: message.category };
+           let newGameMode = stateRef.current.gameMode;
+           if (message.category === '🏆 من الأشهر؟') newGameMode = 'famous';
+           else if (message.category === '🧩 خمن الإيموجي') newGameMode = 'emoji';
+           else if (message.category === '🏷️ خمن الشعار') newGameMode = 'logos';
+           else if (message.category === '📝 أكمل المثل') newGameMode = 'proverbs';
+           else if (message.category === '📏 رتب الأشياء') newGameMode = 'sort';
+           else if (['🧠 معلومات عامة', '⚽ كرة قدم', '📜 تاريخ', '🔬 علوم', '🎬 أفلام', '🎌 أنمي', '🧮 رياضيات'].includes(message.category)) newGameMode = 'quiz';
+
+           const newState = { ...stateRef.current, category: message.category, gameMode: newGameMode };
            setState(newState);
            broadcast({ type: 'STATE_UPDATE', state: newState });
-           updatePublicRoom(newState.roomId, { category: message.category });
+           updatePublicRoom(newState.roomId, { category: message.category, gameMode: newGameMode });
         }
         break;
       case 'CHANGE_HOCKEY_MODE':
@@ -983,8 +991,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       case 'CHANGE_MODE':
         if (isHostRef.current && stateRef.current && stateRef.current.status === 'waiting') {
-           const newCat = message.gameMode === 'fishing' ? '🎣 صيد السمك' : message.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : message.gameMode === 'domino' ? '🎲 الدومينو' : message.gameMode === 'hockey' ? '🏒 هوكي' : '🧠 معلومات عامة';
-           const newState = { ...stateRef.current, gameMode: message.gameMode, category: message.gameMode === 'quiz' && stateRef.current.category ? stateRef.current.category : newCat };
+           let finalCat = '🧠 معلومات عامة';
+           if (message.gameMode === 'quiz') {
+              if (['🏆 من الأشهر؟', '🧩 خمن الإيموجي', '🏷️ خمن الشعار', '📝 أكمل المثل', '📏 رتب الأشياء'].includes(stateRef.current.category || '')) {
+                 finalCat = '🧠 معلومات عامة';
+              } else {
+                 finalCat = stateRef.current.category || '🧠 معلومات عامة';
+              }
+           } else if (message.gameMode === 'fishing') finalCat = '🎣 صيد السمك';
+           else if (message.gameMode === 'penalty') finalCat = '⚽ ركلات الجزاء';
+           else if (message.gameMode === 'domino') finalCat = '🎲 الدومينو';
+           else if (message.gameMode === 'hockey') finalCat = '🏒 هوكي';
+           else if (message.gameMode === 'king') finalCat = '👑 طور الملك';
+           else if (message.gameMode === 'chicken') finalCat = '🐔 حماية الدجاجات';
+           else if (message.gameMode === 'emoji') finalCat = '🧩 خمن الإيموجي';
+           else if (message.gameMode === 'logos') finalCat = '🏷️ خمن الشعار';
+           else if (message.gameMode === 'famous') finalCat = '🏆 من الأشهر؟';
+           else if (message.gameMode === 'sort') finalCat = '📏 رتب الأشياء';
+           else if (message.gameMode === 'proverbs') finalCat = '📝 أكمل المثل';
+
+           const newState = { ...stateRef.current, gameMode: message.gameMode, category: finalCat };
            setState(newState);
            broadcast({ type: 'STATE_UPDATE', state: newState });
            updatePublicRoom(newState.roomId, { gameMode: message.gameMode, category: newState.category });
@@ -1715,6 +1741,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     else if (gameMode === 'domino') roomCategory = '🎲 الدومينو';
     else if (gameMode === 'hockey') roomCategory = subMode === '2v2' ? '🏒 هوكي 2 ضد 2' : '🏒 هوكي 1 ضد 1';
     else if (gameMode === 'chicken') roomCategory = '🐔 حماية الدجاجات';
+    else if (gameMode === 'emoji') roomCategory = '🧩 خمن الإيموجي';
+    else if (gameMode === 'logos') roomCategory = '🏷️ خمن الشعار';
+    else if (gameMode === 'famous') roomCategory = '🏆 من الأشهر؟';
+    else if (gameMode === 'sort') roomCategory = '📏 رتب الأشياء';
+    else if (gameMode === 'proverbs') roomCategory = '📝 أكمل المثل';
     
     let targetScore = 1500;
     if (['proverbs', 'logos', 'sort', 'famous', 'emoji'].includes(gameMode)) {

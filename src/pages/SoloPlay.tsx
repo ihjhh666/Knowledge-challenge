@@ -5,20 +5,21 @@ import { GENERAL_KNOWLEDGE_EXPANDED as GENERAL_KNOWLEDGE, FB_EXPANDED as FOOTBAL
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 import { supabaseService } from '../services/supabaseService';
+import { GameCard } from '../components/GameCard';
 
 export const CATEGORIES = [
-  { id: 'general', name: 'معلومات عامة', icon: '🌍', data: GENERAL_KNOWLEDGE, color: 'from-blue-500 to-blue-700' },
-  { id: 'football', name: 'كرة القدم', icon: '⚽', data: FOOTBALL, color: 'from-green-500 to-green-700' },
-  { id: 'movies', name: 'الأفلام', icon: '🎬', data: MOVIES, color: 'from-purple-500 to-purple-700' },
-  { id: 'anime', name: 'الأنمي', icon: '🎌', data: ANIME, color: 'from-red-500 to-red-700' },
-  { id: 'science', name: 'العلوم', icon: '🔬', data: SCIENCE, color: 'from-teal-500 to-teal-700' },
-  { id: 'history', name: 'التاريخ', icon: '📜', data: HISTORY, color: 'from-amber-500 to-amber-700' },
-  { id: 'islamic', name: 'إسلاميات', icon: '🕌', data: ISLAMIC, color: 'from-emerald-500 to-emerald-700' },
-  { id: 'math', name: 'رياضيات', icon: '🧮', data: MATH, color: 'from-blue-400 to-blue-600' },
-  { id: 'sentence_order', name: 'رتب الجمل', icon: '🧩', data: [], color: 'from-sky-500 to-sky-700' },
-  { id: 'proverbs', name: 'أكمل المثل', icon: '🏺', data: [], color: 'from-amber-600 to-amber-900' },
-  { id: 'logos', name: 'خمن الشعار', icon: '🏷️', data: [], color: 'from-pink-500 to-pink-700' },
-  { id: 'sort', name: 'رتب الأشياء', icon: '📊', data: [], color: 'from-cyan-500 to-cyan-700' }
+  { id: 'general', name: 'معلومات عامة', icon: '🌍', data: GENERAL_KNOWLEDGE, color: 'from-indigo-600 to-indigo-900', glowColor: '#6366f1', themeStyle: 'quiz' },
+  { id: 'football', name: 'كرة القدم', icon: '⚽', data: FOOTBALL, color: 'from-emerald-600 to-green-900', glowColor: '#10b981', themeStyle: 'football' },
+  { id: 'movies', name: 'الأفلام', icon: '🎬', data: MOVIES, color: 'from-rose-600 to-red-900', glowColor: '#e11d48', themeStyle: 'movies' },
+  { id: 'anime', name: 'الأنمي', icon: '🎌', data: ANIME, color: 'from-red-500 to-orange-800', glowColor: '#ef4444', themeStyle: 'anime' },
+  { id: 'science', name: 'العلوم', icon: '🔬', data: SCIENCE, color: 'from-teal-600 to-cyan-900', glowColor: '#0d9488', themeStyle: 'science' },
+  { id: 'history', name: 'التاريخ', icon: '📜', data: HISTORY, color: 'from-amber-700 to-stone-900', glowColor: '#d97706', themeStyle: 'history' },
+  { id: 'islamic', name: 'إسلاميات', icon: '🕌', data: ISLAMIC, color: 'from-emerald-600 to-teal-900', glowColor: '#059669', themeStyle: 'islamic' },
+  { id: 'math', name: 'رياضيات', icon: '🧮', data: MATH, color: 'from-blue-600 to-indigo-900', glowColor: '#2563eb', themeStyle: 'math' },
+  { id: 'sentence_order', name: 'رتب الجمل', icon: '🧩', data: [], color: 'from-sky-500 to-sky-700', glowColor: '#0ea5e9', themeStyle: 'default' },
+  { id: 'proverbs', name: 'أكمل المثل', icon: '🏺', data: [], color: 'from-amber-700 to-amber-900', glowColor: '#d97706', themeStyle: 'proverbs' },
+  { id: 'logos', name: 'خمن الشعار', icon: '🏷️', data: [], color: 'from-slate-700 to-zinc-900', glowColor: '#64748b', themeStyle: 'logos' },
+  { id: 'sort', name: 'رتب الأشياء', icon: '📊', data: [], color: 'from-teal-600 to-emerald-800', glowColor: '#0d9488', themeStyle: 'sort' }
 ];
 
 export default function SoloPlay() {
@@ -260,41 +261,47 @@ export default function SoloPlay() {
         </header>
 
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <button
-            onClick={() => navigate('/survival')}
-            className={`bg-gradient-to-br from-rose-600 to-rose-900 p-6 rounded-3xl text-right relative overflow-hidden group hover:scale-[1.02] transition-transform`}
-          >
-            <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
-            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
-            <span className="text-4xl mb-4 block animate-pulse">🔥</span>
-            <h3 className="text-xl font-bold font-heading text-white">طور البقاء</h3>
-            <p className="text-white/80 text-sm mt-2">التحدي اللانهائي</p>
-          </button>
+          <GameCard
+            card={{
+              id: 'survival',
+              title: 'طور البقاء',
+              subtitle: 'التحدي اللانهائي',
+              icon: '🔥',
+              themeStyle: 'survival',
+              primaryColor: 'from-orange-600 to-red-900',
+              glowColor: '#ea580c',
+              onClick: () => navigate('/survival')
+            }}
+          />
 
           {CATEGORIES.map(cat => (
-            <button
+            <GameCard
               key={cat.id}
-              onClick={() => startGame(cat)}
-              className={`bg-gradient-to-br ${cat.color} p-6 rounded-3xl text-right relative overflow-hidden group hover:scale-[1.02] transition-transform`}
-            >
-              <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
-              <span className="text-4xl mb-4 block">{cat.icon}</span>
-              <h3 className="text-xl font-bold font-heading text-white">{cat.name}</h3>
-              <p className="text-white/80 text-sm mt-2">
-                {cat.id === 'sentence_order' ? 'مئات الجمل' : cat.id === 'proverbs' ? 'آلاف الأمثال' : cat.id === 'logos' ? 'مئات الشعارات' : cat.id === 'sort' ? 'آلاف الاحتمالات' : `${cat.data.length} سؤال`}
-              </p>
-            </button>
+              card={{
+                id: cat.id,
+                title: cat.name,
+                subtitle: cat.id === 'sentence_order' ? 'مئات الجمل' : cat.id === 'proverbs' ? 'آلاف الأمثال' : cat.id === 'logos' ? 'مئات الشعارات' : cat.id === 'sort' ? 'آلاف الاحتمالات' : `${cat.data.length} سؤال`,
+                icon: cat.icon,
+                themeStyle: cat.themeStyle,
+                primaryColor: cat.color,
+                glowColor: cat.glowColor,
+                onClick: () => startGame(cat)
+              }}
+            />
           ))}
           
-          <button
-            onClick={() => navigate('/true-false')}
-            className={`bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 rounded-3xl text-right relative overflow-hidden group hover:scale-[1.02] transition-transform`}
-          >
-            <div className="absolute top-0 right-0 w-full h-full bg-black/10 pointer-events-none group-hover:bg-black/0 transition-colors"></div>
-            <span className="text-4xl mb-4 block">✅</span>
-            <h3 className="text-xl font-bold font-heading text-white">صح أم خطأ</h3>
-            <p className="text-white/80 text-sm mt-2">مئات الأسئلة</p>
-          </button>
+          <GameCard
+            card={{
+              id: 'truefalse',
+              title: 'صح أم خطأ',
+              subtitle: 'مئات الأسئلة',
+              icon: '✅',
+              themeStyle: 'truefalse',
+              primaryColor: 'from-emerald-600 to-emerald-900',
+              glowColor: '#10b981',
+              onClick: () => navigate('/true-false')
+            }}
+          />
         </div>
       </div>
     );
