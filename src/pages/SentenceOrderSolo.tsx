@@ -6,6 +6,7 @@ import { audio } from '../lib/audio';
 import { storage } from '../lib/storage';
 import { updateStats, getPlayerStats } from '../lib/achievements';
 import { calculateLevel, calculateEarnedXp } from '../lib/level';
+import { PlayBackground } from '../components/PlayBackground';
 
 export default function SentenceOrderSolo() {
   const navigate = useNavigate();
@@ -160,16 +161,18 @@ export default function SentenceOrderSolo() {
 
   if (!isPlaying && !gameOver) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <>
+      <PlayBackground theme="sentence_order" />
+      <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
         <div className="max-w-md w-full text-center space-y-6">
-          <button onClick={() => navigate('/solo')} className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-slate-400 hover:text-white mx-auto transition-colors">
+          <button onClick={() => navigate('/solo')} className="w-12 h-12 bg-slate-900/50 backdrop-blur-md rounded-2xl flex items-center justify-center text-slate-400 hover:text-white mx-auto transition-colors">
             <ArrowRight className="w-6 h-6" />
           </button>
-          <div className="w-24 h-24 bg-sky-500/20 rounded-3xl mx-auto flex items-center justify-center drop-shadow-xl animate-bounce">
+          <div className="w-24 h-24 bg-sky-500/20 rounded-3xl mx-auto flex items-center justify-center drop-shadow-xl animate-bounce backdrop-blur-md">
             <span className="text-5xl">🧩</span>
           </div>
           <h1 className="text-4xl font-bold text-white font-heading">رتب الجملة</h1>
-          <p className="text-slate-400">
+          <p className="text-slate-300 backdrop-blur-sm p-4 rounded-xl bg-black/20 border border-white/5">
             أعد ترتيب الكلمات المبعثرة لتكوين جملة صحيحة قبل انتهاء الوقت المخصص. السرعة تمنحك نقاطاً أكثر!
           </p>
           <button
@@ -180,14 +183,17 @@ export default function SentenceOrderSolo() {
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   if (gameOver) {
     const earnedXps = Math.floor(score * 0.5) + correctCount * 10;
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center space-y-6">
+      <>
+      <PlayBackground theme="sentence_order" />
+      <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl text-center space-y-6 shadow-2xl">
            <div className="w-24 h-24 bg-amber-500/20 rounded-full mx-auto flex items-center justify-center mb-6">
              <Trophy className="w-12 h-12 text-amber-500" />
            </div>
@@ -195,19 +201,19 @@ export default function SentenceOrderSolo() {
            <h2 className="text-3xl font-bold text-white mb-2 font-heading">انتهى التحدي</h2>
            
            <div className="grid grid-cols-2 gap-4 my-8">
-             <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+             <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50">
                <span className="block text-slate-400 text-sm mb-1">النقاط</span>
                <span className="text-3xl font-bold text-emerald-400 font-mono">{score}</span>
              </div>
-             <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+             <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50">
                <span className="block text-slate-400 text-sm mb-1">XP مكتسب</span>
                <span className="text-3xl font-bold text-sky-400 font-mono">+{earnedXps}</span>
              </div>
-             <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+             <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50">
                <span className="block text-slate-400 text-sm mb-1">جمل صحيحة</span>
                <span className="text-2xl font-bold text-green-400 font-mono">{correctCount}</span>
              </div>
-             <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+             <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50">
                <span className="block text-slate-400 text-sm mb-1">أخطاء</span>
                <span className="text-2xl font-bold text-rose-400 font-mono">{wrongCount}</span>
              </div>
@@ -228,19 +234,22 @@ export default function SentenceOrderSolo() {
              </button>
              <button
                onClick={() => navigate('/solo')}
-               className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-colors"
+               className="flex-1 bg-slate-800/80 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-colors border border-slate-700/50"
              >
                الأقسام
              </button>
            </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 flex flex-col max-w-4xl mx-auto space-y-6">
-      <header className="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-3xl shrink-0">
+    <>
+    <PlayBackground theme="sentence_order" />
+    <div className="min-h-screen p-4 flex flex-col max-w-4xl mx-auto space-y-6 relative z-10">
+      <header className="flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border border-slate-800/50 p-4 rounded-3xl shrink-0 shadow-lg">
         <button onClick={finishGame} className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors">
           <ArrowRight className="w-5 h-5" />
         </button>
@@ -309,5 +318,6 @@ export default function SentenceOrderSolo() {
          </div>
       </div>
     </div>
+    </>
   );
 }

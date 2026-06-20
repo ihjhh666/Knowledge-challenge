@@ -6,6 +6,7 @@ import { proverbsAudio } from '../lib/proverbsAudio';
 import { storage } from '../lib/storage';
 import { updateStats, getPlayerStats } from '../lib/achievements';
 import { calculateLevel, calculateEarnedXp } from '../lib/level';
+import { PlayBackground } from '../components/PlayBackground';
 
 // Pre-generate a list
 let QUESTIONS_QUEUE = generateProverbQuestions(100);
@@ -34,11 +35,7 @@ export default function ProverbsSolo() {
   const [maxTime, setMaxTime] = useState(1);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
-  // Background pattern for authentic feel
-  const parchmentStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E")`,
-    backgroundColor: '#1E1B18', // Deep earthy tone
-  };
+  const parchmentStyle = {};
 
   const loadQuestion = useCallback(() => {
     const q = getNextQuestion();
@@ -138,12 +135,14 @@ export default function ProverbsSolo() {
 
   if (!isPlaying) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white p-4" dir="rtl" style={parchmentStyle}>
-        <button onClick={() => navigate('/solo')} className="flex items-center gap-2 text-amber-500/80 hover:text-amber-400 font-bold mb-8 transition-colors">
+      <>
+      <PlayBackground theme="proverbs" />
+      <div className="min-h-screen text-white p-4 relative z-10" dir="rtl">
+        <button onClick={() => navigate('/solo')} className="flex items-center gap-2 text-amber-500/80 hover:text-amber-400 font-bold mb-8 transition-colors drop-shadow-md">
           <ArrowRight className="w-5 h-5" /> عودة للأطوار
         </button>
         
-        <div className="max-w-xl mx-auto text-center space-y-8 mt-12 bg-black/40 p-8 rounded-3xl border border-amber-900/50 backdrop-blur-sm">
+        <div className="max-w-xl mx-auto text-center space-y-8 mt-12 bg-black/60 backdrop-blur-md p-8 rounded-3xl border border-amber-900/50 shadow-2xl">
           <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-700 to-amber-900 rounded-full flex items-center justify-center border-4 border-amber-500/30 shadow-xl shadow-amber-900/20">
             <BookOpen className="w-12 h-12 text-amber-100" />
           </div>
@@ -184,38 +183,41 @@ export default function ProverbsSolo() {
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   if (gameOver) {
     const xp = calculateEarnedXp(score);
     return (
-      <div className="min-h-screen bg-slate-950 p-4 flex items-center justify-center font-sans" dir="rtl" style={parchmentStyle}>
+      <>
+      <PlayBackground theme="proverbs" />
+      <div className="min-h-screen p-4 flex items-center justify-center font-sans relative z-10" dir="rtl">
         <div className="bg-black/60 border border-amber-900/50 p-8 rounded-3xl max-w-md w-full text-center shadow-2xl backdrop-blur-md">
           <BookOpen className="w-16 h-16 text-amber-500 mx-auto mb-6" />
           <h2 className="text-3xl font-bold text-amber-50 mb-2">انتهت الجولة</h2>
           <p className="text-amber-200/60 mb-8">حكمتك أضاءت الدرب</p>
           
           <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-amber-900/20 p-4 rounded-2xl border border-amber-700/30">
+            <div className="bg-amber-900/40 p-4 rounded-2xl border border-amber-700/50">
               <Target className="w-6 h-6 text-green-400 mx-auto mb-2" />
               <div className="text-2xl font-bold text-white mb-1">{correctCount}</div>
-              <div className="text-xs text-amber-500/80">إجابة صحيحة</div>
+              <div className="text-xs text-amber-400/80">إجابة صحيحة</div>
             </div>
-            <div className="bg-amber-900/20 p-4 rounded-2xl border border-amber-700/30">
+            <div className="bg-amber-900/40 p-4 rounded-2xl border border-amber-700/50">
               <Zap className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
               <div className="text-2xl font-bold text-white mb-1">{score}</div>
-              <div className="text-xs text-amber-500/80">نقطة</div>
+              <div className="text-xs text-amber-400/80">نقطة</div>
             </div>
-            <div className="bg-amber-900/20 p-4 rounded-2xl border border-amber-700/30">
+            <div className="bg-amber-900/40 p-4 rounded-2xl border border-amber-700/50">
               <Flame className="w-6 h-6 text-orange-500 mx-auto mb-2" />
               <div className="text-2xl font-bold text-white mb-1">{maxStreak}</div>
-              <div className="text-xs text-amber-500/80">أفضل سلسلة</div>
+              <div className="text-xs text-amber-400/80">أفضل سلسلة</div>
             </div>
-            <div className="bg-amber-900/20 p-4 rounded-2xl border border-amber-700/30">
+            <div className="bg-amber-900/40 p-4 rounded-2xl border border-amber-700/50">
               <Crown className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
               <div className="text-2xl font-bold text-white mb-1">+{xp}</div>
-              <div className="text-xs text-amber-500/80">خبرة XP</div>
+              <div className="text-xs text-amber-400/80">خبرة XP</div>
             </div>
           </div>
           
@@ -230,24 +232,27 @@ export default function ProverbsSolo() {
                 setGameOver(false);
                 proverbsAudio.playRoundComplete();
               }}
-              className="flex-1 py-4 font-bold rounded-2xl bg-amber-600 text-white hover:bg-amber-500 transition-colors"
+              className="flex-1 py-4 font-bold rounded-2xl bg-amber-600 text-white hover:bg-amber-500 transition-colors shadow-lg"
             >
               العب مجدداً
             </button>
             <button
               onClick={() => navigate('/solo')}
-              className="flex-1 py-4 font-bold rounded-2xl bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+              className="flex-1 py-4 font-bold rounded-2xl bg-slate-800/80 text-white hover:bg-slate-700 transition-colors border border-amber-900/50"
             >
               عودة للقائمة
             </button>
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-4 flex flex-col" dir="rtl" style={parchmentStyle}>
+    <>
+    <PlayBackground theme="proverbs" />
+    <div className="min-h-screen p-4 flex flex-col relative z-10" dir="rtl">
       <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
         {/* Header HUD */}
         <div className="flex items-center justify-between mb-8 bg-black/40 p-4 rounded-2xl border border-amber-900/30 backdrop-blur-sm">
@@ -336,5 +341,6 @@ export default function ProverbsSolo() {
         )}
       </div>
     </div>
+    </>
   );
 }

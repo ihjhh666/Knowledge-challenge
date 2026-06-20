@@ -7,6 +7,7 @@ import { audio } from '../lib/audio';
 import { getPlayerStats, updateStats } from '../lib/achievements';
 import { notifyAchievements } from '../lib/firebase';
 import { User, Medal, ArrowLeft, Trophy, Crown, Maximize2, AlertCircle, RefreshCw, BarChart, Flame, Heart } from 'lucide-react';
+import { PlayBackground } from '../components/PlayBackground';
 
 export default function SortGame() {
   const navigate = useNavigate();
@@ -159,12 +160,9 @@ export default function SortGame() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] flex flex-col font-cairo text-right selection:bg-cyan-500/30 overflow-hidden relative">
-       {/* Background Effects */}
-       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-[120px]" />
-         <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-indigo-600/10 rounded-full blur-[150px]" />
-       </div>
+    <>
+    <PlayBackground theme="sort" />
+    <div className="min-h-screen flex flex-col font-cairo text-right selection:bg-cyan-500/30 overflow-hidden relative z-10">
 
        {/* Header */}
        <header className="relative z-10 px-6 py-4 flex items-center justify-between border-b border-white/5 bg-black/20 backdrop-blur-md">
@@ -428,5 +426,6 @@ export default function SortGame() {
          </div>
        )}
     </div>
+    </>
   );
 }

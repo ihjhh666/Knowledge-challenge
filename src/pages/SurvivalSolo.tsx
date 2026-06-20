@@ -6,6 +6,7 @@ import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 import { supabaseService } from '../services/supabaseService';
 import { tfQuestions } from '../lib/tfData';
+import { PlayBackground } from '../components/PlayBackground';
 
 // Helper to shuffle array
 const shuffle = (array: any[]) => [...array].sort(() => 0.5 - Math.random());
@@ -173,17 +174,19 @@ export default function SurvivalSolo() {
 
   if (!isPlaying && !isFinished) {
     return (
-      <div className="max-w-3xl mx-auto p-4 md:p-12 space-y-8 animate-fade-in text-center">
+      <>
+      <PlayBackground theme="survival" />
+      <div className="max-w-3xl mx-auto p-4 md:p-12 space-y-8 animate-fade-in text-center relative z-10">
         <header className="flex items-center gap-4 justify-start mb-12">
           <button 
             onClick={() => navigate('/')}
-            className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
+            className="p-3 bg-slate-800/80 backdrop-blur-md hover:bg-slate-700 rounded-xl transition-colors shadow-lg"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
         </header>
 
-        <div className="bg-gradient-to-b from-rose-500/20 to-slate-900 border border-rose-500/30 p-12 rounded-[3rem] shadow-2xl relative overflow-hidden">
+        <div className="bg-gradient-to-b from-rose-500/20 to-slate-900/80 backdrop-blur-xl border border-rose-500/30 p-12 rounded-[3rem] shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
           
           <div className="bg-rose-500/20 w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner shadow-rose-500/20 relative">
@@ -193,7 +196,7 @@ export default function SurvivalSolo() {
           
           <h1 className="text-5xl font-bold font-heading text-white mb-6 drop-shadow-lg">طور البقاء</h1>
           
-          <div className="space-y-4 text-slate-300 text-lg mb-12 max-w-lg mx-auto bg-slate-950/40 p-6 rounded-2xl border border-slate-800/50">
+          <div className="space-y-4 text-slate-300 text-lg mb-12 max-w-lg mx-auto bg-slate-950/60 backdrop-blur-md p-6 rounded-2xl border border-slate-800/50 shadow-xl">
             <p className="flex items-center gap-3"><span className="text-2xl">☠️</span> خطأ واحد يعني النهاية الفورية.</p>
             <p className="flex items-center gap-3"><span className="text-2xl">📈</span> تزداد الصعوبة تدريجياً.</p>
             <p className="flex items-center gap-3"><span className="text-2xl">⏱️</span> لا يوجد مؤقت، خذ وقتك للتفكير.</p>
@@ -202,41 +205,44 @@ export default function SurvivalSolo() {
 
           <button
             onClick={startGame}
-            className="w-full sm:w-auto px-16 py-5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-2xl font-bold rounded-2xl shadow-xl shadow-rose-600/20 transition-all duration-300 flex items-center justify-center gap-3 mx-auto"
+            className="w-full sm:w-auto px-16 py-5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-2xl font-bold rounded-2xl shadow-xl shadow-rose-600/50 transition-all duration-300 flex items-center justify-center gap-3 mx-auto"
           >
             <Flame className="w-6 h-6" />
             بدء التحدي
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   if (isFinished) {
     return (
-      <div className="max-w-xl mx-auto p-6 md:p-12 text-center space-y-8 animate-fade-in">
-        <div className="bg-rose-500/10 w-32 h-32 rounded-full flex items-center justify-center mx-auto relative">
+      <>
+      <PlayBackground theme="survival" />
+      <div className="max-w-xl mx-auto p-6 md:p-12 text-center space-y-8 animate-fade-in relative z-10">
+        <div className="bg-rose-500/10 w-32 h-32 rounded-full flex items-center justify-center mx-auto relative backdrop-blur-sm">
           <Skull className="w-16 h-16 text-rose-500" />
           <div className="absolute inset-0 bg-rose-500/20 rounded-full blur-xl"></div>
         </div>
         <div>
-          <h2 className="text-5xl font-bold font-heading mb-4 text-rose-500">نهاية التحدي!</h2>
-          <p className="text-xl text-slate-300 mb-8">لقد أجبت بشكل خاطئ وانتهت سلسلة البقاء.</p>
+          <h2 className="text-5xl font-bold font-heading mb-4 text-rose-500 drop-shadow-lg">نهاية التحدي!</h2>
+          <p className="text-xl text-slate-300 mb-8 bg-black/40 p-4 rounded-xl backdrop-blur-sm inline-block">لقد أجبت بشكل خاطئ وانتهت سلسلة البقاء.</p>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-slate-800 border border-slate-700 p-6 rounded-3xl">
+          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
             <p className="text-slate-400 mb-2">النتيجة الحالية</p>
-            <p className="text-6xl font-bold font-mono text-white">{score}</p>
+            <p className="text-6xl font-bold font-mono text-white drop-shadow-md">{score}</p>
           </div>
-          <div className="bg-slate-800 border border-slate-700 p-6 rounded-3xl relative overflow-hidden">
+          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl relative overflow-hidden shadow-xl">
             {score >= highestScore && score > 0 && (
                <div className="absolute inset-0 bg-yellow-500/10 animate-pulse"></div>
             )}
             <p className="text-slate-400 mb-2">أعلى نتيجة</p>
-            <p className="text-6xl font-bold font-mono text-yellow-500">{highestScore}</p>
+            <p className="text-6xl font-bold font-mono text-yellow-500 drop-shadow-md">{highestScore}</p>
             {score >= highestScore && score > 0 && (
-               <div className="absolute top-2 right-2 flex items-center gap-1 text-yellow-500 text-xs font-bold bg-yellow-500/10 px-2 py-1 rounded-full">
+               <div className="absolute top-2 right-2 flex items-center gap-1 text-yellow-500 text-xs font-bold bg-yellow-500/20 px-2 py-1 rounded-full backdrop-blur-sm">
                  <Trophy className="w-3 h-3" />
                  رقم جديد!
                </div>
@@ -247,25 +253,28 @@ export default function SurvivalSolo() {
         <div className="flex gap-4 mt-8">
           <button
             onClick={startGame}
-            className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 text-lg"
+            className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-rose-600/30 active:scale-95 text-lg"
           >
             إعادة اللعب
           </button>
           <button
             onClick={() => navigate('/')}
-            className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-all border border-slate-700 active:scale-95 text-lg"
+            className="flex-1 bg-slate-800/80 backdrop-blur-md hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-all border border-slate-700/50 active:scale-95 text-lg shadow-lg"
           >
             العودة للرئيسية
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   const currentQ = questions[currentIndex];
 
   return (
-    <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in">
+    <>
+    <PlayBackground theme="survival" />
+    <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in relative z-10 transition-transform active:scale-[0.99] duration-75">
       <div className="flex justify-between items-center bg-slate-900 border border-slate-800 px-6 py-4 rounded-3xl shadow-lg relative overflow-hidden">
          {/* Background effect */}
          {showResult && selectedAnswer === currentQ.correctAnswer && <div className="absolute inset-0 bg-emerald-500/10 animate-pulse"></div>}
@@ -332,5 +341,6 @@ export default function SurvivalSolo() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -64,3 +64,19 @@ body {
   }
 }
 
+@keyframes sweep {
+  0% { transform: translateY(-300px) rotate(var(--tw-rotate, 0deg)); }
+  100% { transform: translateY(300px) rotate(var(--tw-rotate, 0deg)); }
+}
+
+@keyframes sweep-x {
+  0% { transform: translateX(-100%) skewX(-25deg); }
+  100% { transform: translateX(100%) skewX(-25deg); }
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+

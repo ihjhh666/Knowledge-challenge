@@ -6,6 +6,7 @@ import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 import { supabaseService } from '../services/supabaseService';
 import { GameCard } from '../components/GameCard';
+import { PlayBackground } from '../components/PlayBackground';
 
 export const CATEGORIES = [
   { id: 'general', name: 'معلومات عامة', icon: '🌍', data: GENERAL_KNOWLEDGE, color: 'from-indigo-600 to-indigo-900', glowColor: '#6366f1', themeStyle: 'quiz' },
@@ -16,7 +17,7 @@ export const CATEGORIES = [
   { id: 'history', name: 'التاريخ', icon: '📜', data: HISTORY, color: 'from-amber-700 to-stone-900', glowColor: '#d97706', themeStyle: 'history' },
   { id: 'islamic', name: 'إسلاميات', icon: '🕌', data: ISLAMIC, color: 'from-emerald-600 to-teal-900', glowColor: '#059669', themeStyle: 'islamic' },
   { id: 'math', name: 'رياضيات', icon: '🧮', data: MATH, color: 'from-blue-600 to-indigo-900', glowColor: '#2563eb', themeStyle: 'math' },
-  { id: 'sentence_order', name: 'رتب الجمل', icon: '🧩', data: [], color: 'from-sky-500 to-sky-700', glowColor: '#0ea5e9', themeStyle: 'default' },
+  { id: 'sentence_order', name: 'رتب الجمل', icon: '🧩', data: [], color: 'from-sky-500 to-sky-700', glowColor: '#0ea5e9', themeStyle: 'sentence_order' },
   { id: 'proverbs', name: 'أكمل المثل', icon: '🏺', data: [], color: 'from-amber-700 to-amber-900', glowColor: '#d97706', themeStyle: 'proverbs' },
   { id: 'logos', name: 'خمن الشعار', icon: '🏷️', data: [], color: 'from-slate-700 to-zinc-900', glowColor: '#64748b', themeStyle: 'logos' },
   { id: 'sort', name: 'رتب الأشياء', icon: '📊', data: [], color: 'from-teal-600 to-emerald-800', glowColor: '#0d9488', themeStyle: 'sort' }
@@ -262,6 +263,7 @@ export default function SoloPlay() {
 
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           <GameCard
+            index={0}
             card={{
               id: 'survival',
               title: 'طور البقاء',
@@ -274,9 +276,10 @@ export default function SoloPlay() {
             }}
           />
 
-          {CATEGORIES.map(cat => (
+          {CATEGORIES.map((cat, idx) => (
             <GameCard
               key={cat.id}
+              index={idx + 1}
               card={{
                 id: cat.id,
                 title: cat.name,
@@ -291,6 +294,7 @@ export default function SoloPlay() {
           ))}
           
           <GameCard
+            index={CATEGORIES.length + 1}
             card={{
               id: 'truefalse',
               title: 'صح أم خطأ',
@@ -309,8 +313,9 @@ export default function SoloPlay() {
 
   if (isFinished) {
     return (
-      <div className="max-w-xl mx-auto p-6 md:p-12 text-center space-y-8 animate-fade-in">
-        <div className="bg-emerald-500/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto">
+      <>
+        <div className="max-w-xl mx-auto p-6 md:p-12 text-center space-y-8 animate-fade-in relative z-10">
+          <div className="bg-emerald-500/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto">
           <Trophy className="w-12 h-12 text-emerald-400" />
         </div>
         <div>
@@ -339,14 +344,18 @@ export default function SoloPlay() {
           </button>
         </div>
       </div>
-    );
+      <PlayBackground theme={selectedCategory?.themeStyle || 'general'} />
+    </>
+  );
   }
 
   const currentQ = questions[currentQuestionIndex];
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-12 space-y-6 md:space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-800 border border-slate-700 px-4 py-4 md:px-6 rounded-3xl gap-4">
+    <>
+      <PlayBackground theme={selectedCategory?.themeStyle || 'general'} />
+      <div className="max-w-4xl mx-auto p-4 md:p-12 space-y-6 md:space-y-8 relative z-10">
+      <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 px-4 py-4 md:px-6 rounded-3xl gap-4 shadow-xl">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className={`p-2 rounded-lg bg-gradient-to-br ${selectedCategory?.color} shrink-0`}>
             <span className="text-xl">{selectedCategory?.icon}</span>
@@ -419,5 +428,6 @@ export default function SoloPlay() {
         </div>
       </div>
     </div>
+    </>
   );
 }

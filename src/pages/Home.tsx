@@ -413,6 +413,7 @@ export default function Home() {
         </div>
         <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
           <GameCard
+            index={0}
             card={{
               id: 'survival',
               title: 'طور البقاء',
@@ -424,9 +425,10 @@ export default function Home() {
             }}
           />
 
-          {SOLO_CATEGORIES.map(cat => (
+          {SOLO_CATEGORIES.map((cat, idx) => (
             <GameCard
               key={cat.id}
+              index={idx + 1}
               card={{
                 id: cat.id,
                 title: cat.name,
@@ -440,6 +442,7 @@ export default function Home() {
           ))}
           
           <GameCard
+            index={SOLO_CATEGORIES.length + 1}
             card={{
               id: 'famous',
               title: 'من الأشهر؟',
@@ -452,6 +455,7 @@ export default function Home() {
           />
           
           <GameCard
+            index={SOLO_CATEGORIES.length + 2}
             card={{
               id: 'truefalse',
               title: 'صح أم خطأ',
@@ -464,6 +468,7 @@ export default function Home() {
           />
           
           <GameCard
+            index={SOLO_CATEGORIES.length + 3}
             card={{
               id: 'emoji',
               title: 'خمن الإيموجي',
@@ -489,6 +494,7 @@ export default function Home() {
         </div>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           <GameCard
+            index={0}
             card={{
               id: 'fishing',
               title: 'صيد السمك',
@@ -502,6 +508,7 @@ export default function Home() {
           />
           
           <GameCard
+            index={1}
             card={{
               id: 'penalty',
               title: 'ركلات الجزاء',
@@ -515,6 +522,7 @@ export default function Home() {
           />
           
           <GameCard
+            index={2}
             card={{
               id: 'domino',
               title: 'الدومينو',
@@ -528,6 +536,7 @@ export default function Home() {
           />
 
           <GameCard
+            index={3}
             card={{
               id: 'hockey',
               title: 'الهوكي',
@@ -541,6 +550,7 @@ export default function Home() {
           />
 
           <GameCard
+            index={4}
             card={{
               id: 'king',
               title: 'طور الملك',
@@ -554,6 +564,7 @@ export default function Home() {
           />
 
           <GameCard
+            index={5}
             card={{
               id: 'chicken',
               title: 'جمع الدجاج',
@@ -581,7 +592,7 @@ export default function Home() {
         
         {/* إنشاء غرفة جديدة */}
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 md:p-10 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 h-auto transform transition-transform hover:shadow-indigo-500/20 border border-indigo-500/30">
-          <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
+          <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none mix-blend-overlay" style={{backgroundImage: 'radial-gradient(circle at 10px 10px, rgba(255,255,255,0.2) 2px, transparent 0)', backgroundSize: '30px 30px'}}></div>
           <div className="absolute -left-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
           
           <div className="relative z-10 text-right md:w-2/3">
@@ -825,7 +836,7 @@ export default function Home() {
 
         {/* لماذا تلعب */}
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700/50 p-6 md:p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
-           <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+           <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none mix-blend-overlay" style={{backgroundImage: 'radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, transparent 60%)', backgroundSize: '60px 60px'}}></div>
            <div className="bg-indigo-500/10 w-16 h-16 rounded-2xl flex flex-shrink-0 items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform duration-300 border border-indigo-500/20 z-10">
              📌
            </div>

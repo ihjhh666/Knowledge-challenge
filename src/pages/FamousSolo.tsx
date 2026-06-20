@@ -7,6 +7,7 @@ import { storage } from '../lib/storage';
 import { generateFamousQuestions, FamousQuestion } from '../data/famousData';
 import { updateStats as doUpdateAchStats, getPlayerStats } from '../lib/achievements';
 import { tfAudio } from '../lib/tfAudio';
+import { PlayBackground } from '../components/PlayBackground';
 
 // Helper for sound
 function safePlayObject(audioFunc: () => void) {
@@ -221,7 +222,9 @@ export default function FamousSolo() {
   const isTimeExpiring = timeLeft <= 3 && !selectedAnswer && !gameOver;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-hidden">
+    <>
+    <PlayBackground theme="famous" />
+    <div className="min-h-screen text-white font-sans overflow-hidden relative z-10" dir="rtl">
       {/* Confetti Explosion */}
       {showConfetti && <ConfettiExplosion />}
 
@@ -452,6 +455,7 @@ export default function FamousSolo() {
         </AnimatePresence>
       </main>
     </div>
+    </>
   );
 }
 

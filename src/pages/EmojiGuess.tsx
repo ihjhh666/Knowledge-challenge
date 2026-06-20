@@ -6,6 +6,7 @@ import { storage } from '../lib/storage';
 import { generateEmojiOptionQuestions, EmojiQuestion } from '../data/emojiData';
 import { updateStats as doUpdateAchStats, getPlayerStats } from '../lib/achievements';
 import { tfAudio } from '../lib/tfAudio'; // reuse audio
+import { PlayBackground } from '../components/PlayBackground';
 
 function safePlayObject(audioFunc: () => void) {
   if (storage.getSettings().sfxEnabled && audioFunc) {
@@ -215,7 +216,9 @@ export default function EmojiGuess() {
   const isTimeExpiring = timeLeft <= 3 && !selectedAnswer && !gameOver;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-hidden">
+    <>
+    <PlayBackground theme="emoji" />
+    <div className="min-h-screen text-white font-sans overflow-hidden relative z-10" dir="rtl">
       {showConfetti && <ConfettiExplosion />}
 
       <header className="p-4 flex items-center justify-between border-b border-white/10 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
@@ -410,6 +413,7 @@ export default function EmojiGuess() {
         </AnimatePresence>
       </main>
     </div>
+    </>
   );
 }
 

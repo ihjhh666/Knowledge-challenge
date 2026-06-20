@@ -5,6 +5,7 @@ import { audio } from '../lib/audio';
 import { getPlayerStats, updateStats } from '../lib/achievements';
 import { calculateEarnedXp } from '../lib/level';
 import { LOGOS_DATA, LogoItem } from '../lib/logosData';
+import { PlayBackground } from '../components/PlayBackground';
 
 export default function LogoGame() {
   const navigate = useNavigate();
@@ -175,53 +176,55 @@ export default function LogoGame() {
 
   if (!isPlaying) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white p-4" dir="rtl">
-        <button onClick={() => navigate('/solo')} className="flex items-center gap-2 text-pink-500/80 hover:text-pink-400 font-bold mb-8 transition-colors">
+      <>
+      <PlayBackground theme="logos" />
+      <div className="min-h-screen text-white p-4 relative z-10" dir="rtl">
+        <button onClick={() => navigate('/solo')} className="flex items-center gap-2 text-pink-500/80 hover:text-pink-400 font-bold mb-8 transition-colors drop-shadow-md">
           <ArrowRight className="w-5 h-5" /> عودة للأطوار
         </button>
         
-        <div className="max-w-xl mx-auto text-center space-y-8 mt-12 bg-slate-900 shadow-xl shadow-pink-900/10 p-8 rounded-3xl border border-pink-900/30">
+        <div className="max-w-xl mx-auto text-center space-y-8 mt-12 bg-slate-900/80 backdrop-blur-md shadow-2xl p-8 rounded-3xl border border-pink-900/50">
           <div className="w-24 h-24 mx-auto bg-gradient-to-br from-pink-500 to-rose-700 rounded-full flex items-center justify-center border-4 border-pink-500/30 shadow-xl shadow-pink-900/20">
             <ImageIcon className="w-12 h-12 text-white" />
           </div>
           
           <div>
             <h1 className="text-4xl font-bold font-heading text-white mb-4">خمن الشعار</h1>
-            <p className="text-slate-400 leading-relaxed max-w-md mx-auto">
+            <p className="text-slate-300 leading-relaxed max-w-md mx-auto">
               اختبر قوة ذاكرتك ومعرفتك بالعلامات التجارية والشركات بجميع الفئات. هل تتذكر شعار شركتك المفضلة بدون حروف؟
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center py-6 border-y border-slate-800">
+          <div className="grid grid-cols-3 gap-4 text-center py-6 border-y border-slate-800/50">
             <div className="space-y-1">
               <Star className="w-6 h-6 text-pink-500 mx-auto" />
               <div className="text-sm font-bold text-white">مئات الشعارات</div>
-              <div className="text-xs text-slate-500">من مختلف الفئات</div>
+              <div className="text-xs text-slate-400">من مختلف الفئات</div>
             </div>
-            <div className="space-y-1 border-x border-slate-800">
+            <div className="space-y-1 border-x border-slate-800/50">
               <Trophy className="w-6 h-6 text-yellow-500 mx-auto" />
               <div className="text-sm font-bold text-white">إنجازات حصرية</div>
-              <div className="text-xs text-slate-500">ألقاب ونقاط</div>
+              <div className="text-xs text-slate-400">ألقاب ونقاط</div>
             </div>
             <div className="space-y-1">
               <Target className="w-6 h-6 text-purple-500 mx-auto" />
               <div className="text-sm font-bold text-white">دقة وملاحظة</div>
-              <div className="text-xs text-slate-500">اختبر عينيك</div>
+              <div className="text-xs text-slate-400">اختبر عينيك</div>
             </div>
           </div>
 
           <div className="space-y-3">
-             <div className="text-right text-slate-300 font-bold mb-2">اختر مستوى الصعوبة:</div>
+             <div className="text-right text-slate-200 font-bold mb-2">اختر مستوى الصعوبة:</div>
              <button
                onClick={() => setDifficultyMode('normal')}
-               className={`w-full p-4 rounded-xl border-2 font-bold transition-all ${difficultyMode === 'normal' ? 'bg-pink-500/20 border-pink-500 text-pink-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+               className={`w-full p-4 rounded-xl border-2 font-bold transition-all backdrop-blur-sm ${difficultyMode === 'normal' ? 'bg-pink-500/30 border-pink-500 text-white shadow-lg' : 'bg-slate-800/50 border-slate-700 text-slate-300'}`}
              >
                <div className="text-lg">عادي</div>
                <div className="text-sm font-normal opacity-80 mt-1">عرض الشعار بألوانه الطبيعية</div>
              </button>
              <button
                onClick={() => setDifficultyMode('silhouette')}
-               className={`w-full p-4 rounded-xl border-2 font-bold transition-all ${difficultyMode === 'silhouette' ? 'bg-purple-500/20 border-purple-500 text-purple-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+               className={`w-full p-4 rounded-xl border-2 font-bold transition-all backdrop-blur-sm ${difficultyMode === 'silhouette' ? 'bg-purple-500/30 border-purple-500 text-white shadow-lg' : 'bg-slate-800/50 border-slate-700 text-slate-300'}`}
              >
                <div className="text-lg">مستحيل (ظل فقط)</div>
                <div className="text-sm font-normal opacity-80 mt-1">عرض الشعار كلون أسود داكن (للمحترفين)</div>
@@ -239,28 +242,31 @@ export default function LogoGame() {
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   if (gameOver) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white p-4 flex flex-col items-center justify-center font-heading" dir="rtl">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+      <>
+      <PlayBackground theme="logos" />
+      <div className="min-h-screen text-white p-4 flex flex-col items-center justify-center font-heading relative z-10" dir="rtl">
+        <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-500 to-rose-600"></div>
           
-          <div className="w-24 h-24 bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-24 h-24 bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
             <Trophy className="w-12 h-12" />
           </div>
           
-          <h2 className="text-4xl font-bold mb-2">انتهت اللعبة!</h2>
-          <p className="text-slate-400 mb-8">لقد نفدت محاولاتك في التعرف على الشعارات.</p>
+          <h2 className="text-4xl font-bold mb-2 text-white">انتهت اللعبة!</h2>
+          <p className="text-slate-300 mb-8 bg-black/40 p-4 rounded-xl inline-block mt-2">لقد نفدت محاولاتك في التعرف على الشعارات.</p>
           
           <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50 shadow-md">
               <div className="text-slate-400 text-sm mb-1">النتيجة</div>
               <div className="text-3xl font-bold font-mono text-yellow-400">{score}</div>
             </div>
-            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50 shadow-md">
               <div className="text-slate-400 text-sm mb-1">إجابات صحيحة</div>
               <div className="text-3xl font-bold font-mono text-emerald-400">{correctCount}</div>
             </div>
@@ -269,7 +275,7 @@ export default function LogoGame() {
           <div className="flex gap-4">
             <button
               onClick={() => navigate('/solo')}
-              className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-colors"
+              className="flex-1 bg-slate-800/80 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-colors border border-slate-700/50 shadow-md"
             >
               عودة
             </button>
@@ -292,13 +298,16 @@ export default function LogoGame() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   if (!currentLogo) return null;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col font-heading" dir="rtl">
+    <>
+    <PlayBackground theme="logos" />
+    <div className="min-h-screen text-white flex flex-col font-heading relative z-10" dir="rtl">
       {/* Header */}
       <div className="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shadow-lg sticky top-0 z-10">
         <div className="flex gap-1" dir="ltr">
@@ -378,5 +387,6 @@ export default function LogoGame() {
         </div>
       </div>
     </div>
+    </>
   );
 }
