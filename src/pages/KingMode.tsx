@@ -4,6 +4,7 @@ import { ArrowRight, Trophy, Crown, RefreshCcw, Settings, Lightbulb, Zap } from 
 import { useAuth } from '../components/AuthContext';
 import { audio } from '../lib/audio';
 import confetti from 'canvas-confetti';
+import { PlayBackground } from '../components/PlayBackground';
 
 interface Entity {
   id: string;
@@ -861,7 +862,9 @@ export default function KingMode() {
   const sortedLeaderboard = [...entities.current].sort((a,b) => b.score - a.score);
 
   return (
-    <div className="absolute inset-0 bg-[#0a0a16] flex flex-col font-sans overflow-hidden touch-none overscroll-none" dir="rtl">
+    <>
+      <PlayBackground theme="king" />
+      <div className="absolute inset-0 flex flex-col font-sans overflow-hidden touch-none overscroll-none z-10" dir="rtl">
         
         {/* Modern HUD Overlay */}
         {gameState === 'playing' && (
@@ -1034,5 +1037,6 @@ export default function KingMode() {
            </div>
         )}
     </div>
+    </>
   );
 }

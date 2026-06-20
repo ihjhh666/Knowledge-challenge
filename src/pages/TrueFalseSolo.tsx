@@ -8,6 +8,8 @@ import { getRandomTFQuestions, TFQuestion } from '../lib/tfData';
 import { updateTFStats } from '../lib/firebase';
 import { getPlayerStats } from '../lib/achievements';
 import { tfAudio } from '../lib/tfAudio';
+import { PlayBackground } from '../components/PlayBackground';
+import { getHudStyle, getCardStyle, getButtonStyle, ThemeState } from '../lib/themeStyles';
 
 export default function TrueFalseSolo() {
   const [questions, setQuestions] = useState<TFQuestion[]>([]);
@@ -119,112 +121,110 @@ export default function TrueFalseSolo() {
 
   const currentQ = questions[currentIndex];
 
+  const showState = (val: boolean): ThemeState => {
+    if (selectedAnswer === null) return 'idle';
+    if (val === currentQ.isTrue) return 'correct';
+    if (selectedAnswer === val && val !== currentQ.isTrue) return 'wrong';
+    if (selectedAnswer !== val) return 'disabled';
+    return 'idle';
+  };
+
   if (!questions.length) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white text-xl">جاري التحميل...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-hidden">
-      {/* Header */}
-      <header className="p-4 flex items-center justify-between border-b border-white/10 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
-        <button 
-          onClick={() => navigate('/')} 
-          className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
-        >
-          <ArrowLeft className="w-5 h-5 ml-2" />
-          <span className="font-bold">رجوع</span>
-        </button>
-        <div className="flex gap-1">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Heart 
-              key={i} 
-              className={`w-6 h-6 transition-all duration-300 ${
-                i < hearts 
-                  ? hearts === 1 
-                    ? 'text-rose-500 fill-rose-500 animate-[pulse_0.5s_ease-in-out_infinite]' 
-                    : 'text-rose-500 fill-rose-500'
-                  : 'text-slate-600 scale-75'
-              }`} 
-            />
-          ))}
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-2xl mx-auto p-4 flex flex-col min-h-[calc(100vh-80px)]">
-        {/* Top Stats */}
-        <div className="flex justify-between items-center mb-8 bg-slate-900/40 p-4 rounded-2xl border border-white/5 relative">
-          <div className="flex flex-col">
-            <span className="text-slate-400 text-sm">النقاط</span>
-            <span className="text-3xl font-bold text-amber-400">{score}</span>
+    <>
+      <PlayBackground theme="true_false" />
+      <div className="min-h-screen text-white font-sans overflow-hidden relative z-10" dir="rtl">
+        {/* Header */}
+        <header className={`p-4 flex items-center justify-between sticky top-0 z-50 ${getHudStyle('true_false')}`}>
+          <button 
+            onClick={() => navigate('/')} 
+            className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center text-indigo-100"
+          >
+            <ArrowLeft className="w-5 h-5 ml-2" />
+            <span className="font-bold">رجوع</span>
+          </button>
+          <div className="flex gap-1" dir="ltr">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Heart 
+                key={i} 
+                className={`w-6 h-6 transition-all duration-300 ${
+                  i < hearts 
+                    ? hearts === 1 
+                      ? 'text-rose-500 fill-rose-500 animate-[pulse_0.5s_ease-in-out_infinite]' 
+                      : 'text-rose-500 fill-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]'
+                    : 'text-white/20 scale-75'
+                }`} 
+              />
+            ))}
           </div>
-          <div className="flex flex-col items-end">
-            <span className="text-slate-400 text-sm">السلسلة 🔥</span>
-            <div className="flex items-center gap-2">
-              <AnimatePresence>
-                {streak >= 10 && <motion.span initial={{ opacity:0, scale: 0.5 }} animate={{ opacity:1, scale:1 }} className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-md font-bold">أسطورية 👑</motion.span>}
-                {streak >= 5 && streak < 10 && <motion.span initial={{ opacity:0, scale: 0.5 }} animate={{ opacity:1, scale:1 }} className="text-xs bg-amber-500/20 text-amber-400 px-2 py-1 rounded-md font-bold">ممتازة ⚡</motion.span>}
-                {streak >= 3 && streak < 5 && <motion.span initial={{ opacity:0, scale: 0.5 }} animate={{ opacity:1, scale:1 }} className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-md font-bold">جيدة 🔥</motion.span>}
-              </AnimatePresence>
-              <span className={`text-2xl font-bold ${streak >= 10 ? 'text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]' : streak >= 5 ? 'text-amber-400' : 'text-orange-400'}`}>{streak}</span>
+        </header>
+
+        {/* Main Content */}
+        <main className="max-w-2xl mx-auto p-4 flex flex-col min-h-[calc(100vh-80px)]">
+          {/* Top Stats */}
+          <div className={`flex justify-between items-center mb-8 p-4 mt-4 ${getHudStyle('true_false')}`}>
+            <div className="flex flex-col">
+              <span className="text-white/60 text-sm uppercase tracking-wider font-bold">النقاط</span>
+              <span className="text-3xl font-bold font-mono text-white drop-shadow-md">{score}</span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-white/60 text-sm uppercase tracking-wider font-bold">السلسلة 🔥</span>
+              <div className="flex items-center gap-2">
+                <AnimatePresence>
+                  {streak >= 10 && <motion.span initial={{ opacity:0, scale: 0.5 }} animate={{ opacity:1, scale:1 }} className="text-xs bg-purple-500/20 text-purple-200 px-2 py-1 rounded-md font-bold border border-purple-500/30">أسطورية 👑</motion.span>}
+                  {streak >= 5 && streak < 10 && <motion.span initial={{ opacity:0, scale: 0.5 }} animate={{ opacity:1, scale:1 }} className="text-xs bg-amber-500/20 text-amber-200 px-2 py-1 rounded-md font-bold border border-amber-500/30">ممتازة ⚡</motion.span>}
+                  {streak >= 3 && streak < 5 && <motion.span initial={{ opacity:0, scale: 0.5 }} animate={{ opacity:1, scale:1 }} className="text-xs bg-orange-500/20 text-orange-200 px-2 py-1 rounded-md font-bold border border-orange-500/30">جيدة 🔥</motion.span>}
+                </AnimatePresence>
+                <span className={`text-2xl font-bold font-mono ${streak >= 10 ? 'text-purple-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]' : streak >= 5 ? 'text-amber-300' : 'text-orange-300'}`}>{streak}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {!gameOver ? (
-          <AnimatePresence mode="wait">
-            <motion.div 
-              key={currentIndex}
-              initial={{ x: 50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1, ...(isShaking ? { x: [-10, 10, -10, 10, 0], transition: { duration: 0.4 } } : {}) }}
-              exit={{ x: -50, opacity: 0 }}
-              className="flex-1 flex flex-col justify-center items-center relative"
-            >
-              <div 
-                className={`bg-gradient-to-br p-8 rounded-3xl border shadow-2xl text-center w-full max-w-lg mb-12 transition-colors duration-300 ${
-                  isFlashing 
-                    ? 'from-rose-900/80 to-red-900/80 border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.6)]'
-                    : 'from-indigo-900/50 to-purple-900/50 border-indigo-500/20'
-                }`}
+          {!gameOver ? (
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={currentIndex}
+                initial={{ x: 50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1, ...(isShaking ? { x: [-10, 10, -10, 10, 0], transition: { duration: 0.4 } } : {}) }}
+                exit={{ x: -50, opacity: 0 }}
+                className="flex-1 flex flex-col justify-center items-center relative"
               >
-                <ShieldAlert className={`w-12 h-12 mx-auto mb-6 opacity-50 ${isFlashing ? 'text-rose-400' : 'text-indigo-400'}`} />
-                <h2 className="text-4xl md:text-5xl font-extrabold leading-tight text-white">{currentQ?.question}</h2>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6 w-full max-w-lg">
-                <button
-                  onClick={() => handleAnswer(true)}
-                  disabled={selectedAnswer !== null}
-                  className={`relative overflow-hidden p-8 rounded-3xl font-bold text-3xl transition-all duration-300 transform active:scale-95 ${
-                    selectedAnswer === true
-                      ? currentQ.isTrue 
-                        ? 'bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-105'
-                        : 'bg-rose-500 text-white shadow-[0_0_30px_rgba(244,63,94,0.5)] scale-95'
-                      : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:-translate-y-1'
+                <div 
+                  className={`text-center w-full max-w-lg mb-12 p-8 transition-all duration-300 ${
+                    isFlashing 
+                      ? 'bg-rose-900/90 border-4 border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.6)] rounded-3xl scale-105'
+                      : getCardStyle('true_false')
                   }`}
                 >
-                  <span className="relative z-10 flex items-center justify-center gap-3">
-                    <CheckCircle className="w-8 h-8" /> صح
-                  </span>
-                </button>
+                  <ShieldAlert className={`w-12 h-12 mx-auto mb-6 opacity-80 ${isFlashing ? 'text-white' : 'text-indigo-300'}`} />
+                  <h2 className="text-3xl md:text-5xl font-bold font-heading leading-tight text-white drop-shadow-md">{currentQ?.question}</h2>
+                </div>
 
-                <button
-                  onClick={() => handleAnswer(false)}
-                  disabled={selectedAnswer !== null}
-                  className={`relative overflow-hidden p-8 rounded-3xl font-bold text-3xl transition-all duration-300 transform active:scale-95 ${
-                    selectedAnswer === false
-                      ? !currentQ.isTrue 
-                        ? 'bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-105'
-                        : 'bg-rose-500 text-white shadow-[0_0_30px_rgba(244,63,94,0.5)] scale-95'
-                      : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:-translate-y-1'
-                  }`}
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-3">
-                     خطأ <XCircle className="w-8 h-8" />
-                  </span>
-                </button>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        ) : (
+                <div className="grid grid-cols-2 gap-6 w-full max-w-lg">
+                  <button
+                    onClick={() => handleAnswer(true)}
+                    disabled={selectedAnswer !== null}
+                    className={getButtonStyle('true_false', showState(true))}
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-3">
+                      <CheckCircle className="w-8 h-8" /> صح
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAnswer(false)}
+                    disabled={selectedAnswer !== null}
+                    className={getButtonStyle('true_false', showState(false))}
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-3">
+                       خطأ <XCircle className="w-8 h-8" />
+                    </span>
+                  </button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          ) : (
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -271,5 +271,6 @@ export default function TrueFalseSolo() {
         )}
       </main>
     </div>
+    </>
   );
 }

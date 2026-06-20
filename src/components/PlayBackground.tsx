@@ -357,6 +357,103 @@ export function PlayBackground({ theme }: PlayBackgroundProps) {
         </div>
       );
 
+    case 'king':
+      return (
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-black pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-yellow-950 via-black to-yellow-950/50"></div>
+          
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 120, repeat: Infinity, ease: "linear" }} className="absolute top-[10%] left-[5%] w-[800px] h-[800px] border border-yellow-500/10 rounded-full border-dashed opacity-50"></motion.div>
+          
+          <div className="absolute inset-0 opacity-[0.1]" style={{backgroundImage: 'radial-gradient(circle at center, rgba(250,204,21,0.2) 0%, transparent 70%)'}}></div>
+          
+          <div className="absolute left-[20%] top-[30%] text-[200px] opacity-[0.04] rotate-[-10deg]">👑</div>
+          <div className="absolute right-[20%] bottom-[20%] text-[180px] opacity-[0.03] rotate-[15deg]">🏆</div>
+        </div>
+      );
+
+    case 'chicken':
+      return (
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-orange-950 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-900 via-orange-900 to-yellow-900"></div>
+          <div className="absolute inset-0 opacity-[0.1]" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/wood-pattern.png")'}}></div>
+          
+          {Array.from({length: 10}).map((_, i) => (
+             <motion.div key={i} className="absolute text-4xl opacity-10"
+                initial={{ x: Math.random() * 100 + 'vw', y: Math.random() * 100 + 'vh' }}
+                animate={{ 
+                  x: [null, Math.random() * 100 + 'vw', Math.random() * 100 + 'vw'], 
+                  y: [null, Math.random() * 100 + 'vh', Math.random() * 100 + 'vh']
+                }}
+                transition={{ duration: 30 + Math.random() * 20, repeat: Infinity, ease: "linear" }}
+             >
+                🐓
+             </motion.div>
+          ))}
+          <div className="absolute left-[20%] top-[10%] text-[200px] opacity-[0.05] rotate-[20deg] mix-blend-overlay">🥚</div>
+        </div>
+      );
+
+    case 'domino':
+      return (
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-stone-900 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-stone-800 via-zinc-900 to-stone-950"></div>
+          <div className="absolute inset-0 opacity-[0.15]" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/black-linen.png")'}}></div>
+          
+          <div className="absolute inset-0 opacity-[0.05]" style={{backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.1) 2px, transparent 2px, transparent 10px)'}}></div>
+          
+          <div className="absolute left-[15%] bottom-[15%] text-[150px] opacity-[0.04] rotate-[-25deg]">🁫</div>
+          <div className="absolute right-[25%] top-[15%] text-[180px] opacity-[0.04] rotate-[35deg]">🁣</div>
+        </div>
+      );
+
+    case 'fishing':
+      return (
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-sky-950 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-b from-sky-900 via-blue-900 to-indigo-950"></div>
+          <div className="absolute inset-0 opacity-[0.1]" style={{backgroundImage: 'radial-gradient(circle at 50% -20%, rgba(255,255,255,0.5), transparent 60%)'}}></div>
+          
+          {Array.from({length: 15}).map((_, i) => (
+             <motion.div key={i} className="absolute w-1 h-1 rounded-full bg-white opacity-20"
+                initial={{ x: Math.random() * 100 + 'vw', y: '110vh' }}
+                animate={{ 
+                  y: '-10vh',
+                  x: `calc(${Math.random() * 100}vw + ${Math.sin(i) * 50}px)`
+                }}
+                transition={{ duration: 10 + Math.random() * 10, repeat: Infinity, ease: "linear" }}
+             ></motion.div>
+          ))}
+          
+          <div className="absolute left-[10%] top-[40%] text-[150px] opacity-[0.05] rotate-[15deg]">🐟</div>
+          <div className="absolute right-[15%] bottom-[20%] text-[200px] opacity-[0.03] rotate-[-10deg]">🎣</div>
+        </div>
+      );
+
+    case 'hockey':
+      return (
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-slate-900 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-950 via-slate-900 to-blue-950"></div>
+          <div className="absolute inset-0 opacity-[0.15]" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/ice-texture.png")'}}></div>
+          
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border-4 border-rose-500/10 rounded-full opacity-50"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-rose-500/20 rounded-full"></div>
+          <div className="absolute inset-y-0 left-1/2 w-1 bg-red-500/10 -translate-x-1/2"></div>
+        </div>
+      );
+
+    case 'true_false':
+      return (
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-indigo-950 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950"></div>
+          <div className="absolute inset-0 opacity-[0.05]" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.4) 1px, transparent 0)', backgroundSize: '40px 40px'}}></div>
+          
+          <div className="absolute left-0 top-0 w-1/2 h-full bg-emerald-500/5 blur-[100px]"></div>
+          <div className="absolute right-0 bottom-0 w-1/2 h-full bg-rose-500/5 blur-[100px]"></div>
+          
+          <div className="absolute left-[20%] top-[20%] text-[200px] opacity-[0.03] rotate-[-15deg] font-bold text-emerald-500">✓</div>
+          <div className="absolute right-[20%] bottom-[20%] text-[200px] opacity-[0.03] rotate-[15deg] font-bold text-rose-500">✗</div>
+        </div>
+      );
+
     default:
       return (
         <div className="fixed inset-0 -z-10 overflow-hidden bg-slate-950 pointer-events-none">

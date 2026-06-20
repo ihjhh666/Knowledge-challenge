@@ -7,6 +7,7 @@ import { storage } from '../lib/storage';
 import { updateStats, getPlayerStats } from '../lib/achievements';
 import { calculateLevel, calculateEarnedXp } from '../lib/level';
 import { PlayBackground } from '../components/PlayBackground';
+import { getHudStyle, getCardStyle } from '../lib/themeStyles';
 
 // Pre-generate a list
 let QUESTIONS_QUEUE = generateProverbQuestions(100);
@@ -255,13 +256,13 @@ export default function ProverbsSolo() {
     <div className="min-h-screen p-4 flex flex-col relative z-10" dir="rtl">
       <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
         {/* Header HUD */}
-        <div className="flex items-center justify-between mb-8 bg-black/40 p-4 rounded-2xl border border-amber-900/30 backdrop-blur-sm">
+        <div className={`flex items-center justify-between mb-8 p-4 rounded-xl ${getHudStyle('proverbs')}`}>
           <div className="flex items-center gap-4">
-            <button onClick={() => setGameOver(true)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
-              <ArrowRight className="w-5 h-5 text-amber-500" />
+            <button onClick={() => setGameOver(true)} className="p-2 hover:bg-black/20 rounded-xl transition-colors">
+              <ArrowRight className="w-5 h-5 opacity-80" />
             </button>
-            <div className="flex bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl gap-2 font-mono font-bold text-xl text-yellow-400 items-center shadow-inner pt-2.5">
-              <Zap className="w-5 h-5 text-yellow-500" /> {score}
+            <div className="flex bg-black/20 border border-white/10 px-4 py-2 rounded-xl gap-2 font-mono font-bold text-xl text-amber-300 items-center shadow-inner pt-2.5">
+              <Zap className="w-5 h-5 text-amber-400" /> {score}
             </div>
           </div>
           
@@ -269,29 +270,29 @@ export default function ProverbsSolo() {
             {[...Array(3)].map((_, i) => (
               <Heart 
                 key={i} 
-                className={`w-7 h-7 sm:w-8 sm:h-8 ${i < lives ? 'text-red-500 fill-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'text-slate-700'} transition-all`} 
+                className={`w-7 h-7 sm:w-8 sm:h-8 ${i < lives ? 'text-red-500 fill-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'text-slate-800/50'} transition-all`} 
               />
             ))}
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-slate-900/80 rounded-full h-3 max-w-sm mx-auto mb-8 border border-slate-800 overflow-hidden shadow-inner">
+        <div className="w-full bg-black/20 rounded-full h-3 max-w-sm mx-auto mb-8 border border-white/10 overflow-hidden shadow-inner">
           <div 
-            className={`h-full rounded-full transition-all duration-1000 ease-linear ${timeLeft < 5 ? 'bg-red-500' : 'bg-amber-500'}`}
+            className={`h-full rounded-full transition-all duration-1000 ease-linear ${timeLeft < 5 ? 'bg-red-500' : 'bg-amber-600'}`}
             style={{ width: `${(timeLeft / maxTime) * 100}%` }}
           />
         </div>
 
         {streak >= 3 && (
-          <div className="text-center mb-4 animate-bounce text-orange-400 font-bold flex items-center justify-center gap-2 drop-shadow-[0_0_5px_rgba(249,115,22,0.8)]">
+          <div className="text-center mb-4 animate-bounce text-orange-600 font-bold flex items-center justify-center gap-2 drop-shadow-md">
             <Flame className="w-5 h-5" /> سلسلة {streak} متتالية!
           </div>
         )}
 
         {/* Question Card */}
         {currentQ && (
-          <div className="bg-black/40 border border-amber-900/50 p-6 md:p-10 rounded-3xl text-center shadow-lg backdrop-blur-md mb-8 flex-1 flex flex-col justify-center relative overflow-hidden">
+          <div className={`p-6 md:p-10 text-center shadow-lg mb-8 flex-1 flex flex-col justify-center relative ${getCardStyle('proverbs')}`}>
              
              {/* Subtitle based on category */}
              <div className="absolute top-4 right-4 bg-amber-900/30 text-amber-500 px-3 py-1 rounded-full text-xs font-bold border border-amber-700/50">

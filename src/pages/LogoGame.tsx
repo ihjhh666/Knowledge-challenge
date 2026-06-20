@@ -6,6 +6,7 @@ import { getPlayerStats, updateStats } from '../lib/achievements';
 import { calculateEarnedXp } from '../lib/level';
 import { LOGOS_DATA, LogoItem } from '../lib/logosData';
 import { PlayBackground } from '../components/PlayBackground';
+import { getHudStyle, getCardStyle } from '../lib/themeStyles';
 
 export default function LogoGame() {
   const navigate = useNavigate();
@@ -309,33 +310,33 @@ export default function LogoGame() {
     <PlayBackground theme="logos" />
     <div className="min-h-screen text-white flex flex-col font-heading relative z-10" dir="rtl">
       {/* Header */}
-      <div className="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shadow-lg sticky top-0 z-10">
+      <div className={`p-4 flex justify-between items-center shadow-lg sticky top-0 z-10 ${getHudStyle('logos')}`}>
         <div className="flex gap-1" dir="ltr">
           {[...Array(3)].map((_, i) => (
-            <Heart key={i} className={`w-6 h-6 ${i < lives ? 'text-rose-500 fill-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'text-slate-700'} transition-all duration-300`} />
+            <Heart key={i} className={`w-6 h-6 ${i < lives ? 'text-rose-500 fill-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'text-slate-700/50'} transition-all duration-300`} />
           ))}
         </div>
         
-        <div className="text-2xl font-bold font-mono text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.3)]">
+        <div className="text-2xl font-bold font-mono text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
           {score}
         </div>
         
-        <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
-          <Flame className={`w-5 h-5 ${streak > 2 ? 'text-orange-500 fill-orange-500 animate-pulse' : 'text-slate-500'}`} />
-          <span className="font-mono font-bold">{streak}</span>
+        <div className="flex items-center gap-2 bg-black/30 px-4 py-2 rounded-full border border-white/10">
+          <Flame className={`w-5 h-5 ${streak > 2 ? 'text-orange-400 fill-orange-400 animate-pulse' : 'text-slate-500'}`} />
+          <span className="font-mono font-bold text-white/80">{streak}</span>
         </div>
       </div>
 
       {/* Timer Bar */}
-      <div className="h-1.5 w-full bg-slate-800">
+      <div className="h-1.5 w-full bg-slate-900 border-b border-cyan-500/20">
         <div 
-          className={`h-full transition-all duration-1000 ease-linear ${timeLeft <= 3 ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]' : timeLeft <= 7 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+          className={`h-full transition-all duration-1000 ease-linear ${timeLeft <= 3 ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]' : timeLeft <= 7 ? 'bg-amber-500' : 'bg-cyan-500'}`}
           style={{ width: `${(timeLeft / maxTime) * 100}%` }}
         />
       </div>
 
       <div className="flex-1 flex flex-col p-4 max-w-2xl mx-auto w-full">
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
+        <div className={`flex-1 flex flex-col items-center justify-center min-h-[300px] my-6 ${getCardStyle('logos')}`}>
           <div className={`relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center p-8 rounded-3xl border-4 transition-all duration-300
             ${selectedAnswer 
               ? (selectedAnswer === currentLogo.name 

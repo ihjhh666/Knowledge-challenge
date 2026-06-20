@@ -8,6 +8,7 @@ import { LogOut, Users, Lock, UserPlus, Settings } from 'lucide-react';
 import { FriendsSidebar } from '../components/FriendsSidebar';
 import { subscribeToFriends } from '../lib/firebase';
 import { storage } from '../lib/storage';
+import { PlayBackground } from '../components/PlayBackground';
 
 const PlayingField = lazy(() => import('./PlayingField'));
 const FishingRoom = lazy(() => import('./FishingRoom'));
@@ -164,7 +165,9 @@ export default function Room() {
   }
 
   return (
-    <div className="min-h-screen max-w-7xl mx-auto p-4 md:p-8 space-y-8 flex flex-col">
+    <>
+    {state.status !== 'waiting' && <PlayBackground theme={state.gameMode || 'general'} />}
+    <div className={`min-h-screen max-w-7xl mx-auto p-4 md:p-8 space-y-8 flex flex-col relative z-10 ${state.status !== 'waiting' ? 'bg-transparent' : 'bg-slate-900'}`}>
       <FriendsSidebar isOpen={showFriends} onClose={() => setShowFriends(false)} />
       
       <header className="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-3xl shrink-0">
@@ -229,5 +232,6 @@ export default function Room() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -7,6 +7,7 @@ import { generateEmojiOptionQuestions, EmojiQuestion } from '../data/emojiData';
 import { updateStats as doUpdateAchStats, getPlayerStats } from '../lib/achievements';
 import { tfAudio } from '../lib/tfAudio'; // reuse audio
 import { PlayBackground } from '../components/PlayBackground';
+import { getHudStyle } from '../lib/themeStyles';
 
 function safePlayObject(audioFunc: () => void) {
   if (storage.getSettings().sfxEnabled && audioFunc) {
@@ -221,17 +222,17 @@ export default function EmojiGuess() {
     <div className="min-h-screen text-white font-sans overflow-hidden relative z-10" dir="rtl">
       {showConfetti && <ConfettiExplosion />}
 
-      <header className="p-4 flex items-center justify-between border-b border-white/10 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
+      <header className={`p-4 flex items-center justify-between sticky top-0 z-50 ${getHudStyle('emoji')}`}>
         <button 
           onClick={() => navigate('/')} 
-          className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
+          className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center text-slate-800"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
         
         {!gameOver && (
           <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-bold transition-colors ${
-            isTimeExpiring ? 'bg-rose-500/20 text-rose-400 animate-pulse' : 'bg-white/10 text-slate-200'
+            isTimeExpiring ? 'bg-rose-500/20 text-rose-600 animate-pulse' : 'bg-black/10 text-slate-800'
           }`}>
              <Clock className="w-5 h-5" />
              <span className="text-xl font-mono w-6 text-center">{timeLeft}</span>
@@ -242,11 +243,11 @@ export default function EmojiGuess() {
           <div className="text-right">
             <div className="flex items-center gap-2 justify-end">
                {currentMultiplier > 1 && (
-                 <span className="text-sm font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">x{currentMultiplier}</span>
+                 <span className="text-sm font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded">x{currentMultiplier}</span>
                )}
-               <div className="text-xl font-bold font-mono text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">{score}</div>
+               <div className="text-xl font-bold font-mono text-fuchsia-700 drop-shadow-[0_0_8px_rgba(232,121,249,0.5)]">{score}</div>
             </div>
-            <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">النقاط</div>
+            <div className="text-xs text-slate-600 font-bold uppercase tracking-wider">النقاط</div>
           </div>
           
           <div className={`flex gap-1.5 items-center px-3 py-1.5 rounded-2xl border transition-colors ${

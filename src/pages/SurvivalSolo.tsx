@@ -7,6 +7,7 @@ import { audio } from '../lib/audio';
 import { supabaseService } from '../services/supabaseService';
 import { tfQuestions } from '../lib/tfData';
 import { PlayBackground } from '../components/PlayBackground';
+import { getHudStyle, getCardStyle, getButtonStyle } from '../lib/themeStyles';
 
 // Helper to shuffle array
 const shuffle = (array: any[]) => [...array].sort(() => 0.5 - Math.random());
@@ -275,7 +276,7 @@ export default function SurvivalSolo() {
     <>
     <PlayBackground theme="survival" />
     <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in relative z-10 transition-transform active:scale-[0.99] duration-75">
-      <div className="flex justify-between items-center bg-slate-900 border border-slate-800 px-6 py-4 rounded-3xl shadow-lg relative overflow-hidden">
+      <div className={`flex justify-between items-center px-6 py-4 rounded-3xl shadow-lg relative overflow-hidden ${getHudStyle('survival')}`}>
          {/* Background effect */}
          {showResult && selectedAnswer === currentQ.correctAnswer && <div className="absolute inset-0 bg-emerald-500/10 animate-pulse"></div>}
          {showResult && selectedAnswer !== currentQ.correctAnswer && <div className="absolute inset-0 bg-rose-500/10 animate-pulse"></div>}
@@ -285,9 +286,9 @@ export default function SurvivalSolo() {
                <span className="text-2xl block drop-shadow-md">{currentQ.icon}</span>
             </div>
             <div>
-               <p className="text-sm text-slate-400 font-bold mb-1">{currentQ.categoryName}</p>
+               <p className="text-sm opacity-80 font-bold mb-1">{currentQ.categoryName}</p>
                <div className="flex items-center gap-2 text-xs">
-                  <span className={`px-2 py-0.5 rounded-md font-bold ${currentQ.difficultyRank === 0 ? 'bg-emerald-500/20 text-emerald-400' : currentQ.difficultyRank === 1 ? 'bg-amber-500/20 text-amber-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                  <span className={`px-2 py-0.5 rounded-md font-bold ${currentQ.difficultyRank === 0 ? 'bg-emerald-500/20 text-emerald-300' : currentQ.difficultyRank === 1 ? 'bg-amber-500/20 text-amber-300' : 'bg-rose-500/20 text-rose-300'}`}>
                      {currentQ.difficultyRank === 0 ? 'سهل' : currentQ.difficultyRank === 1 ? 'متوسط' : 'صعب'}
                   </span>
                </div>
@@ -295,16 +296,16 @@ export default function SurvivalSolo() {
          </div>
 
          <div className="text-center relative z-10 w-32">
-            <p className="text-xs text-slate-400 mb-1 font-bold">سلسلة البقاء الحالية</p>
-            <div className="bg-slate-950 border border-slate-800 rounded-xl py-1.5 px-4 inline-flex items-center justify-center gap-2 shadow-inner">
+            <p className="text-xs opacity-80 mb-1 font-bold">سلسلة البقاء الحالية</p>
+            <div className="bg-black/30 border border-white/10 rounded-xl py-1.5 px-4 inline-flex items-center justify-center gap-2 shadow-inner">
                <Flame className="w-5 h-5 text-rose-500" />
                <span className="font-bold text-2xl text-white font-mono leading-none">{score}</span>
             </div>
          </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 p-8 md:p-12 rounded-[2.5rem] shadow-xl relative">
-        <h2 className="text-2xl md:text-3xl font-bold font-heading text-center leading-relaxed text-white mb-10">
+      <div className={`p-8 md:p-12 rounded-[2.5rem] shadow-xl relative ${getCardStyle('survival')}`}>
+        <h2 className="text-2xl md:text-3xl font-bold font-heading text-center leading-relaxed drop-shadow-md mb-10">
           {currentQ.text}
         </h2>
 
@@ -313,18 +314,13 @@ export default function SurvivalSolo() {
             const isSelected = selectedAnswer === opt;
             const isCorrect = opt === currentQ.correctAnswer;
             
-            let btnColor = "bg-slate-950 border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800 text-slate-200 shadow-sm";
-            
+            let state: "idle" | "selected" | "correct" | "wrong" | "disabled" = 'idle';
             if (showResult) {
-              if (isCorrect) {
-                btnColor = "bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] z-10 scale-[1.02] transition-transform";
-              } else if (isSelected && !isCorrect) {
-                 btnColor = "bg-rose-500/20 border-rose-500 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)] z-10 scale-[0.98] transition-transform";
-              } else {
-                 btnColor = "bg-slate-950 border-slate-800 text-slate-700 opacity-30 scale-95 transition-transform";
-              }
+              if (isCorrect) state = 'correct';
+              else if (isSelected && !isCorrect) state = 'wrong';
+              else state = 'disabled';
             } else if (isSelected) {
-               btnColor = "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20";
+              state = 'selected';
             }
 
             return (
@@ -332,7 +328,7 @@ export default function SurvivalSolo() {
                 key={idx}
                 disabled={showResult}
                 onClick={() => handleAnswer(opt)}
-                className={`relative p-6 rounded-2xl border-2 transition-all duration-300 font-bold text-lg text-right ${btnColor}`}
+                className={getButtonStyle('survival', state)}
               >
                 {opt}
               </button>

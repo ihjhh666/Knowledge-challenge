@@ -8,6 +8,7 @@ import { generateFamousQuestions, FamousQuestion } from '../data/famousData';
 import { updateStats as doUpdateAchStats, getPlayerStats } from '../lib/achievements';
 import { tfAudio } from '../lib/tfAudio';
 import { PlayBackground } from '../components/PlayBackground';
+import { getHudStyle } from '../lib/themeStyles';
 
 // Helper for sound
 function safePlayObject(audioFunc: () => void) {
@@ -229,7 +230,7 @@ export default function FamousSolo() {
       {showConfetti && <ConfettiExplosion />}
 
       {/* Header */}
-      <header className="p-4 flex items-center justify-between border-b border-white/10 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
+      <header className={`p-4 flex items-center justify-between sticky top-0 z-50 ${getHudStyle('famous')}`}>
         <button 
           onClick={() => navigate('/')} 
           className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"

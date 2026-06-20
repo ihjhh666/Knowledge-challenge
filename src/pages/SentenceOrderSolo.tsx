@@ -7,6 +7,7 @@ import { storage } from '../lib/storage';
 import { updateStats, getPlayerStats } from '../lib/achievements';
 import { calculateLevel, calculateEarnedXp } from '../lib/level';
 import { PlayBackground } from '../components/PlayBackground';
+import { getHudStyle, getCardStyle } from '../lib/themeStyles';
 
 export default function SentenceOrderSolo() {
   const navigate = useNavigate();
@@ -249,36 +250,36 @@ export default function SentenceOrderSolo() {
     <>
     <PlayBackground theme="sentence_order" />
     <div className="min-h-screen p-4 flex flex-col max-w-4xl mx-auto space-y-6 relative z-10">
-      <header className="flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border border-slate-800/50 p-4 rounded-3xl shrink-0 shadow-lg">
-        <button onClick={finishGame} className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+      <header className={`flex justify-between items-center p-4 rounded-xl shrink-0 ${getHudStyle('sentence_order')}`}>
+        <button onClick={finishGame} className="w-10 h-10 bg-black/20 rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-colors">
           <ArrowRight className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-6">
            <div className="flex flex-col items-center">
-             <span className="text-[10px] text-slate-400">النقاط</span>
-             <span className="font-bold text-emerald-400">{score}</span>
+             <span className="text-[10px] text-white/70 uppercase">النقاط</span>
+             <span className="font-bold text-white drop-shadow-md">{score}</span>
            </div>
            <div className="flex flex-col items-center">
-             <span className="text-[10px] text-slate-400">صح</span>
-             <span className="font-bold text-green-400">{correctCount}</span>
+             <span className="text-[10px] text-white/70 uppercase">صح</span>
+             <span className="font-bold text-white drop-shadow-md">{correctCount}</span>
            </div>
         </div>
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold font-mono ${timeLeft <= 5 ? 'bg-rose-500/20 text-rose-400 animate-pulse' : 'bg-slate-800 text-slate-300'}`}>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold font-mono border border-white/20 ${timeLeft <= 5 ? 'bg-rose-500/80 text-white animate-pulse' : 'bg-black/30 text-white'}`}>
           <Clock className="w-4 h-4" />
           {timeLeft}s
         </div>
       </header>
 
       <div className="flex-1 flex flex-col gap-8">
-         <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden shrink-0">
-            <div className={`h-full transition-all duration-1000 ease-linear ${timeLeft <= 5 ? 'bg-rose-500' : 'bg-sky-500'}`} style={{ width: `${(timeLeft / maxTime) * 100}%` }}></div>
+         <div className="w-full bg-black/30 h-2 rounded-full overflow-hidden shrink-0 border border-white/10">
+            <div className={`h-full transition-all duration-1000 ease-linear ${timeLeft <= 5 ? 'bg-rose-500' : 'bg-sky-400'}`} style={{ width: `${(timeLeft / maxTime) * 100}%` }}></div>
          </div>
          
          <div className="flex-1 flex flex-col justify-center gap-12">
             
             {/* منطقة الإجابة */}
-            <div className={`min-h-[120px] p-6 rounded-3xl border-2 transition-all flex flex-wrap content-start gap-3 ${resultState === 'correct' ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : resultState === 'wrong' ? 'bg-rose-500/10 border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.2)] animate-shake' : 'bg-slate-900 border-slate-700 shadow-inner'}`}>
-               {selectedWords.length === 0 && <span className="text-slate-500 text-center w-full mt-4 font-bold">اضغط على الكلمات بالأسفل لترتيبها هنا...</span>}
+            <div className={`min-h-[140px] p-6 rounded-none border-b-4 border-r-4 transition-all flex flex-wrap content-start gap-3 shadow-xl ${resultState === 'correct' ? 'bg-emerald-100 border-emerald-500 font-bold' : resultState === 'wrong' ? 'bg-rose-100 border-rose-500 font-bold animate-shake' : getCardStyle('sentence_order')}`}>
+               {selectedWords.length === 0 && <span className="text-slate-800/50 text-center w-full mt-4 font-bold">اضغط على الكلمات بالأسفل لترتيبها هنا...</span>}
                {selectedWords.map((word) => (
                  <button
                    key={word.id}

@@ -8,6 +8,7 @@ import { getPlayerStats, updateStats } from '../lib/achievements';
 import { notifyAchievements } from '../lib/firebase';
 import { User, Medal, ArrowLeft, Trophy, Crown, Maximize2, AlertCircle, RefreshCw, BarChart, Flame, Heart } from 'lucide-react';
 import { PlayBackground } from '../components/PlayBackground';
+import { getHudStyle, getCardStyle, getButtonStyle } from '../lib/themeStyles';
 
 export default function SortGame() {
   const navigate = useNavigate();
@@ -276,9 +277,9 @@ export default function SortGame() {
            </motion.div>
          </div>
        ) : (
-         <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full p-4 relative z-10">
+         <div className={`flex-1 flex flex-col max-w-2xl mx-auto w-full p-4 relative z-10 ${getCardStyle('sort')}`}>
            {/* Top Stats */}
-           <div className="flex items-center justify-between mb-8 mt-4">
+           <div className={`flex items-center justify-between mb-8 mt-6 p-4 rounded-xl ${getHudStyle('sort')}`}>
              <div className="flex flex-col gap-1">
                <span className="text-slate-400 text-sm">محاولات</span>
                <div className="flex gap-1 items-center bg-slate-900/50 p-2 rounded-full border border-slate-700/50">
