@@ -47,7 +47,7 @@ export default function Lobby() {
             <h2 className="text-xl font-bold font-heading text-slate-200">اللاعبين في الغرفة</h2>
              {state.category && (
                <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-md text-xs font-bold border border-indigo-500/30">
-                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : state.gameMode === 'domino' ? '🎲 الدومينو' : state.gameMode === 'hockey' ? '🏒 الهوكي' : state.gameMode === 'king' ? '👑 طور الملك' : state.gameMode === 'chicken' ? '🐔 سباق الدجاج' : state.category}
+                 {state.gameMode === 'fishing' ? '🎣 صيد السمك' : state.gameMode === 'penalty' ? '⚽ ركلات الجزاء' : state.gameMode === 'domino' ? '🎲 الدومينو' : state.gameMode === 'hockey' ? '🏒 الهوكي' : state.gameMode === 'king' ? '👑 طور الملك' : state.gameMode === 'chicken' ? '🐔 سباق الدجاج' : state.gameMode === 'ice' ? '🧊 الجليد المنزلق' : state.category}
                </span>
             )}
             {state.gameMode === 'fishing' && (
@@ -110,6 +110,7 @@ export default function Lobby() {
               <option value="hockey-2v2">🏒 الهوكي (2 ضد 2)</option>
               <option value="king">👑 طور الملك</option>
               <option value="chicken">🐔 سباق الدجاج</option>
+              <option value="ice">🧊 الجليد المنزلق</option>
             </select>
           </div>
 
@@ -148,6 +149,15 @@ export default function Lobby() {
         </div>
       )}
 
+      {state.gameMode === 'ice' && (
+         <div className="bg-cyan-900/10 border border-cyan-500/30 rounded-3xl p-6 text-center shadow-lg relative overflow-hidden mt-6">
+            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none w-full h-full flex justify-center items-center text-9xl">🧊</div>
+            <div className="bg-cyan-500/20 w-16 h-16 rounded-2xl mx-auto flex flex-col items-center justify-center mb-4 text-3xl shadow-inner relative z-10">🧊</div>
+            <h3 className="text-xl font-bold text-cyan-400 mb-2 relative z-10">الطور الحالي: الجليد المنزلق (Ice Slide)</h3>
+            <p className="text-slate-300 text-sm max-w-sm mx-auto mb-4 relative z-10">الساحة الجليدية تنهار! حافظ على توازنك وادفع اللاعبين الآخرين في الفراغ لتكون الفائز الأخير.</p>
+         </div>
+      )}
+      
       {state.gameMode === 'chicken' && (
          <div className="bg-lime-900/10 border border-lime-500/30 rounded-3xl p-6 text-center shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none w-full h-full flex justify-center items-center text-9xl">🐔</div>

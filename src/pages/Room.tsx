@@ -23,6 +23,7 @@ const EmojiRoom = lazy(() => import('./EmojiRoom'));
 const LogosRoom = lazy(() => import('./LogosRoom'));
 const ProverbsRoom = lazy(() => import('./ProverbsRoom'));
 const SortRoom = lazy(() => import('./SortRoom'));
+const IceRoom = lazy(() => import('./IceRoom'));
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -191,7 +192,8 @@ export default function Room() {
              state.gameMode === 'penalty' ? '⚽ ركلات الجزاء' :
              state.gameMode === 'domino' ? '🎲 الدومينو' :
              state.gameMode === 'hockey' ? '🏒 الهوكي' :
-             state.gameMode === 'king' ? '👑 طور الملك' : '🧠 تحدي المعرفة'}
+             state.gameMode === 'king' ? '👑 طور الملك' : 
+             state.gameMode === 'ice' ? '🧊 الجليد المنزلق' : '🧠 تحدي المعرفة'}
           </h1>
           <span className="px-3 py-1 bg-slate-800 text-xs text-slate-400 rounded-lg hidden sm:block">
             {state.status === 'waiting' ? 'في الانتظار' : 'جاري اللعب'}
@@ -232,6 +234,7 @@ export default function Room() {
             {state.status !== 'waiting' && state.gameMode === 'hockey' && state.hockeyState?.is2v2 && <Hockey2v2Room />}
             {state.status !== 'waiting' && state.gameMode === 'king' && <KingModeRoom />}
             {state.status !== 'waiting' && state.gameMode === 'chicken' && <ChickenRoom />}
+            {state.status !== 'waiting' && state.gameMode === 'ice' && <IceRoom />}
             {state.status !== 'waiting' && state.gameMode === 'famous' && <FamousRoom />}
             {state.status !== 'waiting' && state.gameMode === 'emoji' && <EmojiRoom />}
             {state.status !== 'waiting' && state.gameMode === 'logos' && <LogosRoom />}

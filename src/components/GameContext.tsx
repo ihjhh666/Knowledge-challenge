@@ -54,6 +54,7 @@ export interface GameContextType {
   sendHockeyEvent: (event: any) => void;
   sendKingEvent: (event: any) => void;
   sendChickenEvent: (event: any) => void;
+  sendIceEvent: (event: any) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -786,6 +787,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             broadcast(message);
           }
           window.dispatchEvent(new CustomEvent('chicken_event', { detail: message }));
+        }
+        break;
+      case 'ICE_INPUT':
+      case 'ICE_SYNC':
+        if (stateRef.current && stateRef.current.gameMode === 'ice') {
+          if (isHostRef.current && message.type === 'ICE_SYNC') {
+            broadcast(message);
+          }
+          window.dispatchEvent(new CustomEvent('ice_event', { detail: message }));
         }
         break;
       case 'SUBMIT_ANSWER':
@@ -1940,6 +1950,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           window.dispatchEvent(new CustomEvent('king_event', { detail: msg }));
         } else if (msg.type === 'CHICKEN_SYNC' || msg.type === 'CHICKEN_INPUT') {
           window.dispatchEvent(new CustomEvent('chicken_event', { detail: msg }));
+        } else if (msg.type === 'ICE_SYNC' || msg.type === 'ICE_INPUT') {
+          window.dispatchEvent(new CustomEvent('ice_event', { detail: msg }));
         }
       });
       
@@ -2284,6 +2296,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [playerId]);
 
+  const sendIceEvent = React.useCallback((event: any) => {
+    if (isHostRef.current) {
+      handleMessage({ ...event, playerId });
+    } else if (hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ ...event, playerId });
+    }
+  }, [playerId]);
+
   const disconnectedPlayer = state && (state.status === 'playing' || state.status === 'revealing' || state.status === 'waiting') 
     ? (Object.values(state.players) as RoomPlayer[]).find(p => p.disconnectedAt) 
     : undefined;
@@ -2325,7 +2345,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [disconnectedPlayer]);
 
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, changeTargetScore, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent, sendChickenEvent }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, changeTargetScore, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent, sendChickenEvent, sendIceEvent }}>
       {children}
       {disconnectedPlayer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

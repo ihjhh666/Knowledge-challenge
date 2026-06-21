@@ -149,6 +149,7 @@ export default function Rooms() {
                 <GameCard compact className={createConfig.gameMode === 'hockey' ? 'ring-2 ring-blue-500' : 'opacity-80'} card={{ id: 'hockey', title: 'الهوكي', icon: '🏒', themeStyle: 'hockey', primaryColor: 'from-sky-500 to-blue-900', glowColor: '#3b82f6', onClick: () => setCreateConfig({...createConfig, gameMode: 'hockey', maxPlayers: 2}) }} />
                 <GameCard compact className={createConfig.gameMode === 'king' ? 'ring-2 ring-amber-500' : 'opacity-80'} card={{ id: 'king', title: 'التاج', icon: '👑', themeStyle: 'king', primaryColor: 'from-purple-700 to-amber-700', glowColor: '#f59e0b', onClick: () => setCreateConfig({...createConfig, gameMode: 'king', maxPlayers: 4}) }} />
                 <GameCard compact className={createConfig.gameMode === 'chicken' ? 'ring-2 ring-lime-500' : 'opacity-80'} card={{ id: 'chicken', title: 'سباق الدجاج', icon: '🐔', themeStyle: 'chicken', primaryColor: 'from-orange-500 to-yellow-600', glowColor: '#84cc16', onClick: () => setCreateConfig({...createConfig, gameMode: 'chicken', maxPlayers: 6}) }} />
+                <GameCard compact className={createConfig.gameMode === 'ice' ? 'ring-2 ring-cyan-400' : 'opacity-80'} card={{ id: 'ice', title: 'جليد', icon: '🧊', themeStyle: 'football', primaryColor: 'from-cyan-500 to-blue-800', glowColor: '#22d3ee', onClick: () => setCreateConfig({...createConfig, gameMode: 'ice', maxPlayers: 6}) }} />
               </div>
             </div>
 
@@ -244,8 +245,8 @@ export default function Rooms() {
               <input 
                 type="number"
                 min="2"
-                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : createConfig.gameMode === 'king' ? "4" : createConfig.gameMode === 'chicken' ? "6" : "20"}
-                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken'}
+                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : createConfig.gameMode === 'king' ? "4" : createConfig.gameMode === 'chicken' || createConfig.gameMode === 'ice' ? "6" : "20"}
+                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken' || createConfig.gameMode === 'ice'}
                 value={createConfig.maxPlayers}
                 onChange={(e) => setCreateConfig({...createConfig, maxPlayers: parseInt(e.target.value) || 2})}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
