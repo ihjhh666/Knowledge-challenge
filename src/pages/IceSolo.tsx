@@ -80,6 +80,7 @@ export default function IceSolo() {
   const inputsRef = useRef({ x: 0, y: 0 });
   const particlesRef = useRef<Particle[]>([]);
   const joystickRef = useRef({ active: false, startX: 0, startY: 0, curX: 0, curY: 0, dx: 0, dy: 0 });
+  const cameraRef = useRef({ x: GRID_W / 2, y: GRID_H / 2 });
   const shakeRef = useRef(0);
 
   const gameTimeRef = useRef(0);
@@ -116,6 +117,7 @@ export default function IceSolo() {
         initialTiles.push({ r, c, state: 0 });
       }
     }
+    cameraRef.current = { x: GRID_W / 2, y: GRID_H / 2 + 100 };
     tilesRef.current = initialTiles;
     
     const chars: Character[] = [];
@@ -480,6 +482,16 @@ export default function IceSolo() {
       }
     }
 
+    let playerTarget = charsRef.current.find(c => c.id === 'player');
+    if (!playerTarget || playerTarget.dead) {
+        playerTarget = charsRef.current.find(c => !c.dead);
+    }
+    
+    if (playerTarget) {
+        cameraRef.current.x += (playerTarget.x - cameraRef.current.x) * 5 * dt;
+        cameraRef.current.y += (playerTarget.y - cameraRef.current.y) * 5 * dt;
+    }
+
   }, [gameState, level, endGame]);
 
   const draw = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -494,8 +506,29 @@ export default function IceSolo() {
     const shake = shakeRef.current;
     const shakeOffsetX = shake > 0 ? (Math.random() - 0.5) * shake : 0;
     const shakeOffsetY = shake > 0 ? (Math.random() - 0.5) * shake : 0;
-    const offsetX = (width - GRID_W) / 2 + shakeOffsetX;
-    const offsetY = (height - GRID_H) / 2 + shakeOffsetY;
+    
+    // Follow camera logic
+    const cam = cameraRef.current;
+    let baseOffsetX = width / 2 - cam.x;
+    let baseOffsetY = (height / 2 + 35) - cam.y; // Shift center down slightly due to top UI
+    
+    const PADDING = 0;
+
+    let minOffsetX = width - GRID_W - PADDING;
+    let maxOffsetX = PADDING;
+    if (width > GRID_W + PADDING * 2) {
+       minOffsetX = maxOffsetX = (width - GRID_W) / 2;
+    }
+    
+    let minOffsetY = height - GRID_H - PADDING;
+    let maxOffsetY = PADDING; // top UI overlay, so map goes to 0
+    if (height > GRID_H + PADDING * 2) {
+       minOffsetY = maxOffsetY = (height - GRID_H) / 2;
+    }
+    
+    const offsetX = Math.max(minOffsetX, Math.min(maxOffsetX, baseOffsetX)) + shakeOffsetX;
+    const offsetY = Math.max(minOffsetY, Math.min(maxOffsetY, baseOffsetY)) + shakeOffsetY;
+    
     ctx.translate(offsetX, offsetY);
     
     ctx.save();
