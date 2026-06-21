@@ -360,8 +360,8 @@ export default function Home() {
                       id: 'ice',
                       title: 'الجليد المنزلق',
                       subtitle: 'تزلج فوق الجليد ولا تسقط!',
-                      icon: <Snowflake className="w-8 h-8" />,
-                      themeStyle: 'sort', 
+                      icon: '🐧',
+                      themeStyle: 'ice', 
                       primaryColor: 'from-cyan-400 to-blue-600',
                       glowColor: '#06b6d4',
                       onClick: () => navigate('/ice-slide')

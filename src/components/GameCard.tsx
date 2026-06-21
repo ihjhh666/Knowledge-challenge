@@ -126,6 +126,41 @@ export function GameCard({ card, compact = false, className = '', index = 0 }: {
             <div className="absolute right-24 bottom-4 text-6xl leading-none opacity-40 group-hover:opacity-0 transition-all duration-300 drop-shadow-2xl">💨</div>
           </>
         );
+      case 'ice':
+        return (
+          <>
+            {/* Professional Frozen Lake Base */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-950 via-cyan-900 to-sky-950"></div>
+            
+            {/* Frozen Surface Layers for Depth */}
+            <div className="absolute inset-0 opacity-40 mix-blend-overlay" style={{backgroundImage: 'radial-gradient(circle at 20% 40%, rgba(255,255,255,0.4) 0%, transparent 60%), radial-gradient(circle at 80% 60%, rgba(165,243,252,0.3) 0%, transparent 60%)'}}></div>
+            
+            {/* Ice Cracks using sharp repeating linear gradients */}
+            <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.1) 40px, rgba(255,255,255,0.4) 41px, transparent 41px, transparent 100px), repeating-linear-gradient(-35deg, transparent, transparent 60px, rgba(255,255,255,0.1) 60px, rgba(255,255,255,0.4) 62px, transparent 62px, transparent 140px)'}}></div>
+
+            {/* Frozen Glass Edge Effect */}
+            <div className="absolute inset-0 border-[3px] border-white/20 rounded-3xl group-hover:border-cyan-300/40 transition-colors duration-500 shadow-[inset_0_0_30px_rgba(34,211,238,0.2)]"></div>
+
+            {/* Slow Moving Horizontal Shine */}
+            <div className="absolute top-0 left-0 w-full h-[200%] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[sweep-x_5s_linear_infinite] mix-blend-overlay"></div>
+
+            {/* Tiny Animated Snow Particles */}
+            <div className="absolute inset-0 pointer-events-none">
+                 <div className="absolute top-[20%] left-[20%] w-1.5 h-1.5 bg-white/80 rounded-full shadow-[0_0_5px_white] animate-[pulse_2s_infinite]"></div>
+                 <div className="absolute top-[50%] left-[80%] w-1 h-1 bg-white/70 rounded-full shadow-[0_0_5px_white] animate-[pulse_3s_infinite_1s]"></div>
+                 <div className="absolute top-[80%] left-[30%] w-2 h-2 bg-white/90 rounded-full shadow-[0_0_8px_white] animate-[pulse_2.5s_infinite_0.5s]"></div>
+                 <div className="absolute top-[30%] left-[70%] w-1.5 h-1.5 bg-white/80 rounded-full shadow-[0_0_6px_white] animate-[pulse_3.5s_infinite_1.5s]"></div>
+            </div>
+
+            {/* Fast Ice Wave inside card on hover */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.4)_0%,transparent_100%)] opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-150 transition-all duration-500 ease-out mix-blend-screen pointer-events-none"></div>
+
+            {/* Awesome Floating Penguin */}
+            <div className="absolute -right-4 -bottom-6 text-[130px] md:text-[160px] leading-none opacity-90 group-hover:opacity-100 transition-all duration-700 drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] group-hover:scale-110 group-hover:-translate-y-6 group-hover:-translate-x-4 group-hover:-rotate-6 origin-bottom-right">🐧</div>
+            <div className="absolute -right-4 -bottom-6 text-[130px] md:text-[160px] leading-none opacity-20 blur-xl drop-shadow-[0_0_30px_rgba(34,211,238,0.8)] group-hover:opacity-60 transition-all duration-700 pointer-events-none">🐧</div>
+
+          </>
+        );
       case 'quiz':
         return (
           <>
@@ -419,13 +454,13 @@ export function GameCard({ card, compact = false, className = '', index = 0 }: {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
 
       {/* Icon */}
-      <div className={`relative z-10 ${compact ? 'w-10 h-10 text-2xl' : 'w-16 h-16 text-3xl'} mb-auto flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.1)] border border-white/20 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300`}>
+      <div className={`relative z-10 ${compact ? 'w-10 h-10 text-2xl' : 'w-16 h-16 text-3xl'} mb-auto flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.1)] border border-white/20 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 ${card.themeStyle === 'ice' ? 'animate-[pulse_3s_ease-in-out_infinite] shadow-[0_0_15px_rgba(34,211,238,0.5)] border-cyan-300/30' : ''}`}>
         {card.icon}
       </div>
 
       {/* Text Content */}
       <div className={`relative z-10 ${compact ? 'mt-4' : 'mt-6'} transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300`}>
-        <h3 className={`${compact ? 'text-lg' : 'text-2xl'} font-bold font-heading text-white drop-shadow-lg tracking-wide`}>{card.title}</h3>
+        <h3 className={`${compact ? 'text-lg' : 'text-2xl'} font-bold font-heading text-white tracking-wide ${card.themeStyle === 'ice' ? 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' : 'drop-shadow-lg'}`}>{card.title}</h3>
         {card.subtitle && (
           <p className={`text-slate-300 ${compact ? 'text-xs mt-1' : 'text-sm mt-2'} opacity-80 group-hover:opacity-100 transition-opacity`}>
             {card.subtitle}
