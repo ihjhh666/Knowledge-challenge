@@ -4,6 +4,7 @@ import { ChevronRight, Home as HomeIcon, RotateCcw, Volume2, VolumeX, Grid2X2, T
 import { supabaseService } from '../services/supabaseService';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
+import { PlayBackground } from '../components/PlayBackground';
 
 type Domino = { id: string; val1: number; val2: number };
 
@@ -593,7 +594,9 @@ export default function DominoSolo() {
 
   if (gameState === 'setup') {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col pt-12 items-center p-4 relative overflow-hidden">
+      <>
+      <PlayBackground theme="domino" />
+      <div className="min-h-screen bg-transparent flex flex-col pt-12 items-center p-4 relative overflow-hidden z-10">
         <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none mix-blend-overlay"></div>
         <div className="absolute -left-32 top-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute right-0 bottom-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -669,11 +672,14 @@ export default function DominoSolo() {
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
+    <>
+    <PlayBackground theme="domino" />
+    <div className="min-h-[100dvh] h-[100dvh] bg-transparent text-slate-100 flex flex-col font-sans overflow-hidden relative z-10">
       <header className="bg-slate-900 border-b border-slate-800 p-3 shrink-0 z-20 shadow-md relative">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -919,5 +925,6 @@ export default function DominoSolo() {
         )}
       </main>
     </div>
+    </>
   );
 }

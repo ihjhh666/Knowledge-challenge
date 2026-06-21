@@ -4,6 +4,7 @@ import { ChevronRight, Target, Trophy, Clock, Fish as FishIcon, Medal, User, Wav
 import { supabaseService } from '../services/supabaseService';
 import { storage } from '../lib/storage';
 import { fishingAudio } from '../lib/fishingAudio';
+import { PlayBackground } from '../components/PlayBackground';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 type BotDifficulty = 'easy' | 'medium' | 'hard';
@@ -465,7 +466,9 @@ export default function FishingSolo() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col p-4 md:p-8" dir="rtl">
+    <>
+    <PlayBackground theme="fishing" />
+    <div className="min-h-screen bg-transparent text-slate-100 font-sans flex flex-col p-4 md:p-8 relative z-10" dir="rtl">
       <header className="flex items-center gap-4 max-w-4xl mx-auto w-full mb-8">
         <button 
           onClick={() => navigate('/')}
@@ -659,5 +662,6 @@ export default function FishingSolo() {
         )}
       </main>
     </div>
+    </>
   );
 }

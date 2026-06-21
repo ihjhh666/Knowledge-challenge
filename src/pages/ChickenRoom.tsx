@@ -948,11 +948,11 @@ export default function ChickenRoom() {
 
   // We removed debugInfo state.
   return (
-    <div className="fixed inset-0 z-[100] w-full h-[100svh] bg-slate-950 flex flex-col touch-none overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[100] w-full h-[100svh] bg-transparent flex flex-col touch-none overflow-hidden font-sans">
       
       {/* 1. Game Area (Top) - Maximized */}
       <div 
-         className="relative w-full mx-auto overflow-hidden bg-[#65a30d] flex-1 border-b-[3px] border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col"
+         className="relative w-full mx-auto overflow-hidden bg-transparent flex-1 border-b-[3px] border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col"
       >
         
         {/* Game Canvas matches Game Area size */}

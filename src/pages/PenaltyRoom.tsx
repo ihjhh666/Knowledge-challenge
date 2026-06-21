@@ -1012,7 +1012,7 @@ export default function PenaltyRoom() {
       </div>
 
       {/* Main Canvas Area */}
-      <div className={`relative w-full rounded-t-3xl overflow-hidden border-2 border-slate-700 shadow-xl bg-[#0f172a] shadow-slate-900/50 flex-1 min-h-[300px] md:min-h-[400px] max-h-[60vh] ${shake ? 'animate-shake' : ''}`}>
+      <div className={`relative w-full rounded-t-3xl overflow-hidden border-2 border-slate-700 shadow-xl bg-[#0f172a]/20 backdrop-blur-sm shadow-slate-900/50 flex-1 min-h-[300px] md:min-h-[400px] max-h-[60vh] ${shake ? 'animate-shake' : ''}`}>
          <canvas 
            ref={canvasRef} 
            className="w-full h-full"

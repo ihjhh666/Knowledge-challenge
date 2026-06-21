@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronLeft, Trophy, Goal, Shield, Save, XOctagon, RotateCcw, Volume2, VolumeX, Home as HomeIcon, Activity, Clock, Star, Medal } from 'lucide-react';
 import { supabaseService } from '../services/supabaseService';
+import { PlayBackground } from '../components/PlayBackground';
 import { storage } from '../lib/storage';
 import { audio } from '../lib/audio';
 
@@ -1009,7 +1010,9 @@ export default function PenaltySolo() {
 
   if (gameState === 'setup') {
     return (
-      <div className="max-w-3xl mx-auto p-6 md:p-12 animate-fade-in">
+      <>
+      <PlayBackground theme="penalty" />
+      <div className="max-w-3xl mx-auto p-6 md:p-12 animate-fade-in relative z-10 w-full">
         <header className="flex items-center gap-4 mb-12">
           <button onClick={() => navigate('/')} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
             <ChevronRight className="w-6 h-6" />
@@ -1047,12 +1050,15 @@ export default function PenaltySolo() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   if (gameState === 'results') {
     const isPlayerWin = playerScore > botScore;
     return (
+      <>
+      <PlayBackground theme="penalty" />
       <div className="max-w-2xl mx-auto p-6 md:p-12 text-center animate-fade-in relative z-10 w-full">
         <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ${
            isPlayerWin ? 'bg-emerald-500/20 shadow-emerald-500/20' : 'bg-rose-500/20 shadow-rose-500/20'
@@ -1145,12 +1151,15 @@ export default function PenaltySolo() {
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   // Active playing view
   return (
-    <div className="max-w-2xl mx-auto p-2 flex flex-col h-[100dvh] justify-between pb-4 gap-2 animate-fade-in w-full">
+    <>
+    <PlayBackground theme="penalty" />
+    <div className="max-w-2xl mx-auto p-2 flex flex-col h-[100dvh] justify-between pb-4 gap-2 animate-fade-in w-full relative z-10">
       
       {/* Top Header controls only */}
       <div className="flex justify-between items-center px-4 pt-2">
@@ -1167,7 +1176,7 @@ export default function PenaltySolo() {
       </div>
 
       {/* Main Canvas Area */}
-      <div className={`relative w-full rounded-t-3xl overflow-hidden border-2 border-slate-700 shadow-xl bg-[#0f172a] shadow-slate-900/50 flex-1 min-h-[300px] md:min-h-[400px] max-h-[60vh] ${shake ? 'animate-shake' : ''}`}>
+      <div className={`relative w-full rounded-t-3xl overflow-hidden border-2 border-slate-700 shadow-xl bg-[#0f172a]/20 backdrop-blur-sm shadow-slate-900/50 flex-1 min-h-[300px] md:min-h-[400px] max-h-[60vh] ${shake ? 'animate-shake' : ''}`}>
          <canvas 
            ref={canvasRef} 
            className="w-full h-full"
@@ -1256,6 +1265,7 @@ export default function PenaltySolo() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

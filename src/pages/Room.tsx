@@ -164,9 +164,22 @@ export default function Room() {
     );
   }
 
+  const resolveTheme = () => {
+    if (state.gameMode && state.gameMode !== 'quiz') return state.gameMode;
+    if (state.category === 'كرة القدم') return 'football';
+    if (state.category === 'الأفلام') return 'movies';
+    if (state.category === 'الأنمي') return 'anime';
+    if (state.category === 'العلوم') return 'science';
+    if (state.category === 'التاريخ') return 'history';
+    if (state.category === 'إسلاميات') return 'islamic';
+    if (state.category === 'رياضيات') return 'math';
+    if (state.category === 'صح أم خطأ') return 'true_false';
+    return 'quiz';
+  };
+
   return (
     <>
-    {state.status !== 'waiting' && <PlayBackground theme={state.gameMode || 'general'} />}
+    {state.status !== 'waiting' && <PlayBackground theme={resolveTheme()} />}
     <div className={`min-h-screen max-w-7xl mx-auto p-4 md:p-8 space-y-8 flex flex-col relative z-10 ${state.status !== 'waiting' ? 'bg-transparent' : 'bg-slate-900'}`}>
       <FriendsSidebar isOpen={showFriends} onClose={() => setShowFriends(false)} />
       

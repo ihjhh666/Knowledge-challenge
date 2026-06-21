@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Settings2, RotateCcw, HomeIcon, Trophy, Target } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { supabaseService } from '../services/supabaseService';
+import { PlayBackground } from '../components/PlayBackground';
 
 // Audio Context for sound effects
 const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -1125,7 +1126,9 @@ export default function HockeySolo() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex flex-col justify-center items-center p-2 md:p-4">
+    <>
+    <PlayBackground theme="hockey" />
+    <div className="min-h-screen bg-transparent font-sans text-slate-100 flex flex-col justify-center items-center p-2 md:p-4 relative z-10 w-full">
       {gameState === 'setup' && (
         <div className="max-w-md w-full bg-slate-900 border border-slate-700 p-8 rounded-3xl shadow-2xl relative overflow-hidden text-center backdrop-blur-xl">
            <div className="text-6xl mb-6 drop-shadow-xl animate-bounce">🏒</div>
@@ -1273,5 +1276,6 @@ export default function HockeySolo() {
          </div>
       )}
     </div>
+    </>
   );
 }

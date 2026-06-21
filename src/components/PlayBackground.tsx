@@ -10,15 +10,27 @@ export function PlayBackground({ theme }: PlayBackgroundProps) {
     case 'general':
     case 'quiz':
       return (
-        <div className="fixed inset-0 -z-10 overflow-hidden bg-slate-950 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950"></div>
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
-          <div className="absolute top-1/4 -left-1/4 w-[150%] h-[1px] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent -rotate-12 animate-[sweep-x_8s_linear_infinite]"></div>
-          <div className="absolute bottom-1/4 -right-1/4 w-[150%] h-[1px] bg-gradient-to-r from-transparent via-indigo-400/30 to-transparent rotate-12 animate-[sweep-x_12s_linear_infinite_reverse]"></div>
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-fuchsia-950 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-950 via-purple-950 to-indigo-950"></div>
           
-          <div className="absolute right-[10%] top-[20%] text-[200px] opacity-5 -rotate-12">🌍</div>
-          <div className="absolute left-[5%] bottom-[10%] w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px]"></div>
-          <div className="absolute right-[5%] top-[10%] w-64 h-64 bg-cyan-600/10 rounded-full blur-[80px]"></div>
+          <div className="absolute inset-0 opacity-[0.05]" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")'}}></div>
+          
+          {/* Animated floating galaxies / planets */}
+          {Array.from({length: 6}).map((_, i) => (
+             <motion.div key={i} className="absolute text-5xl opacity-10 filter blur-[1px]"
+                initial={{ x: Math.random() * 100 + 'vw', y: '110vh' }}
+                animate={{ y: '-20vh', rotate: [-20, 20] }}
+                transition={{ duration: 25 + Math.random() * 20, repeat: Infinity, ease: "easeInOut" }}
+             >
+                {i % 3 === 0 ? '🌍' : i % 3 === 1 ? '🪐' : '✨'}
+             </motion.div>
+          ))}
+          
+          <div className="absolute left-[10%] top-[20%] text-[150px] opacity-[0.03] rotate-[-15deg]">✨</div>
+          <div className="absolute right-[15%] bottom-[15%] text-[180px] opacity-[0.03] rotate-[15deg]">🌎</div>
+          
+          <div className="absolute left-[5%] bottom-[10%] w-96 h-96 bg-fuchsia-600/10 rounded-full blur-[100px]"></div>
+          <div className="absolute right-[5%] top-[10%] w-64 h-64 bg-indigo-600/10 rounded-full blur-[80px]"></div>
         </div>
       );
       
@@ -212,26 +224,28 @@ export function PlayBackground({ theme }: PlayBackgroundProps) {
 
     case 'sentence_order':
       return (
-        <div className="fixed inset-0 -z-10 overflow-hidden bg-slate-950 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-950 via-indigo-950 to-slate-950"></div>
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-amber-950 pointer-events-none">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cork-board.png')] opacity-60"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-950/80 via-stone-900/90 to-black"></div>
           
           {/* Floating Sticky Notes / Paper pieces */}
           {Array.from({length: 6}).map((_, i) => (
-            <motion.div key={i}
-              className="absolute w-32 h-20 bg-yellow-100/5 rounded shadow-lg backdrop-blur-sm border border-white/5"
-              initial={{ rotate: Math.random() * 60 - 30, x: Math.random() * 100 + 'vw', y: Math.random() * 100 + 'vh' }}
-              animate={{
-                 y: [null, Math.random() * 100 + 'vh'],
-                 rotate: [null, Math.random() * 90 - 45]
-              }}
-              transition={{ duration: 20 + Math.random() * 20, repeat: Infinity, ease: 'linear' }}
-            ></motion.div>
+             <motion.div key={i}
+               className="absolute w-32 h-32 bg-yellow-100/10 rounded-sm shadow-xl border border-white/10"
+               style={{ backgroundImage: 'linear-gradient(transparent 90%, rgba(0,0,0,0.1) 90%), linear-gradient(90deg, rgba(255,0,0,0.1) 10%, transparent 10%)', backgroundSize: '100% 20px, 20px 100%' }}
+               initial={{ rotate: Math.random() * 60 - 30, x: Math.random() * 100 + 'vw', y: Math.random() * 100 + 'vh' }}
+               animate={{
+                  y: [null, Math.random() * 100 + 'vh'],
+                  rotate: [null, Math.random() * 90 - 45]
+               }}
+               transition={{ duration: 20 + Math.random() * 20, repeat: Infinity, ease: 'linear' }}
+             ></motion.div>
           ))}
           
           {/* Floating Arabic Letters */}
           {['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ر', 'س'].map((char, i) => (
              <motion.div key={char} 
-                className="absolute text-5xl font-black text-white/5"
+                className="absolute text-6xl font-black text-amber-500/10 mix-blend-overlay drop-shadow-2xl"
                 initial={{ x: Math.random() * 100 + 'vw', y: Math.random() * 100 + 'vh', rotate: Math.random() * 360 }}
                 animate={{ 
                   y: [null, Math.random() * 100 + 'vh'],
@@ -244,7 +258,8 @@ export function PlayBackground({ theme }: PlayBackgroundProps) {
              </motion.div>
           ))}
           
-          <div className="absolute -top-20 -left-20 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px]"></div>
+          <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-yellow-600/10 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-amber-800/20 rounded-full blur-[100px]"></div>
         </div>
       );
 
@@ -442,15 +457,19 @@ export function PlayBackground({ theme }: PlayBackgroundProps) {
 
     case 'true_false':
       return (
-        <div className="fixed inset-0 -z-10 overflow-hidden bg-indigo-950 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950"></div>
-          <div className="absolute inset-0 opacity-[0.05]" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.4) 1px, transparent 0)', backgroundSize: '40px 40px'}}></div>
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-black pointer-events-none">
+          <div className="absolute inset-0 flex">
+            <div className="w-1/2 h-full bg-gradient-to-br from-emerald-950 to-emerald-900/50"></div>
+            <div className="w-1/2 h-full bg-gradient-to-bl from-rose-950 to-rose-900/50"></div>
+          </div>
+          <div className="absolute inset-0 opacity-[0.1]" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.8) 1px, transparent 0)', backgroundSize: '40px 40px'}}></div>
           
-          <div className="absolute left-0 top-0 w-1/2 h-full bg-emerald-500/5 blur-[100px]"></div>
-          <div className="absolute right-0 bottom-0 w-1/2 h-full bg-rose-500/5 blur-[100px]"></div>
+          <div className="absolute left-[15%] top-[50%] -translate-y-1/2 text-[250px] opacity-[0.04] rotate-[-5deg] font-black text-emerald-400 drop-shadow-[0_0_50px_rgba(16,185,129,0.5)]">✓</div>
+          <div className="absolute right-[15%] top-[50%] -translate-y-1/2 text-[250px] opacity-[0.04] rotate-[5deg] font-black text-rose-400 drop-shadow-[0_0_50px_rgba(244,63,94,0.5)]">✗</div>
           
-          <div className="absolute left-[20%] top-[20%] text-[200px] opacity-[0.03] rotate-[-15deg] font-bold text-emerald-500">✓</div>
-          <div className="absolute right-[20%] bottom-[20%] text-[200px] opacity-[0.03] rotate-[15deg] font-bold text-rose-500">✗</div>
+          {/* Beams */}
+          <div className="absolute left-1/4 top-0 w-[100px] h-[150%] bg-white/5 -rotate-45 blur-2xl"></div>
+          <div className="absolute right-1/4 top-0 w-[100px] h-[150%] bg-white/5 rotate-45 blur-2xl"></div>
         </div>
       );
 

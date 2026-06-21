@@ -2,6 +2,9 @@ export type ThemeState = 'idle' | 'selected' | 'correct' | 'wrong' | 'disabled';
 
 export const getHudStyle = (theme: string) => {
   switch (theme) {
+    case 'general':
+    case 'quiz': return 'bg-fuchsia-950/80 border border-fuchsia-500/50 rounded-2xl text-fuchsia-50 backdrop-blur-xl shadow-[0_0_30px_rgba(217,70,239,0.3)] relative overflow-hidden';
+    case 'penalty': return 'bg-black/90 border-b-4 border-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.2)] font-mono text-white uppercase tracking-wider rounded-b-2xl sm:rounded-2xl';
     case 'football': return 'bg-black/90 border-b-4 border-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.2)] font-mono text-white uppercase tracking-wider rounded-b-2xl sm:rounded-2xl';
     case 'science': return 'bg-cyan-950/60 border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.4)] rounded-t-3xl rounded-b-xl text-cyan-50 backdrop-blur-md relative overflow-hidden';
     case 'history': return 'bg-stone-900/90 border-b-4 border-amber-700 shadow-xl rounded-t-sm rounded-b-xl text-amber-50 bg-[url("https://www.transparenttextures.com/patterns/wood-pattern.png")]';
@@ -28,6 +31,9 @@ export const getHudStyle = (theme: string) => {
 
 export const getCardStyle = (theme: string) => {
   switch (theme) {
+    case 'general':
+    case 'quiz': return 'bg-[linear-gradient(135deg,rgba(46,16,101,0.95),rgba(112,26,117,0.95))] border border-fuchsia-400/40 shadow-[0_0_50px_rgba(217,70,239,0.3)] rounded-[3rem] backdrop-blur-xl text-white relative overflow-hidden bg-[url("https://www.transparenttextures.com/patterns/cubes.png")]';
+    case 'penalty': return 'bg-green-800/90 border-2 border-white/20 shadow-2xl rounded-xl text-white relative overflow-hidden bg-[url("https://www.transparenttextures.com/patterns/cubes.png")]';
     case 'football': return 'bg-green-800/90 border-2 border-white/20 shadow-2xl rounded-xl text-white relative overflow-hidden bg-[url("https://www.transparenttextures.com/patterns/cubes.png")]';
     case 'science': return 'bg-cyan-950/40 border border-cyan-400/50 shadow-[0_0_40px_rgba(6,182,212,0.15)] rounded-3xl backdrop-blur-md text-cyan-50 relative overflow-hidden';
     case 'history': return 'bg-amber-100 border-[12px] border-amber-900/80 shadow-2xl rounded-sm text-amber-950 bg-[url("https://www.transparenttextures.com/patterns/cream-paper.png")]';
@@ -71,6 +77,12 @@ export const getButtonStyle = (theme: string, state: ThemeState) => {
   if (isWrong) return base + 'bg-red-500 text-white border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.5)] z-10 scale-95 opacity-80';
 
   switch (theme) {
+    case 'general':
+    case 'quiz':
+      if (isSelected) return base + 'bg-fuchsia-600 text-white border-fuchsia-400 shadow-[0_0_30px_rgba(217,70,239,0.8)] scale-105';
+      return base + 'bg-indigo-950/50 border-fuchsia-500/30 text-fuchsia-100 hover:bg-fuchsia-900 hover:border-fuchsia-400 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]';
+
+    case 'penalty':
     case 'football':
       if (isSelected) return base + 'bg-white text-green-900 border-white shadow-lg';
       return base + 'bg-green-900/50 border-white/30 text-white hover:bg-green-800 hover:border-white/60';

@@ -28,7 +28,6 @@ export function GameCard({ card, compact = false, className = '', index = 0 }: {
   const getCustomVisuals = (themeStyle: string) => {
     switch (themeStyle) {
       case 'football':
-      case 'penalty':
         return (
           <>
             <div className="absolute inset-0 bg-gradient-to-br from-green-900 via-emerald-800 to-green-950"></div>

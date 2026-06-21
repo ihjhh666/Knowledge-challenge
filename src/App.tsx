@@ -15,9 +15,11 @@ import { GlobalProfileModal } from './components/GlobalProfileModal';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { audio } from './lib/audio';
 import { supabase } from './lib/supabase';
+import BottomNav from './components/BottomNav';
 
 // Lazy loading all other pages and modes
 const Room = lazy(() => import('./pages/Room'));
+const Rooms = lazy(() => import('./pages/Rooms'));
 const Updates = lazy(() => import('./pages/Updates'));
 const SoloPlay = lazy(() => import('./pages/SoloPlay'));
 const FishingSolo = lazy(() => import('./pages/FishingSolo'));
@@ -40,6 +42,7 @@ const ContactUs = lazy(() => import('./pages/ContactUs'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Account = lazy(() => import('./pages/Account'));
 const Achievements = lazy(() => import('./pages/Achievements'));
 const Settings = lazy(() => import('./pages/Settings'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -234,6 +237,8 @@ function AppContent() {
             
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Home />} />
+              <Route path="/rooms" element={<Rooms />} />
+              <Route path="/account" element={<Account />} />
               <Route path="/room/:roomId" element={<Room />} />
               <Route path="/updates" element={<Updates />} />
               <Route path="/solo" element={<SoloPlay />} />
@@ -266,13 +271,17 @@ function AppContent() {
         </Suspense>
       </main>
       
-      <div className="w-full bg-slate-950 px-4 py-8">
+      <BottomNav />
+      
+      <div className="w-full bg-transparent px-4 py-8 mb-16 md:mb-0">
         <div className="max-w-4xl mx-auto">
           <AdBanner dataAdSlot="6036873429" />
         </div>
       </div>
       
-      <Footer />
+      <div className="mb-16 md:mb-0">
+        <Footer />
+      </div>
     </div>
   );
 }

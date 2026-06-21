@@ -301,7 +301,7 @@ export default function SoloPlay() {
               title: 'صح أم خطأ',
               subtitle: 'مئات الأسئلة',
               icon: '✅',
-              themeStyle: 'truefalse',
+              themeStyle: 'true_false',
               primaryColor: 'from-emerald-600 to-emerald-900',
               glowColor: '#10b981',
               onClick: () => navigate('/true-false')

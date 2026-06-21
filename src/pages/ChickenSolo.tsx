@@ -4,6 +4,7 @@ import { ChevronRight, Home as HomeIcon, RotateCcw, Trophy, Target, Clock } from
 import { chickenAudio } from '../lib/chickenAudio';
 import { storage } from '../lib/storage';
 import { supabaseService } from '../services/supabaseService';
+import { PlayBackground } from '../components/PlayBackground';
 
 const WORLD_W = 1300;
 const WORLD_H = 950;
@@ -800,11 +801,13 @@ export default function ChickenSolo() {
 
   // We removed debugInfo state.
   return (
-    <div className="fixed inset-0 z-[100] w-full h-[100svh] bg-slate-950 flex flex-col touch-none overflow-hidden font-sans">
+    <>
+    <PlayBackground theme="chicken" />
+    <div className="fixed inset-0 z-[100] w-full h-[100svh] bg-transparent flex flex-col touch-none overflow-hidden font-sans">
       
       {/* 1. Game Area (Top) - Maximized */}
       <div 
-         className="relative w-full mx-auto overflow-hidden bg-[#65a30d] flex-1 border-b-[3px] border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col"
+         className="relative w-full mx-auto overflow-hidden bg-transparent flex-1 border-b-[3px] border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col"
       >
         
         {/* Game Canvas matches Game Area size */}
@@ -929,6 +932,7 @@ export default function ChickenSolo() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
