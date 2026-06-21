@@ -36,6 +36,7 @@ const LogoGame = lazy(() => import('./pages/LogoGame'));
 const SortGame = lazy(() => import('./pages/SortGame'));
 const FamousSolo = lazy(() => import('./pages/FamousSolo'));
 const EmojiGuess = lazy(() => import('./pages/EmojiGuess'));
+const IceSolo = lazy(() => import('./pages/IceSolo'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const AboutUs = lazy(() => import('./pages/AboutUs'));
 const ContactUs = lazy(() => import('./pages/ContactUs'));
@@ -256,6 +257,7 @@ function AppContent() {
               <Route path="/proverbs" element={<ProverbsSolo />} />
               <Route path="/logos" element={<LogoGame />} />
               <Route path="/sort" element={<SortGame />} />
+              <Route path="/ice-slide" element={<IceSolo />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/achievements" element={<Achievements />} />

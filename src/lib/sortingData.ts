@@ -16,7 +16,7 @@ export interface SortingDataset {
   items: SortingItem[];
 }
 
-export const SORTING_DATASETS: Omit<SortingDataset, 'items'> & { items: Omit<SortingItem, 'id'>[] }[] = [
+export const SORTING_DATASETS: (Omit<SortingDataset, 'items'> & { items: Omit<SortingItem, 'id'>[] })[] = [
   {
     id: 'geo_population',
     category: 'geography',

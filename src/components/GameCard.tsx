@@ -12,7 +12,7 @@ export type GameCardTheme = {
   onClick: () => void;
 };
 
-export function GameCard({ card, compact = false, className = '', index = 0 }: { card: GameCardTheme, compact?: boolean, className?: string, index?: number }) {
+export function GameCard({ card, compact = false, className = '', index = 0 }: { card: GameCardTheme, compact?: boolean, className?: string, index?: number, key?: React.Key }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const cardRef = useRef<HTMLButtonElement>(null);
@@ -44,9 +44,7 @@ export function GameCard({ card, compact = false, className = '', index = 0 }: {
             {/* Huge 3D Ball */}
             <div className="absolute -right-6 -bottom-6 text-[140px] md:text-[180px] leading-none opacity-90 group-hover:opacity-100 transition-all duration-700 drop-shadow-[0_30px_40px_rgba(0,0,0,0.6)] group-hover:-rotate-45 group-hover:scale-110">⚽</div>
             {/* Motion Speed Line */}
-            {themeStyle === 'penalty' && (
-               <div className="absolute right-16 bottom-16 w-32 h-6 bg-white/30 blur-xl -rotate-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100"></div>
-            )}
+            <div className="absolute right-16 bottom-16 w-32 h-6 bg-white/30 blur-xl -rotate-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100"></div>
           </>
         );
       case 'hockey':

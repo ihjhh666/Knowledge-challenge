@@ -1602,7 +1602,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let qSortingData: any = undefined;
 
     if (currentState.gameMode === 'proverbs') {
-      const q = generateProverbQuestions(new Set(currentState.askedQuestions), 1)[0];
+      const q = generateProverbQuestions(50).find(x => !currentState.askedQuestions.includes(x.text)) || generateProverbQuestions(1)[0];
       qText = q.text;
       qCorrect = q.correctWord;
       qOptions = q.options;
@@ -1613,7 +1613,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       qOptions = l.options;
       qImage = l.image;
     } else if (currentState.gameMode === 'sort') {
-      const sq = generateSortingQuestion();
+      const sq = generateSortingQuestion([], []);
       qText = sq.question;
       qCorrect = sq.items[0].name;
       qOptions = [];
@@ -1761,7 +1761,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     peer.on('open', () => {
       const initialState: GameState = {
         roomId,
-        gameMode,
+        gameMode: gameMode as any,
         subMode,
         category: roomCategory,
         roomVisibility,

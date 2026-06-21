@@ -52,6 +52,9 @@ export interface PlayerStats {
   emojiCorrectAnswers?: number;
   emojiBestStreak?: number;
   emojiHighScore?: number;
+  iceMaxSurviveTime?: number;
+  iceMaxLevelReached?: number;
+  iceFlawlessWins?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -772,6 +775,68 @@ export const ACHIEVEMENTS: Achievement[] = [
     condition: (s) => (s.logosCorrect || 0) >= 1000,
     getProgress: (s) => s.logosCorrect || 0,
   },
+  
+  // --- الجليد المنزلق (Ice Slide) ---
+  {
+    id: 'ice_starter',
+    title: 'مبتدئ الجليد',
+    description: 'البقاء 30 ثانية في الجليد المنزلق',
+    rarity: 'common',
+    icon: Target,
+    targetMax: 30,
+    condition: (s) => (s.iceMaxSurviveTime || 0) >= 30,
+    getProgress: (s) => s.iceMaxSurviveTime || 0,
+  },
+  {
+    id: 'ice_pro',
+    title: 'محترف الجليد',
+    description: 'البقاء 60 ثانية في الجليد المنزلق',
+    rarity: 'rare',
+    icon: Star,
+    targetMax: 60,
+    condition: (s) => (s.iceMaxSurviveTime || 0) >= 60,
+    getProgress: (s) => s.iceMaxSurviveTime || 0,
+  },
+  {
+    id: 'ice_master',
+    title: 'سيد الجليد',
+    description: 'البقاء 120 ثانية في الجليد المنزلق',
+    rarity: 'rare',
+    icon: Zap,
+    targetMax: 120,
+    condition: (s) => (s.iceMaxSurviveTime || 0) >= 120,
+    getProgress: (s) => s.iceMaxSurviveTime || 0,
+  },
+  {
+    id: 'ice_legend',
+    title: 'أسطورة الجليد',
+    description: 'البقاء 180 ثانية في الجليد المنزلق',
+    rarity: 'legendary',
+    icon: Flame,
+    targetMax: 180,
+    condition: (s) => (s.iceMaxSurviveTime || 0) >= 180,
+    getProgress: (s) => s.iceMaxSurviveTime || 0,
+  },
+  {
+    id: 'ice_king',
+    title: 'ملك الجليد',
+    description: 'الوصول لأعلى مرحلة صعوبة في الجليد المنزلق',
+    rarity: 'legendary',
+    icon: Crown,
+    targetMax: 1,
+    condition: (s) => (s.iceMaxLevelReached || 0) >= 10,
+    getProgress: (s) => s.iceMaxLevelReached || 0,
+  },
+  {
+    id: 'ice_flawless',
+    title: 'لا تمسني',
+    description: 'الفوز في الجليد المنزلق دون السقوط',
+    rarity: 'legendary',
+    icon: Sparkles,
+    targetMax: 1,
+    condition: (s) => (s.iceFlawlessWins || 0) >= 1,
+    getProgress: (s) => s.iceFlawlessWins || 0,
+  }
 ];
 
 const LOCAL_KEY_STATS = 'know_player_stats';

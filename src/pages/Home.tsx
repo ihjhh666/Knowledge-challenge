@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import { useGame } from '../components/GameContext';
 import { useAuth } from '../components/AuthContext';
-import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell, Crown, Newspaper, HelpCircle, Shield, Edit3, ListOrdered, ChevronDown } from 'lucide-react';
+import { Users, Plus, KeyRound, Gamepad2, Brain, Trophy, BookOpen, FlaskConical, Film, PlayCircle, Globe, ChevronRight, Lock, Link as LinkIcon, Medal, UserRound, Waves, Goal, LayoutGrid, Settings, Bell, Crown, Newspaper, HelpCircle, Shield, Edit3, ListOrdered, ChevronDown, Snowflake } from 'lucide-react';
 import { subscribeToFriends } from '../lib/firebase';
 import { supabaseService } from '../services/supabaseService';
 import { RoomVisibility, PublicRoom } from '../lib/types';
@@ -351,6 +351,20 @@ export default function Home() {
                       primaryColor: 'from-orange-500 to-yellow-600',
                       glowColor: '#84cc16',
                       onClick: () => navigate('/chicken-solo')
+                    }}
+                  />
+                  
+                  <GameCard
+                    index={6}
+                    card={{
+                      id: 'ice',
+                      title: 'الجليد المنزلق',
+                      subtitle: 'تزلج فوق الجليد ولا تسقط!',
+                      icon: <Snowflake className="w-8 h-8" />,
+                      themeStyle: 'sort', 
+                      primaryColor: 'from-cyan-400 to-blue-600',
+                      glowColor: '#06b6d4',
+                      onClick: () => navigate('/ice-slide')
                     }}
                   />
                 </div>
