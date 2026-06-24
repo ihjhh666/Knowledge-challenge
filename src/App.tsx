@@ -37,6 +37,7 @@ const SortGame = lazy(() => import('./pages/SortGame'));
 const FamousSolo = lazy(() => import('./pages/FamousSolo'));
 const EmojiGuess = lazy(() => import('./pages/EmojiGuess'));
 const IceSolo = lazy(() => import('./pages/IceSolo'));
+const JumpSolo = lazy(() => import('./pages/JumpSolo'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const AboutUs = lazy(() => import('./pages/AboutUs'));
 const ContactUs = lazy(() => import('./pages/ContactUs'));
@@ -258,6 +259,7 @@ function AppContent() {
               <Route path="/logos" element={<LogoGame />} />
               <Route path="/sort" element={<SortGame />} />
               <Route path="/ice-slide" element={<IceSolo />} />
+              <Route path="/jump-survival" element={<JumpSolo />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/achievements" element={<Achievements />} />
@@ -275,7 +277,7 @@ function AppContent() {
       
       <BottomNav />
       
-      <div className="w-full bg-transparent px-4 py-8 mb-16 md:mb-0">
+      <div className="w-full bg-transparent px-4 py-8 mb-24 pb-safe">
         <div className="max-w-4xl mx-auto">
           <AdBanner dataAdSlot="6036873429" />
         </div>

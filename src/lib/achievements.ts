@@ -55,6 +55,8 @@ export interface PlayerStats {
   iceMaxSurviveTime?: number;
   iceMaxLevelReached?: number;
   iceFlawlessWins?: number;
+  jumpMaxScore?: number;
+  jumpMaxSurviveTime?: number;
 }
 
 export const DEFAULT_STATS: PlayerStats = {
@@ -836,6 +838,47 @@ export const ACHIEVEMENTS: Achievement[] = [
     targetMax: 1,
     condition: (s) => (s.iceFlawlessWins || 0) >= 1,
     getProgress: (s) => s.iceFlawlessWins || 0,
+  },
+  // --- القفزة الأخيرة (Jump) ---
+  {
+    id: 'jump_starter',
+    title: 'القفزة الأولى',
+    description: 'اصمد 30 ثانية في القفزة الأخيرة',
+    rarity: 'common',
+    icon: Rocket,
+    targetMax: 30,
+    condition: (s) => (s.jumpMaxSurviveTime || 0) >= 30,
+    getProgress: (s) => s.jumpMaxSurviveTime || 0,
+  },
+  {
+    id: 'jump_pro',
+    title: 'بهلوان الجاذبية',
+    description: 'اصمد 60 ثانية في القفزة الأخيرة',
+    rarity: 'medium',
+    icon: Zap,
+    targetMax: 60,
+    condition: (s) => (s.jumpMaxSurviveTime || 0) >= 60,
+    getProgress: (s) => s.jumpMaxSurviveTime || 0,
+  },
+  {
+    id: 'jump_master',
+    title: 'محترف القفز',
+    description: 'اصمد 120 ثانية في القفزة الأخيرة',
+    rarity: 'rare',
+    icon: Crown,
+    targetMax: 120,
+    condition: (s) => (s.jumpMaxSurviveTime || 0) >= 120,
+    getProgress: (s) => s.jumpMaxSurviveTime || 0,
+  },
+  {
+    id: 'jump_legend',
+    title: 'الأسطورة الحية',
+    description: 'اجمع 2000 نقطة في مباراة واحدة',
+    rarity: 'legendary',
+    icon: Trophy,
+    targetMax: 2000,
+    condition: (s) => (s.jumpMaxScore || 0) >= 2000,
+    getProgress: (s) => s.jumpMaxScore || 0,
   }
 ];
 

@@ -173,7 +173,7 @@ export function PlayerProfileModal({ targetPlayerId, onClose }: Props) {
                      })()}
                  </h2>
                  <p className="text-slate-500 font-mono text-xs flex items-center gap-2 mt-1">
-                   <span className="bg-slate-800/80 px-2 py-0.5 rounded-md text-slate-400 font-bold tracking-widest">{stats.shortId || targetPlayerId.substring(0,8)}</span>
+                   <span className="bg-slate-800/80 px-2 py-0.5 rounded-md text-slate-400 font-bold tracking-widest">{stats.shortId || '---'}</span>
                  </p>
                  <div className="flex items-center gap-4 mt-3 border-t border-slate-800/50 pt-3 w-max">
                    {stats.createdAt && (

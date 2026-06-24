@@ -125,7 +125,7 @@ export default function Rooms() {
 
   if (showCreateModal) {
     return (
-      <div className="min-h-screen max-w-2xl mx-auto p-4 md:p-12 pb-24 md:pb-12">
+      <div className="min-h-screen max-w-2xl mx-auto p-4 md:p-12 pb-24">
         <button 
           onClick={() => setShowCreateModal(false)}
           className="mb-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
@@ -150,6 +150,7 @@ export default function Rooms() {
                 <GameCard compact className={createConfig.gameMode === 'king' ? 'ring-2 ring-amber-500' : 'opacity-80'} card={{ id: 'king', title: 'التاج', icon: '👑', themeStyle: 'king', primaryColor: 'from-purple-700 to-amber-700', glowColor: '#f59e0b', onClick: () => setCreateConfig({...createConfig, gameMode: 'king', maxPlayers: 4}) }} />
                 <GameCard compact className={createConfig.gameMode === 'chicken' ? 'ring-2 ring-lime-500' : 'opacity-80'} card={{ id: 'chicken', title: 'سباق الدجاج', icon: '🐔', themeStyle: 'chicken', primaryColor: 'from-orange-500 to-yellow-600', glowColor: '#84cc16', onClick: () => setCreateConfig({...createConfig, gameMode: 'chicken', maxPlayers: 6}) }} />
                 <GameCard compact className={createConfig.gameMode === 'ice' ? 'ring-2 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : 'opacity-80'} card={{ id: 'ice', title: 'الجليد المنزلق', icon: '🐧', themeStyle: 'ice', primaryColor: 'from-cyan-500 to-blue-800', glowColor: '#22d3ee', onClick: () => setCreateConfig({...createConfig, gameMode: 'ice', maxPlayers: 6}) }} />
+                <GameCard compact className={createConfig.gameMode === 'jump' ? 'ring-2 ring-fuchsia-400 shadow-[0_0_20px_rgba(192,38,211,0.4)]' : 'opacity-80'} card={{ id: 'jump', title: 'القفزة الأخيرة', icon: '🌀', themeStyle: 'jump', primaryColor: 'from-fuchsia-600 to-purple-900', glowColor: '#c026d3', onClick: () => setCreateConfig({...createConfig, gameMode: 'jump', maxPlayers: 8}) }} />
               </div>
             </div>
 
@@ -245,8 +246,8 @@ export default function Rooms() {
               <input 
                 type="number"
                 min="2"
-                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : createConfig.gameMode === 'king' ? "4" : createConfig.gameMode === 'chicken' || createConfig.gameMode === 'ice' ? "6" : "20"}
-                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken' || createConfig.gameMode === 'ice'}
+                max={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' ? "2" : createConfig.gameMode === 'king' ? "4" : createConfig.gameMode === 'chicken' || createConfig.gameMode === 'ice' ? "6" : createConfig.gameMode === 'jump' ? "8" : "20"}
+                disabled={createConfig.gameMode === 'penalty' || createConfig.gameMode === 'domino' || createConfig.gameMode === 'hockey' || createConfig.gameMode === 'king' || createConfig.gameMode === 'chicken' || createConfig.gameMode === 'ice' || createConfig.gameMode === 'jump'}
                 value={createConfig.maxPlayers}
                 onChange={(e) => setCreateConfig({...createConfig, maxPlayers: parseInt(e.target.value) || 2})}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
@@ -266,7 +267,7 @@ export default function Rooms() {
   }
 
   return (
-    <div className="min-h-screen max-w-5xl mx-auto p-4 md:p-12 pb-24 md:pb-12 space-y-8">
+    <div className="min-h-screen max-w-5xl mx-auto p-4 md:p-12 pb-24 space-y-8">
       <header>
         <h1 className="text-3xl font-bold font-heading text-white">الغرف</h1>
         <p className="text-slate-400 mt-1">أنشئ غرفتك الخاصة أو انضم لغرف اللاعبين</p>

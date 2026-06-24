@@ -55,6 +55,7 @@ export interface GameContextType {
   sendKingEvent: (event: any) => void;
   sendChickenEvent: (event: any) => void;
   sendIceEvent: (event: any) => void;
+  sendJumpEvent: (event: any) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -796,6 +797,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             broadcast(message);
           }
           window.dispatchEvent(new CustomEvent('ice_event', { detail: message }));
+        }
+        break;
+      case 'JUMP_INPUT':
+      case 'JUMP_SYNC':
+        if (stateRef.current && stateRef.current.gameMode === 'jump') {
+          if (isHostRef.current && message.type === 'JUMP_SYNC') {
+            broadcast(message);
+          }
+          window.dispatchEvent(new CustomEvent('jump_event', { detail: message }));
         }
         break;
       case 'SUBMIT_ANSWER':
@@ -2304,6 +2314,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [playerId]);
 
+  const sendJumpEvent = React.useCallback((event: any) => {
+    if (isHostRef.current) {
+      handleMessage({ ...event, playerId });
+    } else if (hostConnectionRef.current?.open) {
+      hostConnectionRef.current.send({ ...event, playerId });
+    }
+  }, [playerId]);
+
   const disconnectedPlayer = state && (state.status === 'playing' || state.status === 'revealing' || state.status === 'waiting') 
     ? (Object.values(state.players) as RoomPlayer[]).find(p => p.disconnectedAt) 
     : undefined;
@@ -2345,7 +2363,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [disconnectedPlayer]);
 
   return (
-    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, changeTargetScore, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent, sendChickenEvent, sendIceEvent }}>
+    <GameContext.Provider value={{ state, playerId, isHost, createRoom, joinRoom, sendMessage, toggleReady, leaveRoom, startGame, submitAnswer, kickPlayer, mutePlayer, changeCategory, changeGameMode, changeTargetScore, returnToLobby, requestRematch, forceNextQuestion, transferHost, catchFish, spawnFish, sendPenaltyAction, sendDominoAction, sendHockeyEvent, sendKingEvent, sendChickenEvent, sendIceEvent, sendJumpEvent }}>
       {children}
       {disconnectedPlayer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

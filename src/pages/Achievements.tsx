@@ -91,7 +91,7 @@ export default function Achievements() {
   const unlockedLegendary = unlockedIds.filter(id => ACHIEVEMENTS.find(a => a.id === id)?.rarity === 'legendary').length;
 
   return (
-    <div className="min-h-screen max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-20">
+    <div className="min-h-screen max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-24">
       <header className="flex flex-col md:flex-row items-center justify-between gap-4">
          <div className="flex items-center gap-4">
             <Link to="/" className="p-2 bg-slate-800 hover:bg-slate-700 rounded-full transition">

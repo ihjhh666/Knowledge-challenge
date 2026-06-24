@@ -161,6 +161,39 @@ export function GameCard({ card, compact = false, className = '', index = 0 }: {
 
           </>
         );
+      case 'jump':
+        return (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-950 via-purple-900 to-indigo-950"></div>
+            
+            {/* Grid Pattern */}
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)', backgroundSize: '30px 30px', transform: 'perspective(500px) rotateX(45deg) scale(1.5)', transformOrigin: 'top center' }}></div>
+            
+            {/* Glowing Ring representing the rotating arm */}
+            <div className="absolute top-[40%] -right-[10%] w-[120%] h-[120%] border-[4px] border-fuchsia-500/30 rounded-full shadow-[0_0_30px_rgba(217,70,239,0.4)] group-hover:border-fuchsia-400 group-hover:shadow-[0_0_50px_rgba(217,70,239,0.8)] transition-all duration-700 animate-[spin_10s_linear_infinite]" style={{ transformStyle: 'preserve-3d', transform: 'rotateX(70deg)' }}>
+               {/* The Arm itself */}
+               <div className="absolute top-1/2 left-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-white to-fuchsia-300 shadow-[0_0_15px_white] origin-left"></div>
+            </div>
+
+            {/* Hexagon core in center */}
+            <div className="absolute top-[60%] left-[80%] w-24 h-24 bg-gradient-to-br from-cyan-400 to-blue-600 opacity-80 mix-blend-screen blur-xl group-hover:opacity-100 group-hover:scale-150 transition-all duration-500 animate-pulse"></div>
+
+            {/* Sci-fi tech lines */}
+            <div className="absolute top-0 right-1/4 w-[1px] h-full bg-gradient-to-b from-transparent via-cyan-400/50 to-transparent"></div>
+            <div className="absolute top-1/4 right-0 w-full h-[1px] bg-gradient-to-l from-transparent via-purple-400/50 to-transparent"></div>
+
+            {/* Particles */}
+            <div className="absolute inset-0 pointer-events-none">
+                 <div className="absolute top-[10%] left-[60%] w-1.5 h-1.5 bg-fuchsia-300 rounded-full shadow-[0_0_8px_#d946ef] animate-[pulse_1.5s_infinite]"></div>
+                 <div className="absolute top-[70%] left-[40%] w-2 h-2 bg-cyan-300 rounded-full shadow-[0_0_10px_#22d3ee] animate-[pulse_2s_infinite_1s]"></div>
+                 <div className="absolute top-[40%] left-[20%] w-1 h-1 bg-white rounded-full shadow-[0_0_5px_white] animate-[pulse_3s_infinite_0.5s]"></div>
+            </div>
+
+            {/* Floating Portal / Runner icon */}
+            <div className="absolute -right-4 -bottom-6 text-[130px] md:text-[160px] leading-none opacity-90 group-hover:opacity-100 transition-all duration-700 drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] group-hover:scale-110 group-hover:-translate-y-6 group-hover:rotate-6 origin-bottom-right">🏃</div>
+            <div className="absolute -right-4 -bottom-6 text-[130px] md:text-[160px] leading-none opacity-20 blur-xl drop-shadow-[0_0_30px_rgba(217,70,239,0.8)] group-hover:opacity-60 transition-all duration-700 pointer-events-none">🏃</div>
+          </>
+        );
       case 'quiz':
         return (
           <>
@@ -454,13 +487,13 @@ export function GameCard({ card, compact = false, className = '', index = 0 }: {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
 
       {/* Icon */}
-      <div className={`relative z-10 ${compact ? 'w-10 h-10 text-2xl' : 'w-16 h-16 text-3xl'} mb-auto flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.1)] border border-white/20 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 ${card.themeStyle === 'ice' ? 'animate-[pulse_3s_ease-in-out_infinite] shadow-[0_0_15px_rgba(34,211,238,0.5)] border-cyan-300/30' : ''}`}>
+      <div className={`relative z-10 ${compact ? 'w-10 h-10 text-2xl' : 'w-16 h-16 text-3xl'} mb-auto flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.1)] border border-white/20 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 ${card.themeStyle === 'ice' ? 'animate-[pulse_3s_ease-in-out_infinite] shadow-[0_0_15px_rgba(34,211,238,0.5)] border-cyan-300/30' : card.themeStyle === 'jump' ? 'animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_20px_rgba(217,70,239,0.5)] border-fuchsia-400/40' : ''}`}>
         {card.icon}
       </div>
 
       {/* Text Content */}
       <div className={`relative z-10 ${compact ? 'mt-4' : 'mt-6'} transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300`}>
-        <h3 className={`${compact ? 'text-lg' : 'text-2xl'} font-bold font-heading text-white tracking-wide ${card.themeStyle === 'ice' ? 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' : 'drop-shadow-lg'}`}>{card.title}</h3>
+        <h3 className={`${compact ? 'text-lg' : 'text-2xl'} font-bold font-heading text-white tracking-wide ${card.themeStyle === 'ice' ? 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' : card.themeStyle === 'jump' ? 'drop-shadow-[0_0_10px_rgba(217,70,239,0.8)]' : 'drop-shadow-lg'}`}>{card.title}</h3>
         {card.subtitle && (
           <p className={`text-slate-300 ${compact ? 'text-xs mt-1' : 'text-sm mt-2'} opacity-80 group-hover:opacity-100 transition-opacity`}>
             {card.subtitle}

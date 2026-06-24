@@ -128,7 +128,7 @@ export type PeerMessage =
   | { type: 'MUTE', playerId: string, isMuted: boolean }
   | { type: 'CHANGE_CATEGORY', category: string }
   | { type: 'CHANGE_TARGET_SCORE', targetScore: number }
-  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' | 'ice' | 'proverbs' | 'logos' | 'sort' | 'famous' | 'emoji' }
+  | { type: 'CHANGE_MODE', gameMode: 'quiz' | 'fishing' | 'penalty' | 'domino' | 'hockey' | 'king' | 'chicken' | 'ice' | 'jump' | 'proverbs' | 'logos' | 'sort' | 'famous' | 'emoji' }
   | { type: 'FORCE_NEXT_QUESTION' }
   | { type: 'LEAVE', playerId: string }
   | { type: 'TRANSFER_HOST', playerId: string }
@@ -150,5 +150,7 @@ export type PeerMessage =
   | { type: 'CHICKEN_INPUT', playerId: string, dx: number, dy: number }
   | { type: 'CHICKEN_SYNC', players: any[], chickens: any[], events: any, gameState: string, timeOut: number }
   | { type: 'ICE_INPUT', playerId: string, dx: number, dy: number }
-  | { type: 'ICE_SYNC', chars: any[], tiles: any[], gameState: string, gameTime: number, nextCrackTime: number, aliveCount: number, curLevel: number };
+  | { type: 'ICE_SYNC', chars: any[], tiles: any[], gameState: string, gameTime: number, nextCrackTime: number, aliveCount: number, curLevel: number }
+  | { type: 'JUMP_INPUT', playerId: string, dx: number, dy: number, jump: boolean }
+  | { type: 'JUMP_SYNC', chars: any[], tiles: any[], armAngle: number, gameState: string, gameTime: number, aliveCount: number, curLevel: number };
 

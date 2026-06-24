@@ -378,8 +378,13 @@ export const updatePlayerStats = async (
       const totalQuestions = totalCorrect + totalWrong;
       const successRate = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
 
+      const newShortId = (!data.shortId || data.shortId.length !== 6 || !/^\d+$/.test(data.shortId)) 
+          ? String(Math.floor(100000 + Math.random() * 900000)) 
+          : data.shortId;
+
       await setDoc(playerRef, {
         playerName,
+        shortId: newShortId,
         gamesPlayed: (data.gamesPlayed || 0) + 1,
         wins: (data.wins || 0) + (isWin ? 1 : 0),
         correctAnswers: totalCorrect,
@@ -395,6 +400,7 @@ export const updatePlayerStats = async (
       const successRate = (correct + wrong) > 0 ? Math.round((correct / (correct + wrong)) * 100) : 0;
       const newStats: PlayerStats = {
         playerId,
+        shortId: String(Math.floor(100000 + Math.random() * 900000)),
         playerName,
         gamesPlayed: 1,
         wins: isWin ? 1 : 0,
@@ -556,8 +562,8 @@ import { getPlayerStats } from './achievements';
        let needsUpdate = false;
        const updateData: any = {};
        
-       if (!data.shortId) {
-          updateData.shortId = String(Math.floor(1000000 + Math.random() * 9000000));
+       if (!data.shortId || data.shortId.length !== 6 || !/^\d+$/.test(data.shortId)) {
+          updateData.shortId = String(Math.floor(100000 + Math.random() * 900000));
           needsUpdate = true;
        }
 
@@ -624,7 +630,7 @@ import { getPlayerStats } from './achievements';
        if (!localStats) return;
        const newStats: PlayerStats = {
          playerId,
-         shortId: String(Math.floor(1000000 + Math.random() * 9000000)),
+         shortId: String(Math.floor(100000 + Math.random() * 900000)),
          playerName,
          gamesPlayed: localStats.gamesPlayed || 0,
          wins: localStats.wins || 0,

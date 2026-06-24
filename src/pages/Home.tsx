@@ -77,7 +77,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen max-w-5xl mx-auto p-4 md:p-12 pb-24 md:pb-12 space-y-10">
+    <div className="min-h-screen max-w-5xl mx-auto p-4 md:p-12 pb-24 space-y-10">
       <FriendsSidebar isOpen={showFriends} onClose={() => setShowFriends(false)} />
       
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50 p-6 rounded-3xl border border-slate-800 backdrop-blur-xl shadow-lg">
@@ -365,6 +365,20 @@ export default function Home() {
                       primaryColor: 'from-cyan-400 to-blue-600',
                       glowColor: '#06b6d4',
                       onClick: () => navigate('/ice-slide')
+                    }}
+                  />
+                  
+                  <GameCard
+                    index={7}
+                    card={{
+                      id: 'jump',
+                      title: 'القفزة الأخيرة',
+                      subtitle: 'تجاوز الذراع الدوارة وابقى للنهاية!',
+                      icon: '🌀',
+                      themeStyle: 'jump', 
+                      primaryColor: 'from-fuchsia-600 to-purple-900',
+                      glowColor: '#c026d3',
+                      onClick: () => navigate('/jump-survival')
                     }}
                   />
                 </div>

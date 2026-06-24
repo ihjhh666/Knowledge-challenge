@@ -58,7 +58,7 @@ class WebAudioEngine {
     this.enabled = enabled;
   }
 
-  private playToneWithADSR(
+  public playToneWithADSR(
     oscType: OscillatorType,
     freq: number,
     attack: number,
@@ -97,7 +97,7 @@ class WebAudioEngine {
     osc.stop(t + totalDuration);
   }
 
-  private playNoise(duration: number, bandPassFreq?: number, vol = 0.1) {
+  public playNoise(duration: number, bandPassFreq?: number, vol = 0.1) {
     if (!this.init() || !this.ctx || !this.sfxGainNode) return;
     
     const bufferSize = this.ctx.sampleRate * duration;

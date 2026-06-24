@@ -19,19 +19,24 @@ export default function Settings() {
   
   const playerId = storage.getPlayerId();
 
-  // Get shortId from localStorage or default
-  // Actually shortId is loaded from Profile stats normally, but playerId is fallback
-  const [shortId, setShortId] = useState(playerId.substring(0, 8));
+  // Get shortId from Firestore
+  const [shortId, setShortId] = useState('جاري التحميل...');
 
   useEffect(() => {
     setSettings(storage.getSettings());
     setUsername(storage.getPlayerName() || '');
     setAvatar(storage.getPlayerAvatar());
     
-    // Attempt to grab shortId from Firestore if possible, but fallback is local UUID segment
-    import('../lib/firebase').then(({ searchUserById }) => {
-        searchUserById(playerId).then(u => {
-           if (u && (u as any).shortId) setShortId((u as any).shortId);
+    import('../lib/firebase').then(({ searchUserById, syncLocalStatsToFirebase }) => {
+        const username = storage.getPlayerName() || '';
+        syncLocalStatsToFirebase(playerId, username).then(() => {
+           searchUserById(playerId).then(u => {
+              if (u && (u as any).shortId) {
+                  setShortId((u as any).shortId);
+              } else {
+                  setShortId('---');
+              }
+           });
         });
     });
   }, [playerId]);
@@ -197,7 +202,7 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 overflow-y-auto" dir="rtl">
-      <div className="max-w-4xl mx-auto space-y-6 lg:space-y-8 pb-12">
+      <div className="max-w-4xl mx-auto space-y-6 lg:space-y-8 pb-24">
         
         {/* Header */}
         <div className="flex items-center justify-between">
