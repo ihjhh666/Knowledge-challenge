@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './components/AuthContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { GameProvider } from './components/GameContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -231,8 +232,9 @@ function AppContent() {
       <GlobalProfileModal />
       <UsernamePrompt />
       <main className="flex-1">
-        <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>}>
-          <Routes>
+        <ErrorBoundary>
+          <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+            <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -274,7 +276,8 @@ function AppContent() {
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </Suspense>
+          </Suspense>
+        </ErrorBoundary>
       </main>
       
       <BottomNav />

@@ -48,7 +48,7 @@ export default function JumpSolo() {
   useEffect(() => {
     const preventDefault = (e: TouchEvent) => {
       // Don't prevent default if it's a click on a button, but mostly we want to prevent scrolling
-      if (e.touches.length > 0) {
+      if (e.touches && e.touches.length > 0) {
          e.preventDefault();
       }
     };
@@ -209,218 +209,221 @@ export default function JumpSolo() {
   };
 
   const loop = useCallback((now: number) => {
-    if (!lastTimeRef.current) lastTimeRef.current = now;
-    const dt = Math.min((now - lastTimeRef.current) / 1000, 0.1);
-    lastTimeRef.current = now;
+    try {
+      if (!lastTimeRef.current) lastTimeRef.current = now;
+      const dt = Math.min((now - lastTimeRef.current) / 1000, 0.1);
+      lastTimeRef.current = now;
 
-    if (gameState === 'playing') {
-      timeRef.current += dt;
-      if (Math.floor(timeRef.current) > time) {
-          setTime(Math.floor(timeRef.current));
-          setScore(prev => prev + 10);
-      }
+      if (gameState === 'playing') {
+        timeRef.current += dt;
+        if (Math.floor(timeRef.current) > time) {
+            setTime(Math.floor(timeRef.current));
+            setScore(prev => prev + 10);
+        }
 
-      // Speed curve
-      let targetSpeed = 1.5;
-      if (timeRef.current < 20) targetSpeed = 1.5;
-      else if (timeRef.current < 40) targetSpeed = 2.5;
-      else if (timeRef.current < 60) targetSpeed = 3.5;
-      else targetSpeed = 4.5 + (timeRef.current - 60) * 0.05;
+        // Speed curve
+        let targetSpeed = 1.5;
+        if (timeRef.current < 20) targetSpeed = 1.5;
+        else if (timeRef.current < 40) targetSpeed = 2.5;
+        else if (timeRef.current < 60) targetSpeed = 3.5;
+        else targetSpeed = 4.5 + (timeRef.current - 60) * 0.05;
 
-      armRef.current.speed += (targetSpeed - armRef.current.speed) * dt;
-      armRef.current.angle += armRef.current.speed * dt;
+        armRef.current.speed += (targetSpeed - armRef.current.speed) * dt;
+        armRef.current.angle += armRef.current.speed * dt;
 
-      const p = playerRef.current;
-      
-      if (!p.dead) {
-          const maxSpeed = 350;
-          let ix = inputsRef.current.x;
-          let iy = inputsRef.current.y;
-          
-          let mag = Math.sqrt(ix * ix + iy * iy);
-          if (mag > 1) {
-              ix /= mag;
-              iy /= mag;
-          }
-          
-          const targetVx = ix * maxSpeed;
-          const targetVy = iy * maxSpeed;
-          
-          // Gradual acceleration and deceleration for smooth feel
-          p.vx += (targetVx - p.vx) * 25 * dt;
-          p.vy += (targetVy - p.vy) * 25 * dt;
-          
-          p.x += p.vx * dt;
-          p.y += p.vy * dt;
-      }
-      
-      updateCharacter(p, dt, false, timeRef.current);
-
-      // Bot AI
-      botsRef.current.forEach(b => {
-          if (!b.dead) {
-              // Smart Movement
-              if (!(b as any).targetPos || Math.random() < 0.01) {
-                  const angle = Math.random() * Math.PI * 2;
-                  const radius = Math.random() * (PLATFORM_RADIUS - 50);
-                  (b as any).targetPos = {
-                      x: Math.cos(angle) * radius,
-                      y: Math.sin(angle) * radius
-                  };
-              }
-              
-              // Avoid grouping
-              let avoidX = 0, avoidY = 0;
-              botsRef.current.forEach(other => {
-                  if (other !== b && !other.dead) {
-                     const dx = b.x - other.x;
-                     const dy = b.y - other.y;
-                     const dist = Math.sqrt(dx*dx + dy*dy);
-                     if (dist < 40 && dist > 0) {
-                         avoidX += (dx/dist);
-                         avoidY += (dy/dist);
-                     }
-                  }
-              });
-
-              const tx = (b as any).targetPos.x - b.x;
-              const ty = (b as any).targetPos.y - b.y;
-              const tdist = Math.sqrt(tx*tx + ty*ty);
-              
-              const speed = b.difficulty === 'hard' ? 250 : b.difficulty === 'normal' ? 200 : 150;
-              
-              if (tdist > 10) {
-                  const moveX = (tx/tdist) + avoidX * 2;
-                  const moveY = (ty/tdist) + avoidY * 2;
-                  const mdist = Math.sqrt(moveX*moveX + moveY*moveY);
-                  b.vx += ((moveX/(mdist||1)) * speed - b.vx) * 10 * dt;
-                  b.vy += ((moveY/(mdist||1)) * speed - b.vy) * 10 * dt;
-              }
-
-              b.x += b.vx * dt;
-              b.y += b.vy * dt;
-
-              // AI Jump Prediction
-              // Distance to center
-              const distFromCenter = Math.sqrt(b.x*b.x + b.y*b.y);
-              if (distFromCenter < PLATFORM_RADIUS) {
-                  // Angle of bot relative to center
-                  let botAngle = Math.atan2(b.y, b.x);
-                  if (botAngle < 0) botAngle += Math.PI * 2;
-                  
-                  let armA = armRef.current.angle % (Math.PI * 2);
-                  if (armA < 0) armA += Math.PI * 2;
-                  
-                  let aDiff = botAngle - armA;
-                  if (aDiff < 0) aDiff += Math.PI * 2;
-                  
-                  const timeToImpact = aDiff / armRef.current.speed;
-                  
-                  let jumpThreshold = 0;
-                  if (b.difficulty === 'easy') jumpThreshold = 0.35 + Math.random()*0.2;
-                  if (b.difficulty === 'normal') jumpThreshold = 0.45 + Math.random()*0.1;
-                  if (b.difficulty === 'hard') jumpThreshold = 0.5 + Math.random()*0.05;
-    
-                  if (timeToImpact > 0 && timeToImpact < jumpThreshold && !b.isJumping && b.z === 0) {
-                      const errorChance = b.difficulty === 'easy' ? 0.15 : b.difficulty === 'normal' ? 0.05 : 0.01;
-                      if (Math.random() < errorChance) { /* human error */ }
-                      else {
-                          b.vz = JUMP_FORCE;
-                          b.isJumping = true;
-                      }
-                  }
-              }
-          }
-          updateCharacter(b, dt, true, timeRef.current);
-      });
-
-      // Count alive
-      let aliveCountNow = (p.dead ? 0 : 1) + botsRef.current.filter(b => !b.dead).length;
-      if (aliveCountNow !== aliveCount) setAliveCount(aliveCountNow);
-
-      if (p.dead && gameState === 'playing') {
-          setGameState('gameover');
-          const s = getPlayerStats();
-          doUpdateAchStats({
-              jumpMaxSurviveTime: Math.max(s.jumpMaxSurviveTime || 0, Math.floor(timeRef.current)),
-              jumpMaxScore: Math.max(s.jumpMaxScore || 0, score)
-          });
-          updatePlayerStats(storage.getPlayerId(), storage.getPlayerName() || 'Unknown', false, 0, score, 0, 'القفزة الأخيرة');
-      } else if (!p.dead && aliveCountNow === 1 && gameState === 'playing') {
-          setGameState('victory');
-          audio.playToneWithADSR('sine', 800, 0.05, 0.2, 0.5, 0.5, 0.5);
-          const s = getPlayerStats();
-          doUpdateAchStats({
-              jumpMaxSurviveTime: Math.max(s.jumpMaxSurviveTime || 0, Math.floor(timeRef.current)),
-              jumpMaxScore: Math.max(s.jumpMaxScore || 0, score)
-          });
-          updatePlayerStats(storage.getPlayerId(), storage.getPlayerName() || 'Unknown', true, 0, score, 0, 'القفزة الأخيرة');
-      }
-
-      // Update particles
-      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
-         const pt = particlesRef.current[i];
-         pt.life -= dt * 2;
-         pt.x += pt.vx * dt;
-         pt.y += pt.vy * dt;
-         if (pt.life <= 0) particlesRef.current.splice(i, 1);
-      }
-      
-      // Camera smooth follow
-      const zoom = 1.5;
-      const targetCamX = -p.x * zoom;
-      const targetCamY = -(p.y - p.z * 0.3) * (zoom * 0.5);
-      camRef.current.x += (targetCamX - camRef.current.x) * 0.15;
-      camRef.current.y += (targetCamY - camRef.current.y) * 0.15;
-    }
-
-    if (shakeRef.current > 0) {
-        shakeRef.current -= dt * 50;
-        if (shakeRef.current < 0) shakeRef.current = 0;
-    }
-
-    // DRAW
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        const { width, height } = canvas;
-        ctx.clearRect(0, 0, width, height);
-
-        ctx.save();
-        const shakeX = (Math.random() - 0.5) * shakeRef.current;
-        const shakeY = (Math.random() - 0.5) * shakeRef.current;
-        ctx.translate(shakeX, shakeY);
-        
-        ctx.translate(width / 2 + camRef.current.x, height / 2 + 50 + camRef.current.y);
-        ctx.scale(1.5, 1.5 * 0.5); // Isometric scale with 1.5x zoom
-
-        drawFuturisticArena(ctx, timeRef.current);
-        drawArm(ctx, armRef.current.angle, timeRef.current);
-
-        // Particles
-        particlesRef.current.forEach(pt => {
-           ctx.fillStyle = pt.color;
-           ctx.globalAlpha = pt.life;
-           ctx.beginPath();
-           ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2);
-           ctx.fill();
-        });
-        ctx.globalAlpha = 1.0;
-
-        // Draw bots
-        botsRef.current.forEach(b => {
-           drawFuturisticPlayer(ctx, b.x, b.y, b.z, b.vx, b.vy, b.isJumping, b.dead, '#3b82f6', timeRef.current, false, b.name, b.characterType);
-        });
-
-        // Draw Player
         const p = playerRef.current;
-        drawFuturisticPlayer(ctx, p.x, p.y, p.z, p.vx, p.vy, p.isJumping, p.dead, '#c026d3', timeRef.current, gameState === 'victory', 'أنت', 'neon');
+        
+        if (!p.dead) {
+            const maxSpeed = 350;
+            let ix = inputsRef.current.x;
+            let iy = inputsRef.current.y;
+            
+            let mag = Math.sqrt(ix * ix + iy * iy);
+            if (mag > 1) {
+                ix /= mag;
+                iy /= mag;
+            }
+            
+            const targetVx = ix * maxSpeed;
+            const targetVy = iy * maxSpeed;
+            
+            // Gradual acceleration and deceleration for smooth feel
+            p.vx += (targetVx - p.vx) * 25 * dt;
+            p.vy += (targetVy - p.vy) * 25 * dt;
+            
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+        }
+        
+        updateCharacter(p, dt, false, timeRef.current);
 
-        ctx.restore(); // scale & camera & shake
+        // Bot AI
+        botsRef.current.forEach(b => {
+            if (!b.dead) {
+                // Smart Movement
+                if (!(b as any).targetPos || Math.random() < 0.01) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * (PLATFORM_RADIUS - 50);
+                    (b as any).targetPos = {
+                        x: Math.cos(angle) * radius,
+                        y: Math.sin(angle) * radius
+                    };
+                }
+                
+                // Avoid grouping
+                let avoidX = 0, avoidY = 0;
+                botsRef.current.forEach(other => {
+                    if (other !== b && !other.dead) {
+                       const dx = b.x - other.x;
+                       const dy = b.y - other.y;
+                       const dist = Math.sqrt(dx*dx + dy*dy);
+                       if (dist < 40 && dist > 0) {
+                           avoidX += (dx/dist);
+                           avoidY += (dy/dist);
+                       }
+                    }
+                });
+
+                const tx = (b as any).targetPos.x - b.x;
+                const ty = (b as any).targetPos.y - b.y;
+                const tdist = Math.sqrt(tx*tx + ty*ty);
+                
+                const speed = b.difficulty === 'hard' ? 250 : b.difficulty === 'normal' ? 200 : 150;
+                
+                if (tdist > 10) {
+                    const moveX = (tx/tdist) + avoidX * 2;
+                    const moveY = (ty/tdist) + avoidY * 2;
+                    const mdist = Math.sqrt(moveX*moveX + moveY*moveY);
+                    b.vx += ((moveX/(mdist||1)) * speed - b.vx) * 10 * dt;
+                    b.vy += ((moveY/(mdist||1)) * speed - b.vy) * 10 * dt;
+                }
+
+                b.x += b.vx * dt;
+                b.y += b.vy * dt;
+
+                // AI Jump Prediction
+                // Distance to center
+                const distFromCenter = Math.sqrt(b.x*b.x + b.y*b.y);
+                if (distFromCenter < PLATFORM_RADIUS) {
+                    // Angle of bot relative to center
+                    let botAngle = Math.atan2(b.y, b.x);
+                    if (botAngle < 0) botAngle += Math.PI * 2;
+                    
+                    let armA = armRef.current.angle % (Math.PI * 2);
+                    if (armA < 0) armA += Math.PI * 2;
+                    
+                    let aDiff = botAngle - armA;
+                    if (aDiff < 0) aDiff += Math.PI * 2;
+                    
+                    const timeToImpact = aDiff / armRef.current.speed;
+                    
+                    let jumpThreshold = 0;
+                    if (b.difficulty === 'easy') jumpThreshold = 0.35 + Math.random()*0.2;
+                    if (b.difficulty === 'normal') jumpThreshold = 0.45 + Math.random()*0.1;
+                    if (b.difficulty === 'hard') jumpThreshold = 0.5 + Math.random()*0.05;
+      
+                    if (timeToImpact > 0 && timeToImpact < jumpThreshold && !b.isJumping && b.z === 0) {
+                        const errorChance = b.difficulty === 'easy' ? 0.15 : b.difficulty === 'normal' ? 0.05 : 0.01;
+                        if (Math.random() < errorChance) { /* human error */ }
+                        else {
+                            b.vz = JUMP_FORCE;
+                            b.isJumping = true;
+                        }
+                    }
+                }
+            }
+            updateCharacter(b, dt, true, timeRef.current);
+        });
+
+        // Count alive
+        let aliveCountNow = (p.dead ? 0 : 1) + botsRef.current.filter(b => !b.dead).length;
+        if (aliveCountNow !== aliveCount) setAliveCount(aliveCountNow);
+
+        if (p.dead && gameState === 'playing') {
+            setGameState('gameover');
+            const s = getPlayerStats();
+            doUpdateAchStats({
+                jumpMaxSurviveTime: Math.max(s.jumpMaxSurviveTime || 0, Math.floor(timeRef.current)),
+                jumpMaxScore: Math.max(s.jumpMaxScore || 0, score)
+            });
+            updatePlayerStats(storage.getPlayerId(), storage.getPlayerName() || 'Unknown', false, 0, score, 0, 'القفزة الأخيرة');
+        } else if (!p.dead && aliveCountNow === 1 && gameState === 'playing') {
+            setGameState('victory');
+            audio.playToneWithADSR('sine', 800, 0.05, 0.2, 0.5, 0.5, 0.5);
+            const s = getPlayerStats();
+            doUpdateAchStats({
+                jumpMaxSurviveTime: Math.max(s.jumpMaxSurviveTime || 0, Math.floor(timeRef.current)),
+                jumpMaxScore: Math.max(s.jumpMaxScore || 0, score)
+            });
+            updatePlayerStats(storage.getPlayerId(), storage.getPlayerName() || 'Unknown', true, 0, score, 0, 'القفزة الأخيرة');
+        }
+
+        // Update particles
+        for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+           const pt = particlesRef.current[i];
+           pt.life -= dt * 2;
+           pt.x += pt.vx * dt;
+           pt.y += pt.vy * dt;
+           if (pt.life <= 0) particlesRef.current.splice(i, 1);
+        }
+        
+        // Camera smooth follow
+        const zoom = 1.5;
+        const targetCamX = -p.x * zoom;
+        const targetCamY = -(p.y - p.z * 0.3) * (zoom * 0.5);
+        camRef.current.x += (targetCamX - camRef.current.x) * 0.15;
+        camRef.current.y += (targetCamY - camRef.current.y) * 0.15;
       }
-    }
 
+      if (shakeRef.current > 0) {
+          shakeRef.current -= dt * 50;
+          if (shakeRef.current < 0) shakeRef.current = 0;
+      }
+
+      // DRAW
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const { width, height } = canvas;
+          ctx.clearRect(0, 0, width, height);
+
+          ctx.save();
+          const shakeX = (Math.random() - 0.5) * shakeRef.current;
+          const shakeY = (Math.random() - 0.5) * shakeRef.current;
+          ctx.translate(shakeX, shakeY);
+          
+          ctx.translate(width / 2 + camRef.current.x, height / 2 + 50 + camRef.current.y);
+          ctx.scale(1.5, 1.5 * 0.5); // Isometric scale with 1.5x zoom
+
+          drawFuturisticArena(ctx, timeRef.current);
+          drawArm(ctx, armRef.current.angle, timeRef.current);
+
+          // Particles
+          particlesRef.current.forEach(pt => {
+             ctx.fillStyle = pt.color;
+             ctx.globalAlpha = pt.life;
+             ctx.beginPath();
+             ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2);
+             ctx.fill();
+          });
+          ctx.globalAlpha = 1.0;
+
+          // Draw bots
+          botsRef.current.forEach(b => {
+             drawFuturisticPlayer(ctx, b.x, b.y, b.z, b.vx, b.vy, b.isJumping, b.dead, '#3b82f6', timeRef.current, false, b.name, b.characterType);
+          });
+
+          // Draw Player
+          const p = playerRef.current;
+          drawFuturisticPlayer(ctx, p.x, p.y, p.z, p.vx, p.vy, p.isJumping, p.dead, '#c026d3', timeRef.current, gameState === 'victory', 'أنت', 'neon');
+
+          ctx.restore(); // scale & camera & shake
+        }
+      }
+    } catch (err) {
+      console.error("Error in JumpSolo loop:", err);
+    }
     requestRef.current = requestAnimationFrame(loop);
   }, [gameState, time, aliveCount, user, score, handleJump]);
 
