@@ -28,6 +28,7 @@ const DominoSolo = lazy(() => import('./pages/DominoSolo'));
 const HockeySolo = lazy(() => import('./pages/HockeySolo'));
 const ChickenSolo = lazy(() => import('./pages/ChickenSolo'));
 const TrueFalseSolo = lazy(() => import('./pages/TrueFalseSolo'));
+const AiPersonality = lazy(() => import('./pages/AiPersonality'));
 const SurvivalSolo = lazy(() => import('./pages/SurvivalSolo'));
 const KingMode = lazy(() => import('./pages/KingMode'));
 const SentenceOrderSolo = lazy(() => import('./pages/SentenceOrderSolo'));
@@ -128,7 +129,7 @@ function AppContent() {
     const checkMigration = async () => {
       let id = localStorage.getItem('know_player_id');
       if (id && id.startsWith('user_')) {
-        const newId = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const newId = Math.floor(100000 + Math.random() * 900000).toString();
         // save new ID locally immediately
         localStorage.setItem('know_player_id', newId);
         
@@ -251,6 +252,7 @@ function AppContent() {
               <Route path="/chicken-solo" element={<ChickenSolo />} />
               <Route path="/king-mode" element={<KingMode />} />
               <Route path="/true-false" element={<TrueFalseSolo />} />
+              <Route path="/ai-personality" element={<AiPersonality />} />
               <Route path="/survival" element={<SurvivalSolo />} />
               <Route path="/famous-solo" element={<FamousSolo />} />
               <Route path="/emoji-guess" element={<EmojiGuess />} />

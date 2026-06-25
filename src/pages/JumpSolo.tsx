@@ -1,27 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Trophy, RotateCcw, Home, Play } from 'lucide-react';
+import { ArrowRight, Trophy, RotateCcw, Home, Play, Users } from 'lucide-react';
 import { useAuth } from '../components/AuthContext';
+import { storage } from '../lib/storage';
 import { updatePlayerStats } from '../lib/firebase';
 import { updateStats as doUpdateAchStats, getPlayerStats } from '../lib/achievements';
 import { audio } from '../lib/audio';
-
-const PLATFORM_RADIUS = 350;
-const GRAVITY = 1500;
-const JUMP_FORCE = 600;
-const ARM_HEIGHT = 40;
-const ARM_WIDTH = 25;
-const PLAYER_RADIUS = 15;
+import { PLATFORM_RADIUS, ARM_HEIGHT, ARM_WIDTH, PLAYER_RADIUS, GRAVITY, JUMP_FORCE, drawFuturisticArena, drawArm, drawFuturisticPlayer } from '../lib/jumpGraphics';
+import { Joystick } from '../components/Joystick';
 
 export default function JumpSolo() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameover'>('menu');
+  const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameover' | 'victory'>('menu');
   const [score, setScore] = useState(0);
   const [time, setTime] = useState(0);
+  const [aliveCount, setAliveCount] = useState(8);
 
   const requestRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
@@ -32,15 +29,36 @@ export default function JumpSolo() {
     isJumping: false, dead: false
   });
   
+  const botsRef = useRef<any[]>([]);
   const armRef = useRef({ angle: 0, speed: 1.5 });
   const inputsRef = useRef({ x: 0, y: 0, jump: false });
   const timeRef = useRef(0);
   const shakeRef = useRef(0);
   const particlesRef = useRef<any[]>([]);
+  
+  // Camera
+  const camRef = useRef({ x: 0, y: 0 });
 
   const handleJoystick = useCallback((dx: number, dy: number) => {
     inputsRef.current.x = dx;
     inputsRef.current.y = dy;
+  }, []);
+
+  // Prevent scrolling while in the game
+  useEffect(() => {
+    const preventDefault = (e: TouchEvent) => {
+      // Don't prevent default if it's a click on a button, but mostly we want to prevent scrolling
+      if (e.touches.length > 0) {
+         e.preventDefault();
+      }
+    };
+    
+    // Use passive: false to allow preventDefault
+    document.addEventListener('touchmove', preventDefault, { passive: false });
+    
+    return () => {
+      document.removeEventListener('touchmove', preventDefault);
+    };
   }, []);
 
   const handleJump = useCallback(() => {
@@ -83,15 +101,37 @@ export default function JumpSolo() {
     armRef.current = { angle: 0, speed: 1.5 };
     timeRef.current = 0;
     shakeRef.current = 0;
+    camRef.current = { x: 0, y: 0 };
     particlesRef.current = [];
+    
+    // Init Bots
+    const newBots = [];
+    const types = ['blue', 'red', 'green', 'purple', 'gold', 'snow', 'robot'];
+    for(let i=0; i<7; i++) {
+        const angle = (i / 7) * Math.PI * 2;
+        const r = PLATFORM_RADIUS * 0.5;
+        newBots.push({
+            id: `bot_${i}`,
+            name: `Bot ${i+1}`,
+            x: Math.cos(angle) * r,
+            y: Math.sin(angle) * r,
+            z: 0, vx: 0, vy: 0, vz: 0,
+            isJumping: false, dead: false,
+            difficulty: i < 2 ? 'easy' : (i < 5 ? 'normal' : 'hard'),
+            characterType: types[i % types.length]
+        });
+    }
+    botsRef.current = newBots;
+    setAliveCount(8);
+
     setScore(0);
     setTime(0);
     setGameState('playing');
     lastTimeRef.current = performance.now();
   };
 
-  const spawnParticles = (x: number, y: number, color: string) => {
-    for (let i = 0; i < 15; i++) {
+  const spawnParticles = (x: number, y: number, color: string, count: number = 15) => {
+    for (let i = 0; i < count; i++) {
        particlesRef.current.push({
            x, y,
            vx: (Math.random() - 0.5) * 400,
@@ -102,54 +142,70 @@ export default function JumpSolo() {
     }
   };
 
-  const drawPlatform = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    // We will do a pseudo-3D look by scaling the context y-axis
-    ctx.save();
-    ctx.translate(width / 2, height / 2 + 50); // Center
-    
-    // Draw outer glow
-    ctx.shadowColor = '#c026d3';
-    ctx.shadowBlur = 50;
+  const updateCharacter = (c: any, dt: number, isBot: boolean, nowTime: number) => {
+      if (c.dead) {
+          c.z -= 800 * dt;
+          return;
+      }
 
-    // Scale for pseudo 3D
-    ctx.scale(1, 0.5);
+      // Jumping physics
+      if (c.isJumping) {
+          c.z += c.vz * dt;
+          c.vz -= GRAVITY * dt;
+          if (c.z <= 0) {
+              c.z = 0;
+              c.vz = 0;
+              c.isJumping = false;
+              spawnParticles(c.x, c.y, 'rgba(34, 211, 238, 0.5)', 5); // landing dust
+              if (!isBot) audio.playNoise(0.2, 100, 0.1);
+          }
+      }
 
-    // Platform Base (Thickness)
-    ctx.fillStyle = '#4a044e'; // fuchsia-950
-    ctx.beginPath();
-    ctx.arc(0, 40, PLATFORM_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
+      // Check fall off
+      const dist = Math.sqrt(c.x * c.x + c.y * c.y);
+      if (dist > PLATFORM_RADIUS + 10) {
+          c.dead = true;
+          spawnParticles(c.x, c.y, '#ef4444', 20);
+          if (!isBot) {
+              shakeRef.current = 15;
+              audio.playToneWithADSR('sawtooth', 200, 0.05, 0.2, 0.2, 0.2, 0.5);
+          }
+      }
 
-    // Platform Top
-    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, PLATFORM_RADIUS);
-    grad.addColorStop(0, '#701a75'); // fuchsia-900
-    grad.addColorStop(1, '#2e1065'); // violet-950
-    
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(0, 0, PLATFORM_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
+      // Collision with arm
+      if (!c.dead && c.z < ARM_HEIGHT) {
+          const dx = Math.cos(armRef.current.angle);
+          const dy = Math.sin(armRef.current.angle);
+          const projLength = c.x * dx + c.y * dy;
+          
+          if (projLength > 0 && projLength < PLATFORM_RADIUS) {
+              const cx = projLength * dx;
+              const cy = projLength * dy;
+              const distToArm = Math.sqrt((c.x - cx)**2 + (c.y - cy)**2);
+              
+              if (distToArm < PLAYER_RADIUS + ARM_WIDTH/2) {
+                  const pushX = -dy * armRef.current.speed * 400;
+                  const pushY = dx * armRef.current.speed * 400;
+                  c.x += pushX * dt;
+                  c.y += pushY * dt;
+                  if (!isBot) {
+                      shakeRef.current = 10;
+                      audio.playToneWithADSR('square', 300, 0.05, 0.1, 0.1, 0.1, 0.2);
+                  }
+              }
+          }
+      }
 
-    // Grid lines
-    ctx.strokeStyle = 'rgba(217, 70, 239, 0.2)'; // fuchsia-500
-    ctx.lineWidth = 2;
-    const step = 50;
-    for (let i = -PLATFORM_RADIUS; i <= PLATFORM_RADIUS; i += step) {
-        ctx.beginPath(); ctx.moveTo(i, -PLATFORM_RADIUS); ctx.lineTo(i, PLATFORM_RADIUS); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-PLATFORM_RADIUS, i); ctx.lineTo(PLATFORM_RADIUS, i); ctx.stroke();
-    }
-    
-    // Draw Edge
-    ctx.strokeStyle = '#e879f9'; // fuchsia-400
-    ctx.lineWidth = 5;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#e879f9';
-    ctx.beginPath();
-    ctx.arc(0, 0, PLATFORM_RADIUS, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    ctx.restore();
+      // Movement Trail
+      const speed = Math.sqrt(c.vx*c.vx + c.vy*c.vy);
+      if (speed > 10 && c.z === 0 && Math.random() < 0.3) {
+          particlesRef.current.push({
+             x: c.x, y: c.y,
+             vx: 0, vy: 0,
+             life: 0.4,
+             color: isBot ? 'rgba(59, 130, 246, 0.3)' : 'rgba(217, 70, 239, 0.3)'
+          });
+      }
   };
 
   const loop = useCallback((now: number) => {
@@ -164,88 +220,143 @@ export default function JumpSolo() {
           setScore(prev => prev + 10);
       }
 
-      // Update arm
-      armRef.current.speed += dt * 0.05; // gradually speed up
+      // Speed curve
+      let targetSpeed = 1.5;
+      if (timeRef.current < 20) targetSpeed = 1.5;
+      else if (timeRef.current < 40) targetSpeed = 2.5;
+      else if (timeRef.current < 60) targetSpeed = 3.5;
+      else targetSpeed = 4.5 + (timeRef.current - 60) * 0.05;
+
+      armRef.current.speed += (targetSpeed - armRef.current.speed) * dt;
       armRef.current.angle += armRef.current.speed * dt;
 
       const p = playerRef.current;
       
       if (!p.dead) {
-          // Movement
-          const moveSpeed = 300;
-          let mag = Math.sqrt(inputsRef.current.x * inputsRef.current.x + inputsRef.current.y * inputsRef.current.y);
-          if (mag > 1) mag = 1;
+          const maxSpeed = 350;
+          let ix = inputsRef.current.x;
+          let iy = inputsRef.current.y;
           
-          p.vx = inputsRef.current.x * moveSpeed * (mag > 0 ? 1/mag : 0);
-          p.vy = inputsRef.current.y * moveSpeed * (mag > 0 ? 1/mag : 0);
-
+          let mag = Math.sqrt(ix * ix + iy * iy);
+          if (mag > 1) {
+              ix /= mag;
+              iy /= mag;
+          }
+          
+          const targetVx = ix * maxSpeed;
+          const targetVy = iy * maxSpeed;
+          
+          // Gradual acceleration and deceleration for smooth feel
+          p.vx += (targetVx - p.vx) * 25 * dt;
+          p.vy += (targetVy - p.vy) * 25 * dt;
+          
           p.x += p.vx * dt;
           p.y += p.vy * dt;
+      }
+      
+      updateCharacter(p, dt, false, timeRef.current);
 
-          // Jumping
-          if (p.isJumping) {
-              p.z += p.vz * dt;
-              p.vz -= GRAVITY * dt;
-              if (p.z <= 0) {
-                  p.z = 0;
-                  p.vz = 0;
-                  p.isJumping = false;
+      // Bot AI
+      botsRef.current.forEach(b => {
+          if (!b.dead) {
+              // Smart Movement
+              if (!(b as any).targetPos || Math.random() < 0.01) {
+                  const angle = Math.random() * Math.PI * 2;
+                  const radius = Math.random() * (PLATFORM_RADIUS - 50);
+                  (b as any).targetPos = {
+                      x: Math.cos(angle) * radius,
+                      y: Math.sin(angle) * radius
+                  };
               }
-          }
-
-          // Check if out of bounds (fall off)
-          const dist = Math.sqrt(p.x * p.x + p.y * p.y);
-          if (dist > PLATFORM_RADIUS + 10) {
-              p.dead = true;
-              shakeRef.current = 15;
-              audio.playToneWithADSR('sawtooth', 200, 0.05, 0.2, 0.2, 0.2, 0.5);
-              spawnParticles(p.x, p.y, '#ef4444');
-              setGameState('gameover');
-              const s = getPlayerStats();
-              doUpdateAchStats({
-                  jumpMaxSurviveTime: Math.max(s.jumpMaxSurviveTime || 0, Math.floor(timeRef.current)),
-                  jumpMaxScore: Math.max(s.jumpMaxScore || 0, score)
+              
+              // Avoid grouping
+              let avoidX = 0, avoidY = 0;
+              botsRef.current.forEach(other => {
+                  if (other !== b && !other.dead) {
+                     const dx = b.x - other.x;
+                     const dy = b.y - other.y;
+                     const dist = Math.sqrt(dx*dx + dy*dy);
+                     if (dist < 40 && dist > 0) {
+                         avoidX += (dx/dist);
+                         avoidY += (dy/dist);
+                     }
+                  }
               });
-              if (user) {
-                  updatePlayerStats(user.uid, user.displayName || 'Unknown', false, 0, score, 0, 'القفزة الأخيرة');
-              }
-          }
 
-          // Collision with arm
-          // The arm is a line from center to edge at armRef.angle
-          // We can check distance from player to that line segment.
-          if (!p.dead && p.z < ARM_HEIGHT) {
-              const dx = Math.cos(armRef.current.angle);
-              const dy = Math.sin(armRef.current.angle);
+              const tx = (b as any).targetPos.x - b.x;
+              const ty = (b as any).targetPos.y - b.y;
+              const tdist = Math.sqrt(tx*tx + ty*ty);
               
-              // Project player pos onto arm line
-              const projLength = p.x * dx + p.y * dy;
+              const speed = b.difficulty === 'hard' ? 250 : b.difficulty === 'normal' ? 200 : 150;
               
-              if (projLength > 0 && projLength < PLATFORM_RADIUS) {
-                  // closest point on arm
-                  const cx = projLength * dx;
-                  const cy = projLength * dy;
+              if (tdist > 10) {
+                  const moveX = (tx/tdist) + avoidX * 2;
+                  const moveY = (ty/tdist) + avoidY * 2;
+                  const mdist = Math.sqrt(moveX*moveX + moveY*moveY);
+                  b.vx += ((moveX/(mdist||1)) * speed - b.vx) * 10 * dt;
+                  b.vy += ((moveY/(mdist||1)) * speed - b.vy) * 10 * dt;
+              }
+
+              b.x += b.vx * dt;
+              b.y += b.vy * dt;
+
+              // AI Jump Prediction
+              // Distance to center
+              const distFromCenter = Math.sqrt(b.x*b.x + b.y*b.y);
+              if (distFromCenter < PLATFORM_RADIUS) {
+                  // Angle of bot relative to center
+                  let botAngle = Math.atan2(b.y, b.x);
+                  if (botAngle < 0) botAngle += Math.PI * 2;
                   
-                  // distance from player to closest point
-                  const distToArm = Math.sqrt((p.x - cx)**2 + (p.y - cy)**2);
+                  let armA = armRef.current.angle % (Math.PI * 2);
+                  if (armA < 0) armA += Math.PI * 2;
                   
-                  if (distToArm < PLAYER_RADIUS + ARM_WIDTH/2) {
-                      // Hit!
-                      // push player heavily in direction of arm movement
-                      const pushX = -dy * armRef.current.speed * 400;
-                      const pushY = dx * armRef.current.speed * 400;
-                      p.x += pushX * dt;
-                      p.y += pushY * dt;
-                      shakeRef.current = 10;
-                      audio.playToneWithADSR('square', 300, 0.05, 0.1, 0.1, 0.1, 0.2);
+                  let aDiff = botAngle - armA;
+                  if (aDiff < 0) aDiff += Math.PI * 2;
+                  
+                  const timeToImpact = aDiff / armRef.current.speed;
+                  
+                  let jumpThreshold = 0;
+                  if (b.difficulty === 'easy') jumpThreshold = 0.35 + Math.random()*0.2;
+                  if (b.difficulty === 'normal') jumpThreshold = 0.45 + Math.random()*0.1;
+                  if (b.difficulty === 'hard') jumpThreshold = 0.5 + Math.random()*0.05;
+    
+                  if (timeToImpact > 0 && timeToImpact < jumpThreshold && !b.isJumping && b.z === 0) {
+                      const errorChance = b.difficulty === 'easy' ? 0.15 : b.difficulty === 'normal' ? 0.05 : 0.01;
+                      if (Math.random() < errorChance) { /* human error */ }
+                      else {
+                          b.vz = JUMP_FORCE;
+                          b.isJumping = true;
+                      }
                   }
               }
           }
-      } else {
-         // Fall logic
-         p.z -= 800 * dt;
+          updateCharacter(b, dt, true, timeRef.current);
+      });
+
+      // Count alive
+      let aliveCountNow = (p.dead ? 0 : 1) + botsRef.current.filter(b => !b.dead).length;
+      if (aliveCountNow !== aliveCount) setAliveCount(aliveCountNow);
+
+      if (p.dead && gameState === 'playing') {
+          setGameState('gameover');
+          const s = getPlayerStats();
+          doUpdateAchStats({
+              jumpMaxSurviveTime: Math.max(s.jumpMaxSurviveTime || 0, Math.floor(timeRef.current)),
+              jumpMaxScore: Math.max(s.jumpMaxScore || 0, score)
+          });
+          updatePlayerStats(storage.getPlayerId(), storage.getPlayerName() || 'Unknown', false, 0, score, 0, 'القفزة الأخيرة');
+      } else if (!p.dead && aliveCountNow === 1 && gameState === 'playing') {
+          setGameState('victory');
+          audio.playToneWithADSR('sine', 800, 0.05, 0.2, 0.5, 0.5, 0.5);
+          const s = getPlayerStats();
+          doUpdateAchStats({
+              jumpMaxSurviveTime: Math.max(s.jumpMaxSurviveTime || 0, Math.floor(timeRef.current)),
+              jumpMaxScore: Math.max(s.jumpMaxScore || 0, score)
+          });
+          updatePlayerStats(storage.getPlayerId(), storage.getPlayerName() || 'Unknown', true, 0, score, 0, 'القفزة الأخيرة');
       }
-      
+
       // Update particles
       for (let i = particlesRef.current.length - 1; i >= 0; i--) {
          const pt = particlesRef.current[i];
@@ -254,6 +365,13 @@ export default function JumpSolo() {
          pt.y += pt.vy * dt;
          if (pt.life <= 0) particlesRef.current.splice(i, 1);
       }
+      
+      // Camera smooth follow
+      const zoom = 1.5;
+      const targetCamX = -p.x * zoom;
+      const targetCamY = -(p.y - p.z * 0.3) * (zoom * 0.5);
+      camRef.current.x += (targetCamX - camRef.current.x) * 0.15;
+      camRef.current.y += (targetCamY - camRef.current.y) * 0.15;
     }
 
     if (shakeRef.current > 0) {
@@ -273,49 +391,12 @@ export default function JumpSolo() {
         const shakeX = (Math.random() - 0.5) * shakeRef.current;
         const shakeY = (Math.random() - 0.5) * shakeRef.current;
         ctx.translate(shakeX, shakeY);
-
-        drawPlatform(ctx, width, height);
-
-        // Draw game elements (pseudo 3D scale)
-        ctx.save();
-        ctx.translate(width / 2, height / 2 + 50);
         
-        ctx.scale(1, 0.5);
+        ctx.translate(width / 2 + camRef.current.x, height / 2 + 50 + camRef.current.y);
+        ctx.scale(1.5, 1.5 * 0.5); // Isometric scale with 1.5x zoom
 
-        // Arm
-        const ax = Math.cos(armRef.current.angle) * PLATFORM_RADIUS;
-        const ay = Math.sin(armRef.current.angle) * PLATFORM_RADIUS;
-
-        // Draw Arm Shadow
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-        ctx.lineWidth = ARM_WIDTH;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(ax, ay);
-        ctx.stroke();
-
-        // Draw Arm
-        ctx.strokeStyle = '#22d3ee'; // cyan-400
-        ctx.lineWidth = ARM_WIDTH;
-        ctx.lineCap = 'round';
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#22d3ee';
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(ax, ay);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        
-        // Center Pillar
-        ctx.fillStyle = '#0891b2'; // cyan-600
-        ctx.beginPath();
-        ctx.arc(0, 0, 40, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#67e8f9'; // cyan-200
-        ctx.beginPath();
-        ctx.arc(0, -30, 40, 0, Math.PI * 2);
-        ctx.fill();
+        drawFuturisticArena(ctx, timeRef.current);
+        drawArm(ctx, armRef.current.angle, timeRef.current);
 
         // Particles
         particlesRef.current.forEach(pt => {
@@ -327,38 +408,21 @@ export default function JumpSolo() {
         });
         ctx.globalAlpha = 1.0;
 
-        // Player
+        // Draw bots
+        botsRef.current.forEach(b => {
+           drawFuturisticPlayer(ctx, b.x, b.y, b.z, b.vx, b.vy, b.isJumping, b.dead, '#3b82f6', timeRef.current, false, b.name, b.characterType);
+        });
+
+        // Draw Player
         const p = playerRef.current;
-        
-        // Draw player shadow
-        if (!p.dead) {
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            ctx.beginPath();
-            // Shadow gets smaller as z increases
-            const shadowRadius = Math.max(5, PLAYER_RADIUS - p.z * 0.1);
-            ctx.arc(p.x, p.y, shadowRadius, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        drawFuturisticPlayer(ctx, p.x, p.y, p.z, p.vx, p.vy, p.isJumping, p.dead, '#c026d3', timeRef.current, gameState === 'victory', 'أنت', 'neon');
 
-        // Draw Player Body (shifted up by z)
-        ctx.fillStyle = '#c026d3'; // fuchsia-600
-        ctx.beginPath();
-        ctx.arc(p.x, p.y - p.z, PLAYER_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Player head/highlight
-        ctx.fillStyle = '#e879f9'; // fuchsia-400
-        ctx.beginPath();
-        ctx.arc(p.x, p.y - p.z - 5, PLAYER_RADIUS * 0.6, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore(); // scale
-        ctx.restore(); // shake
+        ctx.restore(); // scale & camera & shake
       }
     }
 
     requestRef.current = requestAnimationFrame(loop);
-  }, [gameState, time, user, score, handleJump]);
+  }, [gameState, time, aliveCount, user, score, handleJump]);
 
   useEffect(() => {
     requestRef.current = requestAnimationFrame(loop);
@@ -369,30 +433,39 @@ export default function JumpSolo() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-hidden relative flex flex-col">
-      {/* Dynamic Sci-Fi Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-fuchsia-950 opacity-50"></div>
       <div className="absolute inset-0" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(192, 38, 211, 0.1) 0%, transparent 60%)'}}></div>
 
-      {/* Header */}
-      <header className="relative z-10 p-4 sm:p-6 flex justify-between items-center bg-gradient-to-b from-slate-950 to-transparent">
+      {/* Neon HUD */}
+      <header className="relative z-10 p-4 sm:p-6 flex justify-between items-start bg-gradient-to-b from-slate-950 to-transparent">
         <button 
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors bg-slate-900/50 px-4 py-2 rounded-full backdrop-blur"
+          className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors bg-slate-900/50 px-4 py-2 rounded-full backdrop-blur border border-slate-800"
         >
           <ArrowRight className="w-5 h-5" />
           <span className="font-bold hidden sm:block">الرئيسية</span>
         </button>
-        <div className="flex flex-col items-center">
-            <h1 className="text-xl md:text-3xl font-black font-heading tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-cyan-400">
-            القفزة الأخيرة
+        
+        <div className="flex flex-col items-center gap-2">
+            <h1 className="text-xl md:text-3xl font-black font-heading tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-cyan-400 drop-shadow-[0_0_10px_rgba(217,70,239,0.5)]">
+               القفزة الأخيرة
             </h1>
             {gameState === 'playing' && (
-                <div className="text-sm font-bold text-slate-400 mt-1">الوقت: {time} ثانية</div>
+                <div className="flex gap-4 items-center">
+                    <div className="bg-slate-900/80 px-4 py-1.5 rounded-full backdrop-blur border border-cyan-500/30 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-cyan-400" />
+                        <span className="font-bold text-cyan-400">{aliveCount} أحياء</span>
+                    </div>
+                    <div className="bg-slate-900/80 px-4 py-1.5 rounded-full backdrop-blur border border-fuchsia-500/30 font-bold text-fuchsia-400">
+                        ⏱️ {time} ث
+                    </div>
+                </div>
             )}
         </div>
-        <div className="flex items-center gap-3 bg-slate-900/50 px-6 py-2 rounded-full backdrop-blur border border-fuchsia-500/30">
+        
+        <div className="flex items-center gap-3 bg-slate-900/80 px-6 py-2 rounded-full backdrop-blur border border-fuchsia-500/50 shadow-[0_0_15px_rgba(217,70,239,0.3)]">
           <Trophy className="w-5 h-5 text-fuchsia-400" />
-          <span className="font-bold font-mono text-xl">{score}</span>
+          <span className="font-bold font-mono text-xl text-fuchsia-100">{score}</span>
         </div>
       </header>
 
@@ -400,9 +473,9 @@ export default function JumpSolo() {
       <div className="flex-1 relative flex items-center justify-center">
         <canvas
           ref={canvasRef}
-          width={800}
-          height={1000}
-          className="w-full h-full max-w-4xl max-h-[800px] object-contain"
+          width={1000}
+          height={800}
+          className="w-full h-full object-cover"
         />
 
         <AnimatePresence>
@@ -419,7 +492,7 @@ export default function JumpSolo() {
                 </div>
                 <h2 className="text-3xl font-black mb-2">القفزة الأخيرة</h2>
                 <p className="text-slate-400 mb-8 font-medium leading-relaxed">
-                  تجاوز الذراع الدوارة بالقفز في الوقت المناسب. الذراع ستزيد سرعتها!
+                  تجاوز الذراع الدوارة بالقفز في الوقت المناسب. البقاء للأفضل!
                 </p>
                 <button
                   onClick={startGame}
@@ -454,7 +527,42 @@ export default function JumpSolo() {
                   </button>
                   <button
                     onClick={startGame}
-                    className="flex flex-col items-center justify-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold py-4 rounded-xl shadow-lg transition-colors"
+                    className="flex flex-col items-center justify-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(217,70,239,0.5)] transition-colors"
+                  >
+                    <RotateCcw className="w-6 h-6" />
+                    العب مجدداً
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {gameState === 'victory' && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 z-20"
+            >
+              <div className="bg-slate-900 border border-amber-500/50 p-8 rounded-3xl max-w-sm w-full text-center shadow-[0_0_80px_rgba(245,158,11,0.3)]">
+                <div className="text-6xl mb-6 animate-bounce">🏆</div>
+                <h2 className="text-4xl font-black text-white mb-2 text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">أنت الفائز!</h2>
+                <div className="text-amber-400 font-mono text-2xl font-bold mb-2">
+                  النقاط: {score}
+                </div>
+                <div className="text-slate-400 mb-8">
+                  صمدت لمدة {time} ثانية
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => navigate('/')}
+                    className="flex flex-col items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition-colors"
+                  >
+                    <Home className="w-6 h-6" />
+                    الرئيسية
+                  </button>
+                  <button
+                    onClick={startGame}
+                    className="flex flex-col items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-colors"
                   >
                     <RotateCcw className="w-6 h-6" />
                     العب مجدداً
@@ -468,26 +576,11 @@ export default function JumpSolo() {
 
       {/* Mobile Controls */}
       {gameState === 'playing' && (
-        <div className="fixed bottom-8 left-0 right-0 px-8 flex justify-between items-end pointer-events-none z-30">
-          <div className="w-40 h-40 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm pointer-events-auto relative shadow-[0_0_30px_rgba(34,211,238,0.1)] touch-none"
-               onTouchStart={(e) => {
-                 const rect = (e.target as HTMLElement).getBoundingClientRect();
-                 const x = e.touches[0].clientX - rect.left - 80;
-                 const y = e.touches[0].clientY - rect.top - 80;
-                 handleJoystick(x/80, y/80);
-               }}
-               onTouchMove={(e) => {
-                 const rect = (e.target as HTMLElement).getBoundingClientRect();
-                 const x = e.touches[0].clientX - rect.left - 80;
-                 const y = e.touches[0].clientY - rect.top - 80;
-                 handleJoystick(x/80, y/80);
-               }}
-               onTouchEnd={() => handleJoystick(0,0)}
-          >
-            <div className="absolute top-1/2 left-1/2 w-16 h-16 -mt-8 -ml-8 bg-cyan-500/50 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.5)] pointer-events-none transition-transform" 
-                 style={{transform: `translate(${inputsRef.current.x * 40}px, ${inputsRef.current.y * 40}px)`}}
-            />
-          </div>
+        <div className="absolute bottom-8 left-0 right-0 px-8 flex justify-between items-end pointer-events-none z-30" dir="ltr">
+          <Joystick 
+             onMove={(x, y) => handleJoystick(x, y)}
+             onEnd={() => handleJoystick(0, 0)}
+          />
 
           <button 
             className="w-24 h-24 bg-fuchsia-600/80 hover:bg-fuchsia-500/90 rounded-full backdrop-blur shadow-[0_0_30px_rgba(217,70,239,0.5)] border-2 border-fuchsia-400 pointer-events-auto flex items-center justify-center active:scale-90 transition-transform touch-none select-none"

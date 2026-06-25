@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { audio } from '../lib/audio';
-import { Trophy, Home, Play, RotateCcw } from 'lucide-react';
+import { Trophy, Home, Play, RotateCcw, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useGame } from '../components/GameContext';
 import { supabaseService } from '../services/supabaseService';
 import { updatePlayerStats } from '../lib/firebase';
 import { updateStats as doUpdateAchStats, getPlayerStats } from '../lib/achievements';
 import { useAuth } from '../components/AuthContext';
+import { storage } from '../lib/storage';
 import confetti from 'canvas-confetti';
+import { PLATFORM_RADIUS, ARM_HEIGHT, ARM_WIDTH, PLAYER_RADIUS, GRAVITY, JUMP_FORCE, drawFuturisticArena, drawArm, drawFuturisticPlayer } from '../lib/jumpGraphics';
+import { Joystick } from '../components/Joystick';
 
 type GameState = 'playing' | 'gameover';
 
@@ -25,8 +28,10 @@ interface Character {
   isJumping: boolean;
   dead: boolean;
   colorBody: string;
+  characterType?: string;
   score: number;
   timeSurvived: number;
+  difficulty?: 'easy' | 'normal' | 'hard';
   targetX?: number;
   targetY?: number;
   targetZ?: number;
@@ -41,12 +46,6 @@ interface Particle {
   color: string;
 }
 
-const PLATFORM_RADIUS = 350;
-const GRAVITY = 1500;
-const JUMP_FORCE = 600;
-const ARM_HEIGHT = 40;
-const ARM_WIDTH = 25;
-const PLAYER_RADIUS = 15;
 const MOVE_SPEED = 300;
 
 const COLORS = [
@@ -65,6 +64,7 @@ export default function JumpRoom() {
   const [statsSaved, setStatsSaved] = useState(false);
   const [isWin, setIsWin] = useState<boolean | null>(null);
   const [myScore, setMyScore] = useState(0);
+  const [spectateIndex, setSpectateIndex] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
@@ -72,6 +72,7 @@ export default function JumpRoom() {
   
   const charsRef = useRef<Character[]>([]);
   const armRef = useRef({ angle: 0, speed: 1.5 });
+  const camRef = useRef({ x: 0, y: 0 });
 
   const inputsRef = useRef({ x: 0, y: 0, jump: false });
   const remoteInputs = useRef<{ [id: string]: { x: number, y: number, jump: boolean } }>({});
@@ -89,6 +90,7 @@ export default function JumpRoom() {
     if (charsRef.current.length === 0 && isHost) {
         const newChars: Character[] = [];
         let i = 0;
+        const TYPES = ['blue', 'red', 'green', 'gold', 'purple', 'neon', 'snow', 'robot'];
         
         state.players.forEach(p => {
             const angle = (i / state.players.length) * Math.PI * 2;
@@ -102,6 +104,7 @@ export default function JumpRoom() {
                 z: 0, vx: 0, vy: 0, vz: 0,
                 isJumping: false, dead: false,
                 colorBody: COLORS[i % COLORS.length],
+                characterType: TYPES[i % TYPES.length],
                 score: 0, timeSurvived: 0
             });
             i++;
@@ -121,7 +124,9 @@ export default function JumpRoom() {
                 z: 0, vx: 0, vy: 0, vz: 0,
                 isJumping: false, dead: false,
                 colorBody: COLORS[i % COLORS.length],
-                score: 0, timeSurvived: 0
+                characterType: TYPES[i % TYPES.length],
+                score: 0, timeSurvived: 0,
+                difficulty: i % 3 === 0 ? 'hard' : (i % 2 === 0 ? 'normal' : 'easy')
             });
             i++;
         }
@@ -158,12 +163,11 @@ export default function JumpRoom() {
                                 // For self, if not syncing tightly, we can let local simulation run.
                                 // But better to sync jump state if host says we fell.
                                 if (mc.dead && !localP.dead) {
-                                    localP.dead = true;
-                                    shakeRef.current = 15;
-                                    audio.playToneWithADSR('sawtooth', 200, 0.05, 0.2, 0.2, 0.2, 0.5);
-                                    setGameState('gameover');
-                                    stateRef.current = 'gameover';
-                                }
+                            localP.dead = true;
+                            shakeRef.current = 15;
+                            audio.playToneWithADSR('sawtooth', 200, 0.05, 0.2, 0.2, 0.2, 0.5);
+                            // Do NOT set gameover here. Just die and spectate.
+                        }
                             }
                         }
                     });
@@ -183,6 +187,21 @@ export default function JumpRoom() {
     window.addEventListener('jump_event', handleJumpEvent);
     return () => window.removeEventListener('jump_event', handleJumpEvent);
   }, [isHost, playerId]);
+
+  // Prevent scrolling while in the game
+  useEffect(() => {
+    const preventDefault = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+         e.preventDefault();
+      }
+    };
+    
+    document.addEventListener('touchmove', preventDefault, { passive: false });
+    
+    return () => {
+      document.removeEventListener('touchmove', preventDefault);
+    };
+  }, []);
 
   const handleJump = useCallback(() => {
      if (stateRef.current !== 'playing') return;
@@ -234,45 +253,6 @@ export default function JumpRoom() {
     }
   }, [isHost, playerId, sendJumpEvent]);
 
-  const drawPlatform = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.save();
-    ctx.translate(width / 2, height / 2 + 50);
-    ctx.shadowColor = '#c026d3';
-    ctx.shadowBlur = 50;
-    ctx.scale(1, 0.5);
-
-    ctx.fillStyle = '#4a044e';
-    ctx.beginPath();
-    ctx.arc(0, 40, PLATFORM_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
-
-    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, PLATFORM_RADIUS);
-    grad.addColorStop(0, '#701a75');
-    grad.addColorStop(1, '#2e1065');
-    
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(0, 0, PLATFORM_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = 'rgba(217, 70, 239, 0.2)';
-    ctx.lineWidth = 2;
-    const step = 50;
-    for (let i = -PLATFORM_RADIUS; i <= PLATFORM_RADIUS; i += step) {
-        ctx.beginPath(); ctx.moveTo(i, -PLATFORM_RADIUS); ctx.lineTo(i, PLATFORM_RADIUS); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-PLATFORM_RADIUS, i); ctx.lineTo(PLATFORM_RADIUS, i); ctx.stroke();
-    }
-    
-    ctx.strokeStyle = '#e879f9';
-    ctx.lineWidth = 5;
-    ctx.shadowBlur = 20;
-    ctx.beginPath();
-    ctx.arc(0, 0, PLATFORM_RADIUS, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.restore();
-  };
-
   const spawnParticles = (x: number, y: number, color: string) => {
     for (let i = 0; i < 15; i++) {
        particlesRef.current.push({
@@ -298,7 +278,13 @@ export default function JumpRoom() {
         timeRef.current += dt;
 
         if (isHost) {
-            armRef.current.speed += dt * 0.05;
+            let targetSpeed = 1.5;
+            if (timeRef.current < 20) targetSpeed = 1.5;
+            else if (timeRef.current < 40) targetSpeed = 2.5;
+            else if (timeRef.current < 60) targetSpeed = 3.5;
+            else targetSpeed = 4.5 + (timeRef.current - 60) * 0.05;
+
+            armRef.current.speed += (targetSpeed - armRef.current.speed) * dt;
             armRef.current.angle += armRef.current.speed * dt;
 
             chars.forEach(c => {
@@ -309,21 +295,71 @@ export default function JumpRoom() {
 
                 // AI logic
                 if (c.isBot) {
-                    // Try to jump if arm is approaching
-                    // angle diff
-                    let aDiff = armRef.current.angle % (Math.PI*2) - Math.atan2(c.y, c.x);
-                    if (aDiff < 0) aDiff += Math.PI * 2;
-                    // very simple AI
-                    if (aDiff > 0 && aDiff < 0.5 && c.z === 0) {
-                        if (Math.random() < 0.8) {
-                             c.vz = JUMP_FORCE;
-                             c.isJumping = true;
+                    // Smart Movement
+                    if (!(c as any).targetPos || Math.random() < 0.01) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const radius = Math.random() * (PLATFORM_RADIUS - 50);
+                        (c as any).targetPos = {
+                            x: Math.cos(angle) * radius,
+                            y: Math.sin(angle) * radius
+                        };
+                    }
+                    
+                    // Avoid grouping
+                    let avoidX = 0, avoidY = 0;
+                    chars.forEach(other => {
+                        if (other !== c && !other.dead) {
+                           const dx = c.x - other.x;
+                           const dy = c.y - other.y;
+                           const dist = Math.sqrt(dx*dx + dy*dy);
+                           if (dist < 40 && dist > 0) {
+                               avoidX += (dx/dist);
+                               avoidY += (dy/dist);
+                           }
                         }
+                    });
+
+                    const tx = (c as any).targetPos.x - c.x;
+                    const ty = (c as any).targetPos.y - c.y;
+                    const tdist = Math.sqrt(tx*tx + ty*ty);
+                    
+                    const speed = c.difficulty === 'hard' ? 220 : c.difficulty === 'normal' ? 170 : 120;
+                    
+                    if (tdist > 10) {
+                        const moveX = (tx/tdist) + avoidX * 2;
+                        const moveY = (ty/tdist) + avoidY * 2;
+                        const mdist = Math.sqrt(moveX*moveX + moveY*moveY);
+                        c.vx += ((moveX/(mdist||1)) * speed - c.vx) * 10 * dt;
+                        c.vy += ((moveY/(mdist||1)) * speed - c.vy) * 10 * dt;
                     }
 
-                    // Bot move
-                    if (Math.random() < 0.02) {
-                        remoteInputs.current[c.id] = { dx: (Math.random()-0.5)*2, dy: (Math.random()-0.5)*2, jump: false };
+                    // AI Jump Prediction
+                    const distFromCenter = Math.sqrt(c.x*c.x + c.y*c.y);
+                    if (distFromCenter < PLATFORM_RADIUS) {
+                        let botAngle = Math.atan2(c.y, c.x);
+                        if (botAngle < 0) botAngle += Math.PI * 2;
+                        
+                        let armA = armRef.current.angle % (Math.PI * 2);
+                        if (armA < 0) armA += Math.PI * 2;
+                        
+                        let aDiff = botAngle - armA;
+                        if (aDiff < 0) aDiff += Math.PI * 2;
+                        
+                        const timeToImpact = aDiff / armRef.current.speed;
+                        
+                        let jumpThreshold = 0;
+                        if (c.difficulty === 'easy') jumpThreshold = 0.30 + Math.random()*0.15;
+                        if (c.difficulty === 'normal') jumpThreshold = 0.40 + Math.random()*0.1;
+                        if (c.difficulty === 'hard') jumpThreshold = 0.45 + Math.random()*0.05;
+          
+                        if (timeToImpact > 0 && timeToImpact < jumpThreshold && !c.isJumping && c.z === 0) {
+                            const errorChance = c.difficulty === 'easy' ? 0.35 : c.difficulty === 'normal' ? 0.20 : 0.08;
+                            if (Math.random() < errorChance) { /* human error - jump late or fail to jump */ }
+                            else {
+                                c.vz = JUMP_FORCE;
+                                c.isJumping = true;
+                            }
+                        }
                     }
                 }
 
@@ -336,7 +372,7 @@ export default function JumpRoom() {
                         c.isJumping = true;
                         inputsRef.current.jump = false; // consume
                     }
-                } else if (remoteInputs.current[c.id]) {
+                } else if (!c.isBot && remoteInputs.current[c.id]) {
                     ix = remoteInputs.current[c.id].x;
                     iy = remoteInputs.current[c.id].y;
                     if (remoteInputs.current[c.id].jump && c.z === 0) {
@@ -346,13 +382,33 @@ export default function JumpRoom() {
                     }
                 }
 
-                let mag = Math.sqrt(ix * ix + iy * iy);
-                if (mag > 1) mag = 1;
-                c.vx = ix * MOVE_SPEED * (mag > 0 ? 1/mag : 0);
-                c.vy = iy * MOVE_SPEED * (mag > 0 ? 1/mag : 0);
+                if (!c.isBot) {
+                    const maxSpeed = 350;
+                    let mag = Math.sqrt(ix * ix + iy * iy);
+                    if (mag > 1) {
+                        ix /= mag;
+                        iy /= mag;
+                    }
+                    const targetVx = ix * maxSpeed;
+                    const targetVy = iy * maxSpeed;
+                    
+                    c.vx += (targetVx - c.vx) * 25 * dt;
+                    c.vy += (targetVy - c.vy) * 25 * dt;
+                }
 
                 c.x += c.vx * dt;
                 c.y += c.vy * dt;
+
+                // Movement Trail
+                const speed = Math.sqrt(c.vx*c.vx + c.vy*c.vy);
+                if (speed > 10 && c.z === 0 && Math.random() < 0.3) {
+                    particlesRef.current.push({
+                       x: c.x, y: c.y,
+                       vx: 0, vy: 0,
+                       life: 0.4,
+                       color: c.isBot ? 'rgba(59, 130, 246, 0.3)' : 'rgba(217, 70, 239, 0.3)'
+                    });
+                }
 
                 if (c.isJumping) {
                     c.z += c.vz * dt;
@@ -361,6 +417,8 @@ export default function JumpRoom() {
                         c.z = 0;
                         c.vz = 0;
                         c.isJumping = false;
+                        spawnParticles(c.x, c.y, 'rgba(34, 211, 238, 0.5)');
+                        if (c.id === playerId) audio.playNoise(0.2, 100, 0.1);
                     }
                 }
 
@@ -434,12 +492,31 @@ export default function JumpRoom() {
                         inputsRef.current.jump = false;
                      }
                      
+                     const maxSpeed = 350;
                      let mag = Math.sqrt(ix * ix + iy * iy);
-                     if (mag > 1) mag = 1;
-                     c.vx = ix * MOVE_SPEED * (mag > 0 ? 1/mag : 0);
-                     c.vy = iy * MOVE_SPEED * (mag > 0 ? 1/mag : 0);
+                     if (mag > 1) {
+                         ix /= mag;
+                         iy /= mag;
+                     }
+                     const targetVx = ix * maxSpeed;
+                     const targetVy = iy * maxSpeed;
+                     
+                     c.vx += (targetVx - c.vx) * 25 * dt;
+                     c.vy += (targetVy - c.vy) * 25 * dt;
+                     
                      c.x += c.vx * dt;
                      c.y += c.vy * dt;
+
+                     // Movement Trail
+                     const speed = Math.sqrt(c.vx*c.vx + c.vy*c.vy);
+                     if (speed > 10 && c.z === 0 && Math.random() < 0.3) {
+                         particlesRef.current.push({
+                            x: c.x, y: c.y,
+                            vx: 0, vy: 0,
+                            life: 0.4,
+                            color: 'rgba(217, 70, 239, 0.3)'
+                         });
+                     }
 
                      if (c.isJumping) {
                         c.z += c.vz * dt;
@@ -448,6 +525,8 @@ export default function JumpRoom() {
                             c.z = 0;
                             c.vz = 0;
                             c.isJumping = false;
+                            spawnParticles(c.x, c.y, 'rgba(34, 211, 238, 0.5)');
+                            audio.playNoise(0.2, 100, 0.1);
                         }
                      }
                      const dist = Math.sqrt(c.x * c.x + c.y * c.y);
@@ -486,19 +565,16 @@ export default function JumpRoom() {
              myScoreRef.current.score = myP.score;
              myScoreRef.current.time = myP.timeSurvived;
              if (myP.dead && !eliminationMsg) {
-                 const place = chars.filter(c => c.timeSurvived > myP.timeSurvived || !c.dead).length;
+                 const place = chars.filter(c => c.id !== myP.id && (c.timeSurvived > myP.timeSurvived || !c.dead)).length + 1;
                  setPlayerPlacement(place);
                  setEliminationMsg(`تم إقصاؤك! (المركز ${place})`);
-                 if (place === 1 && aliveCount <= 1) {
-                     // Wait, if place is 1, and dead? It means last man standing.
-                 }
              }
         }
     } else if (stateRef.current === 'gameover') {
          if (!statsSaved && user && isWin === null) {
               const myP = chars.find(c => c.id === playerId);
               if (myP) {
-                  const place = chars.filter(c => c.score > myP.score || !c.dead).length + 1;
+                  const place = chars.filter(c => c.id !== myP.id && (c.score > myP.score || !c.dead)).length + 1;
                   setPlayerPlacement(place);
                   const isWinner = place === 1;
                   setIsWin(isWinner);
@@ -514,7 +590,7 @@ export default function JumpRoom() {
                       jumpMaxScore: Math.max(s.jumpMaxScore || 0, Math.floor(myP.score))
                   });
 
-                  updatePlayerStats(user.uid, user.displayName || 'Unknown', isWinner, 0, Math.floor(myP.score), 0, 'القفزة الأخيرة');
+                  updatePlayerStats(storage.getPlayerId(), storage.getPlayerName() || 'Unknown', isWinner, 0, Math.floor(myP.score), 0, 'القفزة الأخيرة');
                   setStatsSaved(true);
               }
          }
@@ -527,6 +603,26 @@ export default function JumpRoom() {
         shakeRef.current -= dt * 50;
         if (shakeRef.current < 0) shakeRef.current = 0;
     }
+
+    // Camera
+    let camTargetX = 0, camTargetY = 0;
+    const zoom = 1.5;
+    const myP = chars.find(c => c.id === playerId);
+    if (myP && !myP.dead) {
+         camTargetX = -myP.x * zoom;
+         camTargetY = -(myP.y - myP.z * 0.3) * (zoom * 0.5);
+    } else {
+         const alivePlayers = chars.filter(c => !c.dead);
+         if (alivePlayers.length > 0) {
+              const spectateTarget = alivePlayers[spectateIndex % alivePlayers.length];
+              if (spectateTarget) {
+                   camTargetX = -spectateTarget.x * zoom;
+                   camTargetY = -(spectateTarget.y - spectateTarget.z * 0.3) * (zoom * 0.5);
+              }
+         }
+    }
+    camRef.current.x += (camTargetX - camRef.current.x) * 0.15;
+    camRef.current.y += (camTargetY - camRef.current.y) * 0.15;
 
     // DRAW
     const canvas = canvasRef.current;
@@ -541,37 +637,11 @@ export default function JumpRoom() {
         const shakeY = (Math.random() - 0.5) * shakeRef.current;
         ctx.translate(shakeX, shakeY);
 
-        drawPlatform(ctx, width, height);
+        ctx.translate(width / 2 + camRef.current.x, height / 2 + 50 + camRef.current.y);
+        ctx.scale(1.5, 1.5 * 0.5);
 
-        ctx.save();
-        ctx.translate(width / 2, height / 2 + 50);
-        ctx.scale(1, 0.5);
-
-        // Draw Arm
-        const ax = Math.cos(armRef.current.angle) * PLATFORM_RADIUS;
-        const ay = Math.sin(armRef.current.angle) * PLATFORM_RADIUS;
-
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-        ctx.lineWidth = ARM_WIDTH;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(0, 0); ctx.lineTo(ax, ay);
-        ctx.stroke();
-
-        ctx.strokeStyle = '#22d3ee';
-        ctx.lineWidth = ARM_WIDTH;
-        ctx.lineCap = 'round';
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#22d3ee';
-        ctx.beginPath();
-        ctx.moveTo(0, 0); ctx.lineTo(ax, ay);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        
-        ctx.fillStyle = '#0891b2';
-        ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#67e8f9';
-        ctx.beginPath(); ctx.arc(0, -30, 40, 0, Math.PI * 2); ctx.fill();
+        drawFuturisticArena(ctx, timeRef.current);
+        drawArm(ctx, armRef.current.angle, timeRef.current);
 
         // Particles
         for (let i = particlesRef.current.length - 1; i >= 0; i--) {
@@ -594,36 +664,20 @@ export default function JumpRoom() {
         const sortedChars = [...chars].sort((a,b) => a.y - b.y);
 
         sortedChars.forEach(p => {
-             // shadow
-             if (!p.dead) {
-                 ctx.fillStyle = 'rgba(0,0,0,0.4)';
-                 ctx.beginPath();
-                 const shadowRadius = Math.max(5, PLAYER_RADIUS - p.z * 0.1);
-                 ctx.arc(p.x, p.y, shadowRadius, 0, Math.PI * 2);
-                 ctx.fill();
-             }
-             // body
-             ctx.fillStyle = p.colorBody;
-             ctx.beginPath();
-             ctx.arc(p.x, p.y - p.z, PLAYER_RADIUS, 0, Math.PI * 2);
-             ctx.fill();
-             // highlight
-             ctx.fillStyle = 'rgba(255,255,255,0.4)';
-             ctx.beginPath();
-             ctx.arc(p.x, p.y - p.z - 5, PLAYER_RADIUS * 0.6, 0, Math.PI * 2);
-             ctx.fill();
+             const isWinner = gameState === 'gameover' && !p.dead;
+             drawFuturisticPlayer(ctx, p.x, p.y, p.z, p.vx, p.vy, p.isJumping, p.dead, p.colorBody, timeRef.current, isWinner, p.name, p.characterType || 'blue');
              
-             // name
-             if (p.z >= 0 && !p.dead) {
-                 ctx.fillStyle = 'white';
-                 ctx.font = 'bold 16px font-heading';
-                 ctx.textAlign = 'center';
-                 // Un-scale text by restoring y scale before drawing text or applying inverse transform
-                 ctx.save();
-                 ctx.translate(p.x, p.y - p.z - 25);
-                 ctx.scale(1, 2);
-                 ctx.fillText(p.name, 0, 0);
-                 ctx.restore();
+             if (p.id === playerId && !p.dead) {
+                  ctx.save();
+                  ctx.translate(p.x, p.y - p.z - 50);
+                  ctx.scale(1, 2); // unscale text/marker vertically
+                  ctx.fillStyle = '#22d3ee';
+                  ctx.beginPath();
+                  ctx.moveTo(-5, -5);
+                  ctx.lineTo(5, -5);
+                  ctx.lineTo(0, 2);
+                  ctx.fill();
+                  ctx.restore();
              }
         });
 
@@ -721,27 +775,13 @@ export default function JumpRoom() {
       </div>
 
       {/* Mobile Controls */}
-      {gameState === 'playing' && (
-        <div className="absolute bottom-8 left-0 right-0 px-8 flex justify-between items-end pointer-events-none z-30">
-          <div className="w-32 h-32 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm pointer-events-auto relative shadow-[0_0_30px_rgba(34,211,238,0.1)] touch-none"
-               onTouchStart={(e) => {
-                 const rect = (e.target as HTMLElement).getBoundingClientRect();
-                 const x = e.touches[0].clientX - rect.left - 64;
-                 const y = e.touches[0].clientY - rect.top - 64;
-                 handleJoystick(x/64, y/64);
-               }}
-               onTouchMove={(e) => {
-                 const rect = (e.target as HTMLElement).getBoundingClientRect();
-                 const x = e.touches[0].clientX - rect.left - 64;
-                 const y = e.touches[0].clientY - rect.top - 64;
-                 handleJoystick(x/64, y/64);
-               }}
-               onTouchEnd={() => handleJoystick(0,0)}
-          >
-            <div className="absolute top-1/2 left-1/2 w-12 h-12 -mt-6 -ml-6 bg-cyan-500/50 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.5)] pointer-events-none" 
-                 style={{transform: `translate(${inputsRef.current.x * 32}px, ${inputsRef.current.y * 32}px)`}}
-            />
-          </div>
+      {/* Controls & Spectator */}
+      {gameState === 'playing' && charsRef.current.find(c => c.id === playerId)?.dead === false && (
+        <div className="absolute bottom-8 left-0 right-0 px-8 flex justify-between items-end pointer-events-none z-30" dir="ltr">
+          <Joystick 
+             onMove={(x, y) => handleJoystick(x, y)}
+             onEnd={() => handleJoystick(0, 0)}
+          />
 
           <button 
             className="w-20 h-20 bg-fuchsia-600/80 hover:bg-fuchsia-500/90 rounded-full backdrop-blur shadow-[0_0_30px_rgba(217,70,239,0.5)] border-2 border-fuchsia-400 pointer-events-auto flex items-center justify-center active:scale-90 transition-transform touch-none select-none"
@@ -751,6 +791,26 @@ export default function JumpRoom() {
             <span className="text-lg font-black text-white pointer-events-none">JUMP</span>
           </button>
         </div>
+      )}
+
+      {gameState === 'playing' && charsRef.current.find(c => c.id === playerId)?.dead === true && (
+         <div className="absolute bottom-8 left-0 right-0 px-8 flex justify-center items-end pointer-events-none z-30">
+            <div className="bg-slate-900/80 backdrop-blur border border-slate-700 p-4 rounded-3xl flex items-center gap-6 pointer-events-auto shadow-2xl">
+                <button onClick={() => setSpectateIndex(prev => prev > 0 ? prev - 1 : 9999)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-full text-white transition-colors active:scale-90">
+                    <ChevronRight className="w-6 h-6" />
+                </button>
+                <div className="text-center w-40">
+                    <div className="flex justify-center mb-1 text-slate-400"><Eye className="w-5 h-5"/></div>
+                    <div className="font-bold text-white text-lg">وضع المشاهدة</div>
+                    <div className="text-sm text-cyan-400 truncate">
+                       {charsRef.current.filter(c => !c.dead)[spectateIndex % Math.max(1, charsRef.current.filter(c => !c.dead).length)]?.name || 'لا يوجد ناجون'}
+                    </div>
+                </div>
+                <button onClick={() => setSpectateIndex(prev => prev + 1)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-full text-white transition-colors active:scale-90">
+                    <ChevronLeft className="w-6 h-6" />
+                </button>
+            </div>
+         </div>
       )}
     </div>
   );

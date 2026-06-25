@@ -4,8 +4,8 @@ import { Home, Users, Trophy, User } from 'lucide-react';
 
 export default function BottomNav() {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-50 pb-safe">
-      <div className="flex justify-around items-center h-16 px-2">
+    <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-[9999]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="flex justify-around items-center h-16 px-2 md:px-8 max-w-4xl mx-auto">
         <NavLink
           to="/"
           className={({ isActive }) =>

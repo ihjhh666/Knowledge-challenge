@@ -234,6 +234,20 @@ export default function Home() {
                       onClick: () => navigate('/emoji-guess')
                     }}
                   />
+                  
+                  <GameCard
+                    index={SOLO_CATEGORIES.length + 4}
+                    card={{
+                      id: 'ai-personality',
+                      title: 'شخصيتك بالذكاء الاصطناعي',
+                      subtitle: 'حلل شخصيتك مع أسئلة علم النفس',
+                      icon: '🧠',
+                      themeStyle: 'math', // using an existing theme style like math/science for blueish tint
+                      primaryColor: 'from-indigo-600 to-purple-900',
+                      glowColor: '#6366f1',
+                      onClick: () => navigate('/ai-personality')
+                    }}
+                  />
                 </div>
               </motion.div>
             )}

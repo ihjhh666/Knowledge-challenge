@@ -353,6 +353,7 @@ export const updatePlayerStats = async (
   points: number,
   category: string
 ) => {
+  if (!playerId) return;
   notifyAchievements(playerId, isWin, points);
   if (!db) return;
   try {
