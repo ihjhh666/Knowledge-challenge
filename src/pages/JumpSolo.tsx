@@ -49,7 +49,6 @@ export default function JumpSolo() {
 
   // Prevent scrolling while in the game
   useEffect(() => {
-    console.log("Canvas element on mount:", canvasRef.current);
     if (canvasRef.current) {
       console.log("Canvas Created", canvasRef.current.width, canvasRef.current.height);
       console.log("Canvas client size:", canvasRef.current.clientWidth, canvasRef.current.clientHeight);
@@ -469,7 +468,7 @@ export default function JumpSolo() {
   }, [loop]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-hidden relative flex flex-col">
+    <div className="fixed inset-0 w-screen h-[100dvh] z-[9999] bg-slate-950 text-white overflow-hidden flex flex-col touch-none">
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-fuchsia-950 opacity-50"></div>
       <div className="absolute inset-0" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(192, 38, 211, 0.1) 0%, transparent 60%)'}}></div>
 

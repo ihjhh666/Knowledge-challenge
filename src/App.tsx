@@ -217,6 +217,9 @@ function AppContent() {
     handleRecovery();
   }, []);
   
+  const location = useLocation();
+  const isFullscreenMode = location.pathname.includes('jump-survival');
+
   if (isRecovering) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4">
@@ -227,7 +230,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 font-sans flex flex-col" dir="rtl">
+    <div className={`min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 font-sans flex flex-col ${isFullscreenMode ? 'overflow-hidden' : ''}`} dir="rtl">
       <AchievementSystem />
       <GlobalProfileModal />
       <UsernamePrompt />
@@ -280,17 +283,21 @@ function AppContent() {
         </ErrorBoundary>
       </main>
       
-      <BottomNav />
-      
-      <div className="w-full bg-transparent px-4 py-8 mb-24 pb-safe">
-        <div className="max-w-4xl mx-auto">
-          <AdBanner dataAdSlot="6036873429" />
-        </div>
-      </div>
-      
-      <div className="mb-16 md:mb-0">
-        <Footer />
-      </div>
+      {!isFullscreenMode && (
+        <>
+          <BottomNav />
+          
+          <div className="w-full bg-transparent px-4 py-8 mb-24 pb-safe">
+            <div className="max-w-4xl mx-auto">
+              <AdBanner dataAdSlot="6036873429" />
+            </div>
+          </div>
+          
+          <div className="mb-16 md:mb-0">
+            <Footer />
+          </div>
+        </>
+      )}
     </div>
   );
 }
