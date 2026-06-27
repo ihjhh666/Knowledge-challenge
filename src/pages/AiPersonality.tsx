@@ -297,7 +297,7 @@ export default function AiPersonality() {
   };
 
   const sortedTraits = Object.entries(traits)
-    .sort((a,b) => b[1] - a[1]);
+    .sort((a,b) => (b[1] as number) - (a[1] as number));
 
   return (
     <div className="min-h-screen bg-slate-950 text-white relative overflow-x-hidden" dir="rtl">
@@ -624,12 +624,12 @@ export default function AiPersonality() {
                       <div key={key} className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="font-bold text-slate-200">{TRAIT_NAMES[key] || key}</span>
-                          <span className="text-indigo-400 font-bold">{getPercentage(val)}%</span>
+                          <span className="text-indigo-400 font-bold">{getPercentage(val as number)}%</span>
                         </div>
                         <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                           <motion.div 
                             initial={{ width: 0 }}
-                            animate={{ width: `${getPercentage(val)}%` }}
+                            animate={{ width: `${getPercentage(val as number)}%` }}
                             transition={{ duration: 1, delay: i * 0.1 }}
                             className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
                           />

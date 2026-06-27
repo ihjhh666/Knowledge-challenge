@@ -11,6 +11,7 @@ import { PLATFORM_RADIUS, ARM_HEIGHT, ARM_WIDTH, PLAYER_RADIUS, GRAVITY, JUMP_FO
 import { Joystick } from '../components/Joystick';
 
 export default function JumpSolo() {
+  console.log("JumpSolo Component Rendered");
   const navigate = useNavigate();
   const { user } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -19,9 +20,11 @@ export default function JumpSolo() {
   const [score, setScore] = useState(0);
   const [time, setTime] = useState(0);
   const [aliveCount, setAliveCount] = useState(8);
+  const [debugMsg, setDebugMsg] = useState('');
 
   const requestRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
+  const renderCountRef = useRef(0);
   
   const playerRef = useRef({
     x: 0, y: PLATFORM_RADIUS * 0.5, z: 0,
@@ -46,6 +49,26 @@ export default function JumpSolo() {
 
   // Prevent scrolling while in the game
   useEffect(() => {
+    console.log("Canvas element on mount:", canvasRef.current);
+    if (canvasRef.current) {
+      console.log("Canvas Created", canvasRef.current.width, canvasRef.current.height);
+      console.log("Canvas client size:", canvasRef.current.clientWidth, canvasRef.current.clientHeight);
+    } else {
+      console.log("Canvas is NULL on mount");
+      setDebugMsg("Canvas is NULL");
+    }
+    
+    const timeout = setTimeout(() => {
+      if (renderCountRef.current === 0) {
+        setDebugMsg("Game Loop Did Not Start. requestAnimationFrame failed.");
+      } else {
+        console.log("Game loop is running. Render count:", renderCountRef.current);
+        if (!canvasRef.current || canvasRef.current.clientWidth === 0) {
+           setDebugMsg("Canvas client width is 0. Canvas is not visible.");
+        }
+      }
+    }, 2000);
+
     const preventDefault = (e: TouchEvent) => {
       // Don't prevent default if it's a click on a button, but mostly we want to prevent scrolling
       if (e.touches && e.touches.length > 0) {
@@ -210,9 +233,19 @@ export default function JumpSolo() {
 
   const loop = useCallback((now: number) => {
     try {
-      if (!lastTimeRef.current) lastTimeRef.current = now;
+      if (!lastTimeRef.current) {
+        console.log("Game Loop Started");
+        lastTimeRef.current = now;
+      }
       const dt = Math.min((now - lastTimeRef.current) / 1000, 0.1);
       lastTimeRef.current = now;
+      
+      if (renderCountRef.current === 0) {
+        console.log("Player inside loop:", playerRef.current);
+        console.log("Canvas context exists?", !!canvasRef.current?.getContext('2d'));
+      }
+      renderCountRef.current++;
+
 
       if (gameState === 'playing') {
         timeRef.current += dt;
@@ -421,11 +454,12 @@ export default function JumpSolo() {
           ctx.restore(); // scale & camera & shake
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error in JumpSolo loop:", err);
+      if (!debugMsg) setDebugMsg(err.message || String(err));
     }
     requestRef.current = requestAnimationFrame(loop);
-  }, [gameState, time, aliveCount, user, score, handleJump]);
+  }, [gameState, time, aliveCount, user, score, handleJump, debugMsg]);
 
   useEffect(() => {
     requestRef.current = requestAnimationFrame(loop);
@@ -473,12 +507,13 @@ export default function JumpSolo() {
       </header>
 
       {/* Game Canvas */}
-      <div className="flex-1 relative flex items-center justify-center">
+      <div className="flex-1 w-full relative flex items-center justify-center min-h-[50vh]">
         <canvas
           ref={canvasRef}
           width={1000}
           height={800}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ display: 'block' }}
         />
 
         <AnimatePresence>
@@ -575,6 +610,13 @@ export default function JumpSolo() {
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {debugMsg && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900/80 text-white p-4 rounded-xl border border-red-500 z-50 text-center pointer-events-none">
+            <h3 className="font-bold text-lg mb-2">Game Initialization Failed</h3>
+            <pre className="text-xs text-left whitespace-pre-wrap">{debugMsg}</pre>
+          </div>
+        )}
       </div>
 
       {/* Mobile Controls */}
