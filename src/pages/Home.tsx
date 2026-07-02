@@ -11,6 +11,7 @@ import { FriendsSidebar } from '../components/FriendsSidebar';
 import { supabase } from '../lib/supabase';
 import { GameCard, GameCardTheme } from '../components/GameCard';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SEO } from '../components/SEO';
 
 import { CATEGORIES as SOLO_CATEGORIES } from './SoloPlay';
 
@@ -78,6 +79,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen max-w-5xl mx-auto p-4 md:p-12 pb-24 space-y-10">
+      <SEO 
+        title="الرئيسية" 
+        description="تحدي المعرفة - منصة الألعاب المعرفية الأولى في العالم العربي. العب، تعلم، وتحدى أصدقاءك في مجموعة متنوعة من الألعاب الممتعة والمسلية."
+        url="/"
+      />
       <FriendsSidebar isOpen={showFriends} onClose={() => setShowFriends(false)} />
       
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50 p-6 rounded-3xl border border-slate-800 backdrop-blur-xl shadow-lg">

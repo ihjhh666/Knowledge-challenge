@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Mail, Youtube, Instagram, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { SEO } from '../components/SEO';
 
 export default function ContactUs() {
   const [name, setName] = useState('');
@@ -50,6 +51,11 @@ export default function ContactUs() {
   };
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200" dir="rtl">
+      <SEO 
+        title="اتصل بنا" 
+        description="تواصل مع فريق منصة تحدي المعرفة لأي استفسارات، اقتراحات، أو شراكات إعلانية."
+        url="/contact"
+      />
       <div className="max-w-4xl mx-auto px-4 py-12 md:py-20">
         
         <Link to="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8 bg-slate-900 border border-slate-800 px-4 py-2 rounded-full">

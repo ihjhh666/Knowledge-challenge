@@ -54,6 +54,13 @@ export function Footer() {
               <span className="text-sm font-bold text-slate-300 group-hover:text-amber-400 transition-colors">عن المنصة</span>
             </Link>
 
+            <Link to="/encyclopedia" className="group flex flex-col items-center md:items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-blue-400 group-hover:bg-blue-400/10 group-hover:border-blue-400/30 transition-all duration-300">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-blue-400 transition-colors">موسوعة المعرفة</span>
+            </Link>
+
             <Link to="/contact" className="group flex flex-col items-center md:items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-blue-400 group-hover:bg-blue-400/10 group-hover:border-blue-400/30 transition-all duration-300">
                 <Mail className="w-6 h-6" />

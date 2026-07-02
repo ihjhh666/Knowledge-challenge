@@ -2,10 +2,16 @@ import React from 'react';
 import { ArrowRight, Book } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { SEO } from '../components/SEO';
 
 export default function TermsOfService() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 pb-24" dir="rtl">
+      <SEO 
+        title="شروط الاستخدام" 
+        description="شروط وأحكام استخدام منصة تحدي المعرفة. يرجى قراءة هذه الشروط بعناية قبل استخدام الموقع."
+        url="/terms"
+      />
       {/* Hero Section */}
       <div className="relative pt-24 pb-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-900/20 via-slate-900 to-orange-900/20 z-0"></div>

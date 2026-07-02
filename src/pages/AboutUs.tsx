@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Info, Target, Zap, Globe2, Lightbulb, Heart, Rocket } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { SEO } from '../components/SEO';
 
 export default function AboutUs() {
   const sections = [
@@ -45,6 +46,11 @@ export default function AboutUs() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white pb-24" dir="rtl">
+      <SEO 
+        title="عن المنصة" 
+        description="تعرف على منصة تحدي المعرفة، رؤيتنا، ورسالتنا في نشر الثقافة والمتعة في العالم العربي."
+        url="/about"
+      />
       {/* Hero Section */}
       <div className="relative pt-24 pb-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-slate-900 to-emerald-900/20 z-0"></div>

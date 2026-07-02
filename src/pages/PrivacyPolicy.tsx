@@ -2,10 +2,16 @@ import React from 'react';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { SEO } from '../components/SEO';
 
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 pb-24" dir="rtl">
+      <SEO 
+        title="سياسة الخصوصية" 
+        description="تعرف على سياسة الخصوصية لمنصة تحدي المعرفة وكيفية حمايتنا لبياناتك ومعلوماتك الشخصية."
+        url="/privacy"
+      />
       {/* Hero Section */}
       <div className="relative pt-24 pb-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-teal-900/20 via-slate-900 to-emerald-900/20 z-0"></div>

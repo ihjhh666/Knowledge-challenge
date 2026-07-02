@@ -54,6 +54,9 @@ const Achievements = lazy(() => import('./pages/Achievements'));
 const Settings = lazy(() => import('./pages/Settings'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Encyclopedia = lazy(() => import('./pages/Encyclopedia'));
+const EncyclopediaCategory = lazy(() => import('./pages/EncyclopediaCategory'));
+const EncyclopediaArticle = lazy(() => import('./pages/EncyclopediaArticle'));
 
 function useGlobalAudio() {
   const location = useLocation();
@@ -286,6 +289,9 @@ function AppContent() {
             <Route path="/guide" element={<GameGuide />} />
             <Route path="/how-to-play" element={<HowToPlay />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/encyclopedia" element={<Encyclopedia />} />
+            <Route path="/encyclopedia/:categoryId" element={<EncyclopediaCategory />} />
+            <Route path="/encyclopedia/:categoryId/:articleId" element={<EncyclopediaArticle />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>
