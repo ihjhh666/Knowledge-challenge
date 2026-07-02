@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, FileText, Mail, Info, Hexagon } from 'lucide-react';
+import { Shield, FileText, Mail, Info, Hexagon, BookOpen, MessageCircleQuestion, Sparkles } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -11,7 +11,7 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-12">
           {/* Brand & Description */}
-          <div className="col-span-1 md:col-span-5 flex flex-col items-center md:items-start text-center md:text-right">
+          <div className="col-span-1 md:col-span-4 flex flex-col items-center md:items-start text-center md:text-right">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
                 <Hexagon className="w-8 h-8 text-indigo-400 fill-indigo-400/20" />
@@ -24,12 +24,34 @@ export function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div className="col-span-1 md:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-6">
+          <div className="col-span-1 md:col-span-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            
+            <Link to="/guide" className="group flex flex-col items-center md:items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-fuchsia-400 group-hover:bg-fuchsia-400/10 group-hover:border-fuchsia-400/30 transition-all duration-300">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-fuchsia-400 transition-colors">دليل الأطوار</span>
+            </Link>
+
+            <Link to="/how-to-play" className="group flex flex-col items-center md:items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 group-hover:bg-emerald-400/10 group-hover:border-emerald-400/30 transition-all duration-300">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-emerald-400 transition-colors">كيفية اللعب</span>
+            </Link>
+
+            <Link to="/faq" className="group flex flex-col items-center md:items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-purple-400 group-hover:bg-purple-400/10 group-hover:border-purple-400/30 transition-all duration-300">
+                <MessageCircleQuestion className="w-6 h-6" />
+              </div>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-purple-400 transition-colors">الأسئلة الشائعة</span>
+            </Link>
+
             <Link to="/about" className="group flex flex-col items-center md:items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-amber-400 group-hover:bg-amber-400/10 group-hover:border-amber-400/30 transition-all duration-300">
                 <Info className="w-6 h-6" />
               </div>
-              <span className="text-sm font-bold text-slate-300 group-hover:text-amber-400 transition-colors">حول اللعبة</span>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-amber-400 transition-colors">عن المنصة</span>
             </Link>
 
             <Link to="/contact" className="group flex flex-col items-center md:items-start gap-4">
@@ -40,17 +62,17 @@ export function Footer() {
             </Link>
 
             <Link to="/privacy" className="group flex flex-col items-center md:items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 group-hover:bg-emerald-400/10 group-hover:border-emerald-400/30 transition-all duration-300">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-teal-400 group-hover:bg-teal-400/10 group-hover:border-teal-400/30 transition-all duration-300">
                 <Shield className="w-6 h-6" />
               </div>
-              <span className="text-sm font-bold text-slate-300 group-hover:text-emerald-400 transition-colors">سياسة الخصوصية</span>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-teal-400 transition-colors">سياسة الخصوصية</span>
             </Link>
 
             <Link to="/terms" className="group flex flex-col items-center md:items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-purple-400 group-hover:bg-purple-400/10 group-hover:border-purple-400/30 transition-all duration-300">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-rose-400 group-hover:bg-rose-400/10 group-hover:border-rose-400/30 transition-all duration-300">
                 <FileText className="w-6 h-6" />
               </div>
-              <span className="text-sm font-bold text-slate-300 group-hover:text-purple-400 transition-colors">شروط الاستخدام</span>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-rose-400 transition-colors">شروط الاستخدام</span>
             </Link>
           </div>
         </div>

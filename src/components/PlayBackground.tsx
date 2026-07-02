@@ -205,20 +205,16 @@ export function PlayBackground({ theme }: PlayBackgroundProps) {
 
     case 'proverbs':
       return (
-        <div className="fixed inset-0 -z-10 overflow-hidden bg-stone-950 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-950 via-yellow-950/20 to-stone-900"></div>
-          {/* Parchment/Antique paper texture */}
-          <div className="absolute inset-0 opacity-[0.15] mix-blend-overlay" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/cream-paper.png")'}}></div>
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-[#020617] pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-[#020617] to-fuchsia-950"></div>
+          {/* Glassmorphism/neon subtle grids */}
+          <div className="absolute inset-0 opacity-[0.05]" style={{backgroundImage: 'linear-gradient(rgba(192,38,211,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(79,70,229,0.3) 1px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
           
-          {/* Ink splatters */}
-          <div className="absolute top-[20%] left-[20%] w-16 h-16 bg-black opacity-20 rounded-full blur-[2px] transform scale-y-50 rotate-45"></div>
-          <div className="absolute bottom-[30%] right-[15%] w-8 h-8 bg-black opacity-10 rounded-full blur-[1px] transform rotate-12"></div>
-          <div className="absolute bottom-[28%] right-[12%] w-4 h-4 bg-black opacity-10 rounded-full blur-[1px]"></div>
+          <div className="absolute top-[20%] left-[20%] w-64 h-64 bg-fuchsia-600/10 rounded-full blur-[100px]"></div>
+          <div className="absolute bottom-[20%] right-[15%] w-80 h-80 bg-indigo-600/10 rounded-full blur-[120px]"></div>
           
-          <div className="absolute right-[10%] top-[25%] text-[150px] opacity-[0.04] rotate-12 drop-shadow-xl">📜</div>
-          <div className="absolute left-[15%] bottom-[20%] text-[100px] opacity-[0.04] -rotate-12">🪶</div>
-          
-          <div className="absolute right-0 top-0 w-[40%] h-full bg-gradient-to-l from-amber-600/5 to-transparent"></div>
+          <div className="absolute right-[10%] top-[25%] text-[150px] opacity-[0.03] rotate-12 mix-blend-screen drop-shadow-[0_0_20px_rgba(217,70,239,0.2)]">✨</div>
+          <div className="absolute left-[15%] bottom-[20%] text-[100px] opacity-[0.02] -rotate-12 mix-blend-screen drop-shadow-[0_0_20px_rgba(79,70,229,0.2)]">🔮</div>
         </div>
       );
 

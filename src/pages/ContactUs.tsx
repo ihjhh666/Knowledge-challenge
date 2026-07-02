@@ -70,9 +70,14 @@ export default function ContactUs() {
           
           <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800/50">
             <h2 className="text-2xl font-bold text-white mb-6">يسعدنا تواصلك</h2>
-            <p className="text-slate-300 leading-relaxed mb-6">
-              يسعدنا تواصلك معنا. إذا كان لديك اقتراح، ملاحظة، أو واجهت مشكلة أثناء اللعب، يمكنك مراسلتنا وسنحاول مساعدتك.
-            </p>
+            <div className="text-slate-300 leading-relaxed mb-8 space-y-4">
+              <p>
+                نحن في "تحدي المعرفة" نضع تجربة المستخدم في المقام الأول. فريقنا متواجد دائماً للاستماع إلى أفكارك، واقتراحاتك، والعمل على تحسين المنصة بناءً على ملاحظاتك.
+              </p>
+              <p>
+                سواء كنت ترغب في الإبلاغ عن مشكلة تقنية، تقديم فكرة لطور لعب جديد، الاستفسار عن الشراكات الإعلانية والتجارية، أو حتى تصحيح معلومة في إحدى الأسئلة، لا تتردد في مراسلتنا. نحن نقرأ جميع الرسائل بدقة ونهتم بكل تعليق.
+              </p>
+            </div>
             
             <div className="flex items-center gap-4 mb-8">
               <a href="mailto:almhbwbswfy342@gmail.com" className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-700 transition">

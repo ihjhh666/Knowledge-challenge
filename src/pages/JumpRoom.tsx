@@ -697,9 +697,22 @@ export default function JumpRoom() {
   }, [loop]);
 
   return (
-    <div className="absolute inset-0 bg-slate-950 text-white overflow-hidden rounded-3xl border border-slate-800">
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-fuchsia-950 opacity-50"></div>
-      <div className="absolute inset-0" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(192, 38, 211, 0.1) 0%, transparent 60%)'}}></div>
+    <div 
+      className="text-white overflow-hidden touch-none"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100dvh',
+        zIndex: 999999,
+        overflow: 'hidden',
+        backgroundColor: '#020617' // slate-950
+      }}
+      dir="rtl"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-fuchsia-950 opacity-50 z-0"></div>
+      <div className="absolute inset-0 z-0" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(192, 38, 211, 0.1) 0%, transparent 60%)'}}></div>
 
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 pointer-events-none">

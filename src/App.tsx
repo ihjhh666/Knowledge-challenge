@@ -44,6 +44,9 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const AboutUs = lazy(() => import('./pages/AboutUs'));
 const ContactUs = lazy(() => import('./pages/ContactUs'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const GameGuide = lazy(() => import('./pages/GameGuide'));
+const HowToPlay = lazy(() => import('./pages/HowToPlay'));
+const FAQ = lazy(() => import('./pages/FAQ'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Account = lazy(() => import('./pages/Account'));
@@ -111,6 +114,8 @@ import { migrateUserData } from './lib/firebase';
 import { storage } from './lib/storage';
 
 import { UsernamePrompt } from './components/UsernamePrompt';
+
+import { CookieBanner } from './components/CookieBanner';
 
 function AppContent() {
   useOnlinePresence();
@@ -234,6 +239,7 @@ function AppContent() {
       <AchievementSystem />
       <GlobalProfileModal />
       <UsernamePrompt />
+      <CookieBanner />
       <main className="flex-1">
         <ErrorBoundary>
           <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>}>
@@ -277,6 +283,9 @@ function AppContent() {
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/guide" element={<GameGuide />} />
+            <Route path="/how-to-play" element={<HowToPlay />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>

@@ -139,37 +139,37 @@ export default function ProverbsSolo() {
       <>
       <PlayBackground theme="proverbs" />
       <div className="min-h-screen text-white p-4 relative z-10" dir="rtl">
-        <button onClick={() => navigate('/solo')} className="flex items-center gap-2 text-amber-500/80 hover:text-amber-400 font-bold mb-8 transition-colors drop-shadow-md">
+        <button onClick={() => navigate('/solo')} className="flex items-center gap-2 text-indigo-300 hover:text-indigo-200 font-bold mb-8 transition-colors drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]">
           <ArrowRight className="w-5 h-5" /> عودة للأطوار
         </button>
         
-        <div className="max-w-xl mx-auto text-center space-y-8 mt-12 bg-black/60 backdrop-blur-md p-8 rounded-3xl border border-amber-900/50 shadow-2xl">
-          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-700 to-amber-900 rounded-full flex items-center justify-center border-4 border-amber-500/30 shadow-xl shadow-amber-900/20">
-            <BookOpen className="w-12 h-12 text-amber-100" />
+        <div className="max-w-xl mx-auto text-center space-y-8 mt-12 bg-indigo-950/40 backdrop-blur-xl p-8 rounded-3xl border border-indigo-500/30 shadow-[0_0_40px_rgba(79,70,229,0.15)] animate-in fade-in zoom-in-95 duration-500">
+          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-indigo-600 to-fuchsia-600 rounded-full flex items-center justify-center border-4 border-fuchsia-500/30 shadow-[0_0_30px_rgba(217,70,239,0.4)]">
+            <BookOpen className="w-12 h-12 text-white" />
           </div>
           
           <div>
-            <h1 className="text-4xl font-bold font-heading text-amber-50 mb-4">أكمل المثل</h1>
-            <p className="text-amber-200/60 leading-relaxed max-w-md mx-auto">
+            <h1 className="text-4xl font-bold font-heading text-white mb-4 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] tracking-wide">أكمل المثل</h1>
+            <p className="text-indigo-200/80 leading-relaxed max-w-md mx-auto">
               اختبر حكمتك ومعرفتك بالأمثال الشعبية والعربية والتراثية الطور يعتمد على الدقة والمعرفة. أثبت أنك حكيم القرية!
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center py-6 border-y border-amber-900/30">
+          <div className="grid grid-cols-3 gap-4 text-center py-6 border-y border-indigo-500/20">
             <div className="space-y-1">
-              <ScrollText className="w-6 h-6 text-amber-500 mx-auto" />
-              <div className="text-sm font-bold text-amber-100">آلاف الأمثال</div>
-              <div className="text-xs text-amber-500/60">عربية وشعبية</div>
+              <ScrollText className="w-6 h-6 text-fuchsia-400 mx-auto drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]" />
+              <div className="text-sm font-bold text-white">آلاف الأمثال</div>
+              <div className="text-xs text-indigo-300/80">عربية وشعبية</div>
             </div>
-            <div className="space-y-1 border-x border-amber-900/30">
-              <Crown className="w-6 h-6 text-yellow-500 mx-auto" />
-              <div className="text-sm font-bold text-yellow-100">إنجازات حصرية</div>
-              <div className="text-xs text-amber-500/60">ألقاب تاريخية</div>
+            <div className="space-y-1 border-x border-indigo-500/20">
+              <Crown className="w-6 h-6 text-yellow-400 mx-auto drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" />
+              <div className="text-sm font-bold text-white">إنجازات حصرية</div>
+              <div className="text-xs text-indigo-300/80">ألقاب تاريخية</div>
             </div>
             <div className="space-y-1">
-              <Flame className="w-6 h-6 text-orange-500 mx-auto" />
-              <div className="text-sm font-bold text-orange-100">ميزة السلسلة</div>
-              <div className="text-xs text-amber-500/60">مكافآت خفية</div>
+              <Flame className="w-6 h-6 text-rose-400 mx-auto drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+              <div className="text-sm font-bold text-white">ميزة السلسلة</div>
+              <div className="text-xs text-indigo-300/80">مكافآت خفية</div>
             </div>
           </div>
 
@@ -178,7 +178,7 @@ export default function ProverbsSolo() {
               proverbsAudio.playRoundComplete();
               setIsPlaying(true);
             }}
-            className="w-full py-4 text-xl font-bold rounded-2xl bg-gradient-to-r from-amber-600 to-amber-800 text-white shadow-lg shadow-amber-900/50 hover:from-amber-500 hover:to-amber-700 transition-all active:scale-95"
+            className="w-full py-4 text-xl font-bold rounded-2xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white shadow-[0_0_20px_rgba(217,70,239,0.4)] hover:from-indigo-500 hover:to-fuchsia-500 transition-all active:scale-95"
           >
             بداية التحدي
           </button>
@@ -194,31 +194,31 @@ export default function ProverbsSolo() {
       <>
       <PlayBackground theme="proverbs" />
       <div className="min-h-screen p-4 flex items-center justify-center font-sans relative z-10" dir="rtl">
-        <div className="bg-black/60 border border-amber-900/50 p-8 rounded-3xl max-w-md w-full text-center shadow-2xl backdrop-blur-md">
-          <BookOpen className="w-16 h-16 text-amber-500 mx-auto mb-6" />
-          <h2 className="text-3xl font-bold text-amber-50 mb-2">انتهت الجولة</h2>
-          <p className="text-amber-200/60 mb-8">حكمتك أضاءت الدرب</p>
+        <div className="bg-indigo-950/40 border border-indigo-500/30 p-8 rounded-3xl max-w-md w-full text-center shadow-[0_0_40px_rgba(79,70,229,0.15)] backdrop-blur-xl animate-in zoom-in-95 fade-in duration-500">
+          <BookOpen className="w-16 h-16 text-fuchsia-400 mx-auto mb-6 drop-shadow-[0_0_15px_rgba(217,70,239,0.4)]" />
+          <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] tracking-wide">انتهت الجولة</h2>
+          <p className="text-indigo-200/80 mb-8">حكمتك أضاءت الدرب</p>
           
           <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-amber-900/40 p-4 rounded-2xl border border-amber-700/50">
-              <Target className="w-6 h-6 text-green-400 mx-auto mb-2" />
+            <div className="bg-indigo-900/30 p-4 rounded-2xl border border-indigo-500/20 shadow-inner">
+              <Target className="w-6 h-6 text-emerald-400 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
               <div className="text-2xl font-bold text-white mb-1">{correctCount}</div>
-              <div className="text-xs text-amber-400/80">إجابة صحيحة</div>
+              <div className="text-xs text-indigo-300/80">إجابة صحيحة</div>
             </div>
-            <div className="bg-amber-900/40 p-4 rounded-2xl border border-amber-700/50">
-              <Zap className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+            <div className="bg-indigo-900/30 p-4 rounded-2xl border border-indigo-500/20 shadow-inner">
+              <Zap className="w-6 h-6 text-fuchsia-400 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]" />
               <div className="text-2xl font-bold text-white mb-1">{score}</div>
-              <div className="text-xs text-amber-400/80">نقطة</div>
+              <div className="text-xs text-indigo-300/80">نقطة</div>
             </div>
-            <div className="bg-amber-900/40 p-4 rounded-2xl border border-amber-700/50">
-              <Flame className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+            <div className="bg-indigo-900/30 p-4 rounded-2xl border border-indigo-500/20 shadow-inner">
+              <Flame className="w-6 h-6 text-rose-400 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
               <div className="text-2xl font-bold text-white mb-1">{maxStreak}</div>
-              <div className="text-xs text-amber-400/80">أفضل سلسلة</div>
+              <div className="text-xs text-indigo-300/80">أفضل سلسلة</div>
             </div>
-            <div className="bg-amber-900/40 p-4 rounded-2xl border border-amber-700/50">
-              <Crown className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
+            <div className="bg-indigo-900/30 p-4 rounded-2xl border border-indigo-500/20 shadow-inner">
+              <Crown className="w-6 h-6 text-yellow-400 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" />
               <div className="text-2xl font-bold text-white mb-1">+{xp}</div>
-              <div className="text-xs text-amber-400/80">خبرة XP</div>
+              <div className="text-xs text-indigo-300/80">خبرة XP</div>
             </div>
           </div>
           
@@ -233,13 +233,13 @@ export default function ProverbsSolo() {
                 setGameOver(false);
                 proverbsAudio.playRoundComplete();
               }}
-              className="flex-1 py-4 font-bold rounded-2xl bg-amber-600 text-white hover:bg-amber-500 transition-colors shadow-lg"
+              className="flex-1 py-4 font-bold rounded-2xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white hover:from-indigo-500 hover:to-fuchsia-500 transition-colors shadow-[0_0_20px_rgba(217,70,239,0.3)] active:scale-95"
             >
               العب مجدداً
             </button>
             <button
               onClick={() => navigate('/solo')}
-              className="flex-1 py-4 font-bold rounded-2xl bg-slate-800/80 text-white hover:bg-slate-700 transition-colors border border-amber-900/50"
+              className="flex-1 py-4 font-bold rounded-2xl bg-slate-800/80 text-white hover:bg-slate-700 transition-colors border border-indigo-500/30 active:scale-95"
             >
               عودة للقائمة
             </button>
@@ -256,13 +256,13 @@ export default function ProverbsSolo() {
     <div className="min-h-screen p-4 flex flex-col relative z-10" dir="rtl">
       <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
         {/* Header HUD */}
-        <div className={`flex items-center justify-between mb-8 p-4 rounded-xl ${getHudStyle('proverbs')}`}>
+        <div className="flex items-center justify-between mb-6 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 backdrop-blur-xl shadow-[0_0_20px_rgba(79,70,229,0.15)] relative overflow-hidden">
           <div className="flex items-center gap-4">
-            <button onClick={() => setGameOver(true)} className="p-2 hover:bg-black/20 rounded-xl transition-colors">
-              <ArrowRight className="w-5 h-5 opacity-80" />
+            <button onClick={() => setGameOver(true)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+              <ArrowRight className="w-5 h-5 text-indigo-200" />
             </button>
-            <div className="flex bg-black/20 border border-white/10 px-4 py-2 rounded-xl gap-2 font-mono font-bold text-xl text-amber-300 items-center shadow-inner pt-2.5">
-              <Zap className="w-5 h-5 text-amber-400" /> {score}
+            <div className="flex bg-black/40 border border-indigo-500/30 px-4 py-2 rounded-xl gap-2 font-mono font-bold text-xl text-fuchsia-300 items-center shadow-inner pt-2.5">
+              <Zap className="w-5 h-5 text-fuchsia-400" /> {score}
             </div>
           </div>
           
@@ -270,38 +270,46 @@ export default function ProverbsSolo() {
             {[...Array(3)].map((_, i) => (
               <Heart 
                 key={i} 
-                className={`w-7 h-7 sm:w-8 sm:h-8 ${i < lives ? 'text-red-500 fill-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'text-slate-800/50'} transition-all`} 
+                className={`w-7 h-7 sm:w-8 sm:h-8 ${i < lives ? 'text-rose-500 fill-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.6)]' : 'text-indigo-900/50'} transition-all`} 
               />
             ))}
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-black/20 rounded-full h-3 max-w-sm mx-auto mb-8 border border-white/10 overflow-hidden shadow-inner">
+        <div className="w-full bg-black/40 rounded-full h-3 max-w-sm mx-auto mb-6 border border-indigo-500/20 overflow-hidden shadow-inner relative">
+          <div className="absolute inset-0 bg-indigo-500/10 animate-pulse"></div>
           <div 
-            className={`h-full rounded-full transition-all duration-1000 ease-linear ${timeLeft < 5 ? 'bg-red-500' : 'bg-amber-600'}`}
+            className={`h-full rounded-full transition-all duration-1000 ease-linear shadow-[0_0_10px_currentColor] relative ${timeLeft < 5 ? 'bg-rose-500 text-rose-500' : 'bg-fuchsia-500 text-fuchsia-500'}`}
             style={{ width: `${(timeLeft / maxTime) * 100}%` }}
           />
         </div>
 
         {streak >= 3 && (
-          <div className="text-center mb-4 animate-bounce text-orange-600 font-bold flex items-center justify-center gap-2 drop-shadow-md">
+          <div className="text-center mb-4 animate-bounce text-fuchsia-400 font-bold flex items-center justify-center gap-2 drop-shadow-[0_0_8px_rgba(232,121,249,0.5)]">
             <Flame className="w-5 h-5" /> سلسلة {streak} متتالية!
           </div>
         )}
 
         {/* Question Card */}
-        {currentQ && (
-          <div className={`p-6 md:p-10 text-center shadow-lg mb-8 flex-1 flex flex-col justify-center relative ${getCardStyle('proverbs')}`}>
+        {currentQ ? (
+          <div className="p-6 md:p-12 text-center shadow-[0_0_40px_rgba(79,70,229,0.2)] mb-8 flex-1 flex flex-col justify-center relative bg-indigo-950/40 border border-indigo-400/40 rounded-[2.5rem] backdrop-blur-xl animate-in zoom-in-95 fade-in duration-500">
              
              {/* Subtitle based on category */}
-             <div className="absolute top-4 right-4 bg-amber-900/30 text-amber-500 px-3 py-1 rounded-full text-xs font-bold border border-amber-700/50">
+             <div className="absolute top-6 right-6 bg-fuchsia-900/40 text-fuchsia-300 px-4 py-1.5 rounded-full text-sm font-bold border border-fuchsia-500/30 shadow-[0_0_15px_rgba(217,70,239,0.3)]">
                {currentQ.category === 'wisdom' ? 'حكمة' : currentQ.category === 'proverb' ? 'مثل شعبي' : 'مقولة'}
              </div>
 
-             <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold font-heading text-amber-50 leading-tight drop-shadow-md">
+             <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold font-heading text-white leading-tight drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] tracking-wide">
                  {currentQ.text}
              </h2>
+          </div>
+        ) : (
+          <div className="p-6 md:p-12 text-center shadow-[0_0_40px_rgba(79,70,229,0.2)] mb-8 flex-1 flex flex-col justify-center relative bg-indigo-950/40 border border-indigo-400/40 rounded-[2.5rem] backdrop-blur-xl">
+             <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-indigo-200 font-bold">جاري تحميل السؤال...</p>
+             </div>
           </div>
         )}
 
@@ -312,15 +320,15 @@ export default function ProverbsSolo() {
               const isSelected = selectedAnswer === opt;
               const isCorrect = opt === currentQ.correctAnswer;
               
-              let styleClass = "bg-black/60 border-amber-900/50 text-amber-50 hover:bg-amber-900/40 hover:border-amber-700";
+              let styleClass = "bg-indigo-950/40 border-indigo-500/30 text-indigo-100 hover:bg-indigo-900 hover:border-indigo-400 shadow-[inset_0_0_20px_rgba(0,0,0,0.3)]";
               
               if (selectedAnswer) {
                 if (isCorrect) {
-                  styleClass = "bg-emerald-500/20 border-emerald-500 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]";
+                  styleClass = "bg-emerald-500/20 border-emerald-500 text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)] scale-105 z-10";
                 } else if (isSelected) {
-                  styleClass = "bg-rose-500/20 border-rose-500 text-rose-400";
+                  styleClass = "bg-rose-500/20 border-rose-500 text-rose-400 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)] scale-95 opacity-80 z-10";
                 } else {
-                  styleClass = "bg-black/40 border-slate-800 text-slate-600 opacity-50";
+                  styleClass = "bg-black/40 border-slate-800 text-slate-600 opacity-50 scale-95";
                 }
               }
 
@@ -329,11 +337,11 @@ export default function ProverbsSolo() {
                   key={i}
                   disabled={!!selectedAnswer}
                   onClick={() => handleAnswer(opt)}
-                  className={`relative p-5 md:p-6 rounded-2xl border-2 text-lg md:text-xl font-bold font-heading transition-all ${styleClass}`}
+                  className={`relative p-5 md:p-6 rounded-2xl border-2 text-xl font-bold font-heading transition-all duration-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] ${styleClass} min-h-[80px] flex items-center justify-center text-center`}
                 >
                   {opt}
                   {selectedAnswer && isCorrect && (
-                    <Sparkles className="absolute top-1/2 left-4 -translate-y-1/2 w-6 h-6 text-emerald-400 animate-pulse" />
+                    <Sparkles className="absolute top-1/2 right-4 -translate-y-1/2 w-6 h-6 text-emerald-400 animate-pulse" />
                   )}
                 </button>
               );

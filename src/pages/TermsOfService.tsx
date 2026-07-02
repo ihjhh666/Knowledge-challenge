@@ -1,70 +1,129 @@
 import React from 'react';
 import { ArrowRight, Book } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200" dir="rtl">
-      <div className="max-w-4xl mx-auto px-4 py-12 md:py-20">
+    <div className="min-h-screen bg-slate-950 text-slate-200 pb-24" dir="rtl">
+      {/* Hero Section */}
+      <div className="relative pt-24 pb-16 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-900/20 via-slate-900 to-orange-900/20 z-0"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 z-0"></div>
         
-        <Link to="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8 bg-slate-900 border border-slate-800 px-4 py-2 rounded-full">
+        <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center justify-center p-4 bg-rose-500/10 rounded-3xl border border-rose-500/20 shadow-[0_0_30px_rgba(225,29,72,0.2)] mb-8"
+          >
+            <Book className="w-12 h-12 text-rose-400" />
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-6xl font-black mb-4 bg-gradient-to-l from-rose-400 to-orange-400 text-transparent bg-clip-text font-heading"
+          >
+            شروط الاستخدام
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl text-slate-400 max-w-2xl mx-auto"
+          >
+            تاريخ آخر تحديث: {new Date().toISOString().split('T')[0]}
+          </motion.p>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 relative z-10">
+        <Link to="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8 bg-slate-900 border border-slate-800 px-5 py-2.5 rounded-full hover:bg-slate-800">
           <ArrowRight className="w-4 h-4" />
-          <span>العودة للصفحة الرئيسية</span>
+          <span className="font-medium">العودة للصفحة الرئيسية</span>
         </Link>
         
-        <div className="flex items-center gap-4 mb-10">
-          <div className="p-3 bg-indigo-500/20 rounded-2xl text-indigo-400">
-            <Book className="w-10 h-10" />
-          </div>
-          <div>
-            <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">شروط الاستخدام</h1>
-            <p className="text-slate-400 mt-2">تاريخ آخر تحديث: {new Date().toISOString().split('T')[0]}</p>
-          </div>
-        </div>
-
-        <div className="space-y-12 bg-slate-900/50 p-8 md:p-12 rounded-3xl border border-slate-800/50 leading-loose text-lg text-slate-300">
+        <div className="space-y-12 bg-slate-900/60 backdrop-blur-sm p-8 md:p-12 rounded-3xl border border-slate-800 leading-relaxed text-lg text-slate-300">
           
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">1. القبول بالشروط</h2>
+            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-4 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">1</span>
+              قبول الشروط
+            </h2>
             <p>
-              باستخدامك لموقع "تحدي المعرفة"، فإنك توافق على الالتزام بشروط الاستخدام هذه وكافة القوانين واللوائح المعمول بها. إذا كنت غير موافق على جزء من هذه الشروط، يرجى التوقف عن استخدام المنصة.
+              باستخدامك لمنصة "تحدي المعرفة" (سواء كزائر أو كلاعب مسجل)، فإنك تقر بقراءتك وفهمك وموافقتك الكاملة على الالتزام بشروط الاستخدام هذه، بالإضافة إلى كافة القوانين واللوائح المعمول بها. إذا كنت لا توافق على أي جزء من هذه الشروط، يجب عليك التوقف فوراً عن استخدام المنصة.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">2. استخدام المنصة</h2>
-            <ul className="list-disc list-inside space-y-2">
-              <li>الموقع مخصص للعب والتسلية وإثراء المعرفة فقط.</li>
-              <li>يمنع استخدام الموقع في أي غرض غير قانوني أو ضار.</li>
-              <li>يجب احترام اللاعبين الآخرين وتجنب أي لغة مسيئة في المحادثات أو الأسماء المستعارة.</li>
+            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-4 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">2</span>
+              إنشاء الحسابات والأمان
+            </h2>
+            <ul className="list-disc list-inside space-y-3">
+              <li>أنت مسؤول بالكامل عن الحفاظ على سرية معلومات حسابك وكلمة المرور الخاصة بك.</li>
+              <li>يُحظر إنشاء حسابات متعددة بغرض التلاعب بنظام النقاط، أو الانضمام للغرف لإفساد تجربة اللاعبين الآخرين.</li>
+              <li>يجب أن تكون المعلومات التي تقدمها عند التسجيل دقيقة (مثل البريد الإلكتروني لاستعادة الحساب).</li>
+              <li>يحق لإدارة الموقع إيقاف أو حظر أي حساب يتبين أنه يخالف هذه الشروط دون سابق إنذار.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">3. الإعلانات والروابط الخارجية</h2>
+            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-4 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">3</span>
+              قواعد السلوك واللعب النظيف
+            </h2>
+            <p className="mb-3">تم إنشاء "تحدي المعرفة" لتوفير بيئة تنافسية ثقافية صحية. بناءً على ذلك، يُمنع منعاً باتاً:</p>
+            <ul className="list-disc list-inside space-y-3">
+              <li>استخدام أسماء مستعارة مسيئة، خادشة للحياء، أو تحمل طابعاً عنصرياً أو سياسياً متطرفاً.</li>
+              <li>التلفظ بألفاظ نابية أو الإساءة للاعبين الآخرين داخل غرف اللعب المشتركة.</li>
+              <li>استخدام أي برمجيات خارجية (Bots) أو ثغرات تقنية بهدف الغش وتعديل النقاط (XP) أو الأرصدة.</li>
+              <li>محاولة الهندسة العكسية للموقع أو شن هجمات حجب الخدمة (DDoS).</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-4 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">4</span>
+              المحتوى وحقوق الملكية
+            </h2>
+            <p className="mb-3">
+              جميع حقوق الملكية الفكرية المرتبطة بتصميم الموقع، الشعار، الأكواد البرمجية، واجهة المستخدم، وقاعدة بيانات الأسئلة هي ملكية حصرية لفريق تطوير "تحدي المعرفة".
+            </p>
+            <ul className="list-disc list-inside space-y-3">
+              <li>لا يُسمح بنسخ، تعديل، أو إعادة نشر أي جزء من الموقع التجاري دون إذن كتابي مسبق.</li>
+              <li>الأسئلة التي يساهم بها المستخدمون (إن وجدت مستقبلاً) تمنح المنصة حق استخدامها وتعديلها مجاناً.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-4 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">5</span>
+              الإعلانات والروابط الخارجية
+            </h2>
             <p>
-              يحتوي الموقع على إعلانات مقدمة من أطراف ثالثة (مثل Google AdSense). نحن غير مسؤولين عن محتوى الإعلانات أو المواقع التي توجه إليها هذه الإعلانات.
+              قد يحتوي الموقع على إعلانات مدعومة من جهات خارجية (مثل Google AdSense) وروابط لمواقع أخرى. نحن لا نتحكم في محتوى تلك المواقع ولا نتحمل أي مسؤولية عن محتواها، أو سياسات الخصوصية الخاصة بها، أو أي خسارة قد تنجم عن استخدامك لها. تفاعلك مع هذه الإعلانات يكون على مسؤوليتك الشخصية.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">4. حقوق الملكية</h2>
+            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-4 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">6</span>
+              إخلاء المسؤولية
+            </h2>
             <p>
-              جميع حقوق الملكية الفكرية لتصميم الموقع وكود البرمجة محفوظة لفريق تطوير تحدي المعرفة. يمنع نسخ أو إعادة إنتاج أي جزء من الموقع بدون إذن مسبق.
+              يتم توفير خدمات المنصة "كما هي" وبحالتها الراهنة، دون أي ضمانات صريحة أو ضمنية. نحن لا نضمن أن الخدمة ستكون مستمرة دون انقطاع، أو خالية من الأخطاء التقنية، أو أن جميع الأسئلة المطروحة دقيقة بنسبة 100%. لن تكون المنصة أو مطوروها مسؤولين عن أي أضرار مباشرة أو غير مباشرة تنشأ عن استخدام الخدمة.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">5. إخلاء المسؤولية</h2>
+            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-4 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">7</span>
+              التعديلات على الشروط
+            </h2>
             <p>
-              يتم توفير الموقع "كما هو" بدون أي ضمانات. نحن لا نضمن أن الخدمة ستكون خالية من الأخطاء أو التوقفات. لن نكون مسؤولين عن أي أضرار قد تنشأ عن استخدامك للمنصة.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">6. التعديلات</h2>
-            <p>
-              يحتفظ فريق الموقع بالحق في تعديل هذه الشروط في أي وقت. سنقوم بتحديث تاريخ التعديل أعلى هذه الصفحة، ويعتبر استخدامك المستمر للمنصة موافقة منك على الشروط الجديدة.
+              يحتفظ فريق التطوير بالحق الكامل في تعديل، تحديث، أو تغيير شروط الاستخدام في أي وقت يراه مناسباً. تسري التعديلات فور نشرها على هذه الصفحة. استمرارك في استخدام الموقع بعد نشر التعديلات يمثل موافقة صريحة منك عليها.
             </p>
           </section>
 

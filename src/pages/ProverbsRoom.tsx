@@ -109,12 +109,12 @@ export default function ProverbsRoom() {
 
       <div className="grid md:grid-cols-4 gap-8">
         <div className="md:col-span-3">
-          {currentQuestion && (
-            <div className="bg-slate-800 p-6 md:p-12 rounded-3xl border border-slate-700 space-y-6 md:space-y-8 flex flex-col items-center">
-              <div className="bg-indigo-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-indigo-500/30">
-                <BookOpen className="w-8 h-8 text-indigo-400" />
+          {currentQuestion ? (
+            <div className="p-6 md:p-12 rounded-[2.5rem] border border-indigo-500/40 space-y-6 md:space-y-8 flex flex-col items-center bg-indigo-950/40 backdrop-blur-xl shadow-[0_0_40px_rgba(79,70,229,0.2)] animate-in zoom-in-95 fade-in duration-500 relative">
+              <div className="bg-fuchsia-900/30 w-16 h-16 rounded-2xl flex items-center justify-center mb-2 border border-fuchsia-500/30 shadow-[0_0_20px_rgba(217,70,239,0.3)]">
+                <BookOpen className="w-8 h-8 text-fuchsia-300" />
               </div>
-              <h2 className="text-3xl md:text-5xl font-bold font-heading text-center leading-relaxed">
+              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold font-heading text-center leading-tight text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] tracking-wide">
                 {currentQuestion.text}
               </h2>
 
@@ -124,14 +124,14 @@ export default function ProverbsRoom() {
                   const isRevealing = state.status === 'revealing';
                   const isCorrect = opt === currentQuestion.correctAnswer;
                   
-                  let btnColor = "bg-slate-900 border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800 text-slate-200";
+                  let btnColor = "bg-indigo-950/40 border-indigo-500/30 text-indigo-100 hover:bg-indigo-900 hover:border-indigo-400 shadow-[inset_0_0_20px_rgba(0,0,0,0.3)]";
                   
                   if (isRevealing) {
-                    if (isCorrect) btnColor = "bg-emerald-500/20 border-emerald-500 text-emerald-400";
-                    else if (isSelected && !isCorrect) btnColor = "bg-red-500/20 border-red-500 text-red-400";
-                    else btnColor = "bg-slate-900 border-slate-800 text-slate-600 opacity-50";
+                    if (isCorrect) btnColor = "bg-emerald-500/20 border-emerald-500 text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)] z-10 scale-105";
+                    else if (isSelected && !isCorrect) btnColor = "bg-rose-500/20 border-rose-500 text-rose-400 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)] z-10 scale-95 opacity-80";
+                    else btnColor = "bg-black/40 border-slate-800 text-slate-600 opacity-50 scale-95";
                   } else if (isSelected) {
-                    btnColor = "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20";
+                    btnColor = "bg-fuchsia-600 border-fuchsia-400 text-white shadow-[0_0_30px_rgba(217,70,239,0.5)] scale-105 z-10";
                   }
 
                   return (
@@ -142,20 +142,25 @@ export default function ProverbsRoom() {
                         setSelectedAnswer(opt);
                         submitAnswer(opt, (15 - timeLeft) * 1000);
                       }}
-                      className={`relative p-6 rounded-2xl border-4 transition-all font-bold text-xl text-center ${btnColor} ${me?.hasAnsweredCurrentRound && !isSelected && !isRevealing ? 'opacity-50' : ''}`}
+                      className={`relative p-6 rounded-2xl border-2 transition-all duration-300 font-bold text-xl text-center min-h-[80px] flex items-center justify-center ${btnColor} ${me?.hasAnsweredCurrentRound && !isSelected && !isRevealing ? 'opacity-50 scale-95' : ''} ${!isRevealing && !me?.hasAnsweredCurrentRound ? 'hover:shadow-[0_0_20px_rgba(99,102,241,0.4)]' : ''}`}
                     >
                       {opt}
-                      {isRevealing && isCorrect && <Check className="absolute top-1/2 -translate-y-1/2 right-4 w-6 h-6" />}
+                      {isRevealing && isCorrect && <Check className="absolute top-1/2 -translate-y-1/2 right-4 w-6 h-6 animate-bounce" />}
                       {isRevealing && isSelected && !isCorrect && <X className="absolute top-1/2 -translate-y-1/2 right-4 w-6 h-6" />}
                     </button>
                   );
                 })}
               </div>
               {me?.hasAnsweredCurrentRound && state.status === 'playing' && (
-                <div className="text-center text-slate-400 animate-pulse mt-4">
+                <div className="text-center text-indigo-300 animate-pulse mt-4 font-bold bg-indigo-900/30 px-6 py-2 rounded-full border border-indigo-500/20 shadow-inner">
                   في انتظار باقي اللاعبين...
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="p-6 md:p-12 rounded-[2.5rem] border border-indigo-500/40 flex flex-col items-center justify-center h-64 bg-indigo-950/40 backdrop-blur-xl shadow-[0_0_40px_rgba(79,70,229,0.2)]">
+               <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+               <p className="text-indigo-200 font-bold">جاري تحميل السؤال...</p>
             </div>
           )}
         </div>

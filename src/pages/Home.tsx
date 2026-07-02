@@ -401,6 +401,123 @@ export default function Home() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Professional Features Section */}
+      <div className="mt-16 space-y-12">
+        <div className="text-center">
+          <h2 className="text-3xl md:text-5xl font-black mb-4 bg-gradient-to-l from-indigo-400 via-purple-400 to-fuchsia-400 text-transparent bg-clip-text font-heading">
+            لماذا تختار تحدي المعرفة؟
+          </h2>
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+            منصة متكاملة تجمع بين متعة اللعب وتحدي العقل، مصممة خصيصاً لتقديم أفضل تجربة للمستخدم العربي.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Feature 1 */}
+          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 hover:bg-slate-800/80 transition-all group overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full group-hover:bg-indigo-500/20 transition-all"></div>
+            <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 w-fit mb-6 text-indigo-400 group-hover:scale-110 transition-transform">
+              <Brain className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-200 mb-3 group-hover:text-white">الذكاء الاصطناعي</h3>
+            <p className="text-slate-400 leading-relaxed text-sm">
+              استمتع بأسئلة متجددة وتحديات ذكية، وتحدث مع شخصيات افتراضية مدعومة بأحدث تقنيات الذكاء الاصطناعي.
+            </p>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 hover:bg-slate-800/80 transition-all group overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full group-hover:bg-emerald-500/20 transition-all"></div>
+            <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 w-fit mb-6 text-emerald-400 group-hover:scale-110 transition-transform">
+              <Globe className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-200 mb-3 group-hover:text-white">اللعب الجماعي</h3>
+            <p className="text-slate-400 leading-relaxed text-sm">
+              انشئ غرفتك الخاصة أو انضم للغرف العامة وتنافس مع لاعبين من كافة أنحاء العالم في الوقت الفعلي.
+            </p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 hover:bg-slate-800/80 transition-all group overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full group-hover:bg-amber-500/20 transition-all"></div>
+            <div className="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 w-fit mb-6 text-amber-400 group-hover:scale-110 transition-transform">
+              <Trophy className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-200 mb-3 group-hover:text-white">المنافسة والمتصدرين</h3>
+            <p className="text-slate-400 leading-relaxed text-sm">
+              اجمع نقاط الخبرة (XP)، وارتقِ في المستويات لتحفر اسمك في لوحة المتصدرين وتفتح إنجازات حصرية.
+            </p>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 hover:bg-slate-800/80 transition-all group overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/10 blur-3xl rounded-full group-hover:bg-fuchsia-500/20 transition-all"></div>
+            <div className="p-4 bg-fuchsia-500/10 rounded-2xl border border-fuchsia-500/20 w-fit mb-6 text-fuchsia-400 group-hover:scale-110 transition-transform">
+              <Settings className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-200 mb-3 group-hover:text-white">توافق تام مع الهواتف</h3>
+            <p className="text-slate-400 leading-relaxed text-sm">
+              تجربة لعب سلسة ومصممة خصيصاً لتناسب شاشات الهواتف المحمولة والأجهزة اللوحية بكل كفاءة.
+            </p>
+          </div>
+
+          {/* Feature 5 */}
+          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 hover:bg-slate-800/80 transition-all group overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-3xl rounded-full group-hover:bg-rose-500/20 transition-all"></div>
+            <div className="p-4 bg-rose-500/10 rounded-2xl border border-rose-500/20 w-fit mb-6 text-rose-400 group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-slate-200 mb-3 group-hover:text-white">سرعة الأداء</h3>
+            <p className="text-slate-400 leading-relaxed text-sm">
+              خوادم قوية ومتزامنة لحظياً (Real-time) لتوفير أسرع استجابة ممكنة ومنع التأخير أثناء اللعب.
+            </p>
+          </div>
+
+          {/* Feature 6 */}
+          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 hover:bg-slate-800/80 transition-all group overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 blur-3xl rounded-full group-hover:bg-cyan-500/20 transition-all"></div>
+            <div className="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/20 w-fit mb-6 text-cyan-400 group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-slate-200 mb-3 group-hover:text-white">تحديثات مستمرة</h3>
+            <p className="text-slate-400 leading-relaxed text-sm">
+              نعمل دوماً على إضافة أطوار لعب جديدة، تحسينات بصرية، وتوسيع قاعدة الأسئلة لتجدد متعتك دائماً.
+            </p>
+          </div>
+        </div>
+
+        {/* Start Game CTA */}
+        <div className="mt-12 bg-gradient-to-br from-indigo-900/40 to-fuchsia-900/40 border border-indigo-500/30 rounded-[2.5rem] p-10 text-center relative overflow-hidden backdrop-blur-xl">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+          <div className="relative z-10">
+            <h3 className="text-3xl font-black text-white mb-4">هل أنت جاهز لاختبار معلوماتك؟</h3>
+            <p className="text-indigo-200 mb-8 max-w-xl mx-auto">
+              انضم الآن إلى مجتمع اللاعبين وابدأ رحلتك في جمع المعرفة وتحقيق الأرقام القياسية.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <Link 
+                to="/rooms"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all active:scale-95 flex items-center gap-2"
+              >
+                <Users className="w-5 h-5" />
+                العب مع الأصدقاء
+              </Link>
+              <button 
+                onClick={() => setOpenSection('quiz')}
+                className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-4 rounded-2xl font-bold text-lg border border-slate-700 transition-all active:scale-95 flex items-center gap-2"
+              >
+                <Gamepad2 className="w-5 h-5" />
+                اللعب الفردي
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
       
     </div>
   );
